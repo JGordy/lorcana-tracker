@@ -820,8 +820,8 @@ export const dbService = {
       }
     }
 
-    // 4. Fallback: Parse local/Appwrite decks if API returned empty/failed
-    if (resolvedDecks.length === 0) {
+    // 4. Load database & mock decks (including pre-seeded Set 13 decks and user imported decks)
+    {
       const [decks, allDeckCards] = await Promise.all([
         this.getCollection<Deck>(COLLECTIONS.DECKS, [Query.equal("is_public", true)], cookieHeader),
         this.getCollection<DeckCardDoc>(COLLECTIONS.DECK_CARDS, [], cookieHeader),
@@ -833,6 +833,11 @@ export const dbService = {
       }
 
       for (const deck of decks) {
+        // Prevent duplicates
+        if (resolvedDecks.some((rd) => rd.id === deck.$id || rd.id === deck.id)) {
+          continue;
+        }
+
         const deckJunctions = allDeckCards.filter((dc) => dc.deck_id === deck.$id || deck.id === dc.deck_id);
         const progress = calculateDeckProgress(userCollection, deckJunctions);
         const cardsInDeck = deckJunctions.map((dc) => {
@@ -852,7 +857,7 @@ export const dbService = {
             classifications: [],
             rarity: "Common",
             image_url: "",
-            formats: ["core"],
+            formats: ["core", "infinity"],
           };
           return {
             card: cardDetails,
