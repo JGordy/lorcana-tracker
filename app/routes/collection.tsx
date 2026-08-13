@@ -284,8 +284,29 @@ const KNOWN_SETS = [
 ];
 
 export default function Collection() {
-  const { cards, userCollection, user } = useLoaderData<typeof loader>();
+  const { cards, userCollection: serverCollection, user } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
+
+  // Client-side persistent state for inventory (bypasses browser 4KB cookie size limits)
+  const [userCollection, setUserCollection] = useState<UserCollectionItemDoc[]>([]);
+
+  // Synchronize with localStorage on client mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("lorcana_user_inventory");
+      if (stored) {
+        try {
+          setUserCollection(JSON.parse(stored));
+          return;
+        } catch (e) {
+          console.error("Failed to parse local storage inventory", e);
+        }
+      }
+      // Fallback to server data
+      setUserCollection(serverCollection);
+      localStorage.setItem("lorcana_user_inventory", JSON.stringify(serverCollection));
+    }
+  }, [serverCollection]);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
@@ -393,6 +414,32 @@ export default function Collection() {
       return;
     }
     const newQty = Math.max(0, currentQty + change);
+
+    // Optimistically update React state & localStorage
+    const updatedCollection = [...userCollection];
+    const existingIdx = updatedCollection.findIndex(
+      (item) => item.card_id === cardId && item.is_foil === isFoil
+    );
+    if (existingIdx > -1) {
+      if (newQty <= 0) {
+        updatedCollection.splice(existingIdx, 1);
+      } else {
+        updatedCollection[existingIdx].quantity = newQty;
+      }
+    } else if (newQty > 0) {
+      updatedCollection.push({
+        $id: `inv-${Date.now()}`,
+        user_id: user.$id,
+        card_id: cardId,
+        quantity: newQty,
+        is_foil: isFoil,
+      });
+    }
+    setUserCollection(updatedCollection);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lorcana_user_inventory", JSON.stringify(updatedCollection));
+    }
+
     fetcher.submit(
       {
         intent: "update-quantity",
