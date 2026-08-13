@@ -91,6 +91,41 @@ export const SET_INDEX_MAP: Record<number, string> = {
   14: "Format Coconut",
 };
 
+export const SET_NAME_TO_INDEX: Record<string, number> = {
+  "The First Chapter": 1,
+  "Rise of the Floodborn": 2,
+  "Into the Inklands": 3,
+  "Ursula's Return": 4,
+  "Shimmering Skies": 5,
+  "Azurite Sea": 6,
+  "Archazia's Island": 7,
+  "Reign of Jafar": 8,
+  "Fabled": 9,
+  "Whispers in the Well": 10,
+  "Winterspell": 11,
+  "Wilds Unknown": 12,
+  "Attack of the Vine!": 13,
+  "Format Coconut": 14,
+};
+
+export function postProcessCardLegality(cards: Card[]): Card[] {
+  const legalCardNames = new Set<string>();
+  for (const card of cards) {
+    const setIdx = SET_NAME_TO_INDEX[card.set];
+    if (setIdx && setIdx >= 9) {
+      legalCardNames.add(card.name.toLowerCase().trim());
+    }
+  }
+
+  for (const card of cards) {
+    const setIdx = SET_NAME_TO_INDEX[card.set];
+    const isCore = (setIdx !== undefined && setIdx >= 9) || legalCardNames.has(card.name.toLowerCase().trim());
+    card.formats = isCore ? ["core", "infinity"] : ["infinity"];
+  }
+  return cards;
+}
+
+
 
 export const client = new Client();
 if (isConfigured) {
@@ -464,7 +499,7 @@ export const dbService = {
           }
         }
 
-        return cards as unknown as T[];
+        return postProcessCardLegality(cards) as unknown as T[];
       }
       if (collectionId === COLLECTIONS.DECKS) {
         return MOCK_DECKS as unknown as T[];
@@ -480,7 +515,11 @@ export const dbService = {
 
     try {
       const response = await databases.listDocuments(DATABASE_ID, collectionId, queries);
-      return response.documents as unknown as T[];
+      let docs = response.documents as unknown as T[];
+      if (collectionId === COLLECTIONS.CARDS) {
+        docs = postProcessCardLegality(docs as unknown as Card[]) as unknown as T[];
+      }
+      return docs;
     } catch (error) {
       console.error(`Error fetching collection ${collectionId}:`, error);
       throw error;
@@ -676,7 +715,7 @@ export const dbService = {
                       classifications: [],
                       rarity: "Common",
                       image_url: "",
-                      formats: ["core"],
+                      formats: setNum >= 9 ? ["core", "infinity"] : ["infinity"],
                     },
                     requiredQty: qty,
                     ownedQty: 0,

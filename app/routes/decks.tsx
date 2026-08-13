@@ -17,8 +17,9 @@ import {
   Select,
   Box,
   ActionIcon,
+  Tabs,
 } from "@mantine/core";
-import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube } from "@tabler/icons-react";
+import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube, IconCards, IconInfinity } from "@tabler/icons-react";
 import { authService, dbService, isConfigured, COLLECTIONS, type UserCollectionItemDoc, type DeckWithProgress } from "../services/appwrite";
 import { Navbar } from "../components/Navbar";
 
@@ -163,6 +164,240 @@ export default function Decks() {
       deck.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Compute Core legality for each deck dynamically
+  const processedDecks = filteredDecks.map((deck) => {
+    const isCoreLegal = deck.cards.every((dc) => dc.card.formats?.includes("core"));
+    return {
+      ...deck,
+      isCoreLegal,
+    };
+  });
+
+  const coreDecks = processedDecks.filter((deck) => deck.isCoreLegal);
+  const infinityDecks = processedDecks;
+
+  const renderDeckList = (decksToRender: typeof processedDecks) => {
+    if (decksToRender.length === 0) {
+      return (
+        <Card padding="xl" radius="md" withBorder bg="dark.8" style={{ textAlign: "center", borderStyle: "dashed" }}>
+          <Text c="gray.5" size="sm">No decks found matching your filters in this format.</Text>
+        </Card>
+      );
+    }
+
+    return (
+      <Stack gap="md">
+        {decksToRender.map((deck) => {
+          const { percentage, ownedCount, totalCount, missingCards } = deck.progress;
+          const isExpanded = expandedDecks[deck.$id];
+
+          // Decide colors based on progress
+          let progressColor = "red";
+          if (percentage >= 80) progressColor = "emerald";
+          else if (percentage >= 50) progressColor = "amber";
+
+          // Map color code to Mantine color
+          const mColor = progressColor === "emerald" ? "teal" : progressColor === "amber" ? "yellow" : "red";
+
+          return (
+            <Card
+              key={deck.$id}
+              padding="lg"
+              radius="md"
+              withBorder
+              bg="dark.8"
+              style={(theme) => ({ borderColor: theme.colors.dark[7] })}
+            >
+              <Stack gap="md">
+                {/* Header line info */}
+                <Group justify="space-between" align="start">
+                  <Box style={{ flex: 1 }}>
+                    <Group gap="xs" mb={4} align="center">
+                      <Text fw={700} size="md" c="gray.1">
+                        {deck.title}
+                      </Text>
+                      {deck.is_trending ? (
+                        <Badge size="xs" variant="gradient" gradient={{ from: "violet", to: "grape" }}>
+                          Trending Meta
+                        </Badge>
+                      ) : (
+                        <Badge size="xs" variant="outline" color="blue">
+                          Local Deck
+                        </Badge>
+                      )}
+                      
+                      {deck.isCoreLegal ? (
+                        <Badge size="xs" variant="light" color="teal">
+                          Core Legal
+                        </Badge>
+                      ) : (
+                        <Badge size="xs" variant="light" color="orange">
+                          Infinity Only
+                        </Badge>
+                      )}
+
+                      {deck.youtube && (
+                        <Button
+                          component="a"
+                          href={`https://www.youtube.com/watch?v=${deck.youtube}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="10px"
+                          px="xs"
+                          variant="light"
+                          color="red"
+                          leftSection={<IconBrandYoutube size={12} />}
+                          style={{ height: 18 }}
+                        >
+                          Watch Guide
+                        </Button>
+                      )}
+                    </Group>
+                    <Text size="xs" c="gray.4">
+                      {deck.description}
+                    </Text>
+                  </Box>
+
+                  {/* Progress Metrics */}
+                  <Stack gap={4} align="end" style={{ minWidth: 150 }}>
+                    <Badge size="sm" variant="light" color={mColor}>
+                      {ownedCount}/{totalCount} Owned ({percentage}%)
+                    </Badge>
+                    <Progress
+                      value={percentage}
+                      color={mColor}
+                      size="sm"
+                      radius="xl"
+                      striped
+                      style={{ width: 120 }}
+                    />
+                  </Stack>
+                </Group>
+
+                {/* Expand buttons line */}
+                <Group justify="space-between" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 12 }}>
+                  <Text size="xs" c="gray.5" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    {missingCards.length === 0 ? (
+                      <Text component="span" c="teal.4" fw={500} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <IconCheck size={14} /> Ready to play! You own all cards.
+                      </Text>
+                    ) : (
+                      <Text component="span" c="rose.4" fw={500} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                        <IconAlertTriangle size={14} /> Missing {totalCount - ownedCount} cards
+                      </Text>
+                    )}
+                  </Text>
+
+                  <Button
+                    variant="subtle"
+                    color="violet"
+                    size="xs"
+                    onClick={() => toggleDeckExpand(deck.$id)}
+                    rightSection={isExpanded ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
+                  >
+                    {isExpanded ? "Hide Details" : "View Card List"}
+                  </Button>
+                </Group>
+
+                {/* Collapsible card table details */}
+                <Collapse expanded={isExpanded}>
+                  <Box py="sm" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", overflowX: "auto" }}>
+                    <Table striped highlightOnHover variant="vertical" style={{ minWidth: 600 }}>
+                      <Table.Thead>
+                        <Table.Tr>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11 }}>Card Name</Table.Th>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11 }}>Ink Color</Table.Th>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Cost</Table.Th>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Rarity</Table.Th>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Required</Table.Th>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Owned</Table.Th>
+                          <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Status</Table.Th>
+                          {user && <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "right" }}>Quick Add</Table.Th>}
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {deck.cards.map(({ card, requiredQty, ownedQty }) => {
+                          const isMissing = ownedQty < requiredQty;
+                          const missingCount = requiredQty - ownedQty;
+
+                          return (
+                            <Table.Tr key={card.$id}>
+                              <Table.Td style={{ fontWeight: 500 }}>
+                                <Group gap="xs">
+                                  <Text size="xs">{card.name}</Text>
+                                  {card.formats.includes("core") ? (
+                                    <Badge size="10px" variant="outline" color="teal">
+                                      Core
+                                    </Badge>
+                                  ) : (
+                                    <Badge size="10px" variant="outline" color="orange">
+                                      Infinity
+                                    </Badge>
+                                  )}
+                                </Group>
+                              </Table.Td>
+                              <Table.Td>
+                                <Badge size="xs" variant="outline" style={getInkBadgeStyle(card.ink_color)}>
+                                  {card.ink_color}
+                                </Badge>
+                              </Table.Td>
+                              <Table.Td style={{ textAlign: "center", fontWeight: 700 }}>
+                                {card.cost}
+                              </Table.Td>
+                              <Table.Td style={{ textAlign: "center", fontSize: 11 }}>
+                                {card.rarity}
+                              </Table.Td>
+                              <Table.Td style={{ textAlign: "center", fontWeight: 700 }}>
+                                {requiredQty}
+                              </Table.Td>
+                              <Table.Td
+                                style={{
+                                  textAlign: "center",
+                                  fontWeight: 700,
+                                  color: isMissing ? "var(--mantine-color-red-4)" : "var(--mantine-color-teal-4)",
+                                }}
+                              >
+                                {ownedQty}
+                              </Table.Td>
+                              <Table.Td style={{ textAlign: "center" }}>
+                                {isMissing ? (
+                                  <Badge size="xs" color="red" variant="light">
+                                    Need {missingCount}
+                                  </Badge>
+                                ) : (
+                                  <Badge size="xs" color="teal" variant="light">
+                                    Matched
+                                  </Badge>
+                                )}
+                              </Table.Td>
+                              {user && (
+                                <Table.Td style={{ textAlign: "right" }}>
+                                  <ActionIcon
+                                    size="sm"
+                                    variant="filled"
+                                    color="violet"
+                                    onClick={() => handleQuickAdd(card.id, ownedQty)}
+                                    title="Quick Add 1 copy to your collection"
+                                  >
+                                    <IconPlus size={12} />
+                                  </ActionIcon>
+                                </Table.Td>
+                              )}
+                            </Table.Tr>
+                          );
+                        })}
+                      </Table.Tbody>
+                    </Table>
+                  </Box>
+                </Collapse>
+              </Stack>
+            </Card>
+          );
+        })}
+      </Stack>
+    );
+  };
+
   return (
     <Box mih="100vh" bg="dark.9" c="gray.1">
       <Navbar user={user} />
@@ -232,207 +467,25 @@ export default function Decks() {
           />
         </Group>
 
-        {/* Deck Card list */}
-        {filteredDecks.length === 0 ? (
-          <Card padding="xl" radius="md" withBorder bg="dark.8" style={{ textAlign: "center", borderStyle: "dashed" }}>
-            <Text c="gray.5" size="sm">No decks found matching your filters.</Text>
-          </Card>
-        ) : (
-          <Stack gap="md">
-            {filteredDecks.map((deck) => {
-              const { percentage, ownedCount, totalCount, missingCards } = deck.progress;
-              const isExpanded = expandedDecks[deck.$id];
+        {/* Tabs for Core/Infinity Formats */}
+        <Tabs defaultValue="core" color="violet" variant="outline" mt="md" mb="xl">
+          <Tabs.List style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.15)" }} mb="md">
+            <Tabs.Tab value="core" leftSection={<IconCards size={16} />} style={{ fontWeight: 600 }}>
+              Core Constructed ({coreDecks.length})
+            </Tabs.Tab>
+            <Tabs.Tab value="infinity" leftSection={<IconInfinity size={16} />} style={{ fontWeight: 600 }}>
+              Infinity Constructed ({infinityDecks.length})
+            </Tabs.Tab>
+          </Tabs.List>
 
-              // Decide colors based on progress
-              let progressColor = "red";
-              if (percentage >= 80) progressColor = "emerald";
-              else if (percentage >= 50) progressColor = "amber";
+          <Tabs.Panel value="core">
+            {renderDeckList(coreDecks)}
+          </Tabs.Panel>
 
-              // Map color code to Mantine color
-              const mColor = progressColor === "emerald" ? "teal" : progressColor === "amber" ? "yellow" : "red";
-
-              return (
-                <Card
-                  key={deck.$id}
-                  padding="lg"
-                  radius="md"
-                  withBorder
-                  bg="dark.8"
-                  style={(theme) => ({ borderColor: theme.colors.dark[7] })}
-                >
-                  <Stack gap="md">
-                    {/* Header line info */}
-                    <Group justify="space-between" align="start">
-                      <Box style={{ flex: 1 }}>
-                        <Group gap="xs" mb={4} align="center">
-                          <Text fw={700} size="md" c="gray.1">
-                            {deck.title}
-                          </Text>
-                          {deck.is_trending ? (
-                            <Badge size="xs" variant="gradient" gradient={{ from: "violet", to: "grape" }}>
-                              Trending Meta
-                            </Badge>
-                          ) : (
-                            <Badge size="xs" variant="outline" color="blue">
-                              Local Deck
-                            </Badge>
-                          )}
-                          {deck.youtube && (
-                            <Button
-                              component="a"
-                              href={`https://www.youtube.com/watch?v=${deck.youtube}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              size="10px"
-                              px="xs"
-                              variant="light"
-                              color="red"
-                              leftSection={<IconBrandYoutube size={12} />}
-                              style={{ height: 18 }}
-                            >
-                              Watch Guide
-                            </Button>
-                          )}
-                        </Group>
-                        <Text size="xs" c="gray.4">
-                          {deck.description}
-                        </Text>
-                      </Box>
-
-                      {/* Progress Metrics */}
-                      <Stack gap={4} align="end" style={{ minWidth: 150 }}>
-                        <Badge size="sm" variant="light" color={mColor}>
-                          {ownedCount}/{totalCount} Owned ({percentage}%)
-                        </Badge>
-                        <Progress
-                          value={percentage}
-                          color={mColor}
-                          size="sm"
-                          radius="xl"
-                          striped
-                          style={{ width: 120 }}
-                        />
-                      </Stack>
-                    </Group>
-
-                    {/* Expand buttons line */}
-                    <Group justify="space-between" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 12 }}>
-                      <Text size="xs" c="gray.5" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        {missingCards.length === 0 ? (
-                          <Text component="span" c="teal.4" fw={500} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <IconCheck size={14} /> Ready to play! You own all cards.
-                          </Text>
-                        ) : (
-                          <Text component="span" c="rose.4" fw={500} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <IconAlertTriangle size={14} /> Missing {totalCount - ownedCount} cards
-                          </Text>
-                        )}
-                      </Text>
-
-                      <Button
-                        variant="subtle"
-                        color="violet"
-                        size="xs"
-                        onClick={() => toggleDeckExpand(deck.$id)}
-                        rightSection={isExpanded ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
-                      >
-                        {isExpanded ? "Hide Details" : "View Card List"}
-                      </Button>
-                    </Group>
-
-                    {/* Collapsible card table details */}
-                    <Collapse expanded={isExpanded}>
-                      <Box py="sm" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", overflowX: "auto" }}>
-                        <Table striped highlightOnHover variant="vertical" style={{ minWidth: 600 }}>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11 }}>Card Name</Table.Th>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11 }}>Ink Color</Table.Th>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Cost</Table.Th>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Rarity</Table.Th>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Required</Table.Th>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Owned</Table.Th>
-                              <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "center" }}>Status</Table.Th>
-                              {user && <Table.Th style={{ color: "var(--mantine-color-gray-5)", fontSize: 11, textAlign: "right" }}>Quick Add</Table.Th>}
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {deck.cards.map(({ card, requiredQty, ownedQty }) => {
-                              const isMissing = ownedQty < requiredQty;
-                              const missingCount = requiredQty - ownedQty;
-
-                              return (
-                                <Table.Tr key={card.$id}>
-                                  <Table.Td style={{ fontWeight: 500 }}>
-                                    <Group gap="xs">
-                                      <Text size="xs">{card.name}</Text>
-                                      {card.formats.includes("core") && (
-                                        <Badge size="10px" variant="outline" color="gray">
-                                          Core
-                                        </Badge>
-                                      )}
-                                    </Group>
-                                  </Table.Td>
-                                  <Table.Td>
-                                    <Badge size="xs" variant="outline" style={getInkBadgeStyle(card.ink_color)}>
-                                      {card.ink_color}
-                                    </Badge>
-                                  </Table.Td>
-                                  <Table.Td style={{ textAlign: "center", fontWeight: 700 }}>
-                                    {card.cost}
-                                  </Table.Td>
-                                  <Table.Td style={{ textAlign: "center", fontSize: 11 }}>
-                                    {card.rarity}
-                                  </Table.Td>
-                                  <Table.Td style={{ textAlign: "center", fontWeight: 700 }}>
-                                    {requiredQty}
-                                  </Table.Td>
-                                  <Table.Td
-                                    style={{
-                                      textAlign: "center",
-                                      fontWeight: 700,
-                                      color: isMissing ? "var(--mantine-color-red-4)" : "var(--mantine-color-teal-4)",
-                                    }}
-                                  >
-                                    {ownedQty}
-                                  </Table.Td>
-                                  <Table.Td style={{ textAlign: "center" }}>
-                                    {isMissing ? (
-                                      <Badge size="xs" color="red" variant="light">
-                                        Need {missingCount}
-                                      </Badge>
-                                    ) : (
-                                      <Badge size="xs" color="teal" variant="light">
-                                        Matched
-                                      </Badge>
-                                    )}
-                                  </Table.Td>
-                                  {user && (
-                                    <Table.Td style={{ textAlign: "right" }}>
-                                      <ActionIcon
-                                        size="sm"
-                                        variant="filled"
-                                        color="violet"
-                                        onClick={() => handleQuickAdd(card.id, ownedQty)}
-                                        title="Quick Add 1 copy to your collection"
-                                      >
-                                        <IconPlus size={12} />
-                                      </ActionIcon>
-                                    </Table.Td>
-                                  )}
-                                </Table.Tr>
-                              );
-                            })}
-                          </Table.Tbody>
-                        </Table>
-                      </Box>
-                    </Collapse>
-                  </Stack>
-                </Card>
-              );
-            })}
-          </Stack>
-        )}
+          <Tabs.Panel value="infinity">
+            {renderDeckList(infinityDecks)}
+          </Tabs.Panel>
+        </Tabs>
       </Container>
     </Box>
   );
