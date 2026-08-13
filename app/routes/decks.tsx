@@ -18,7 +18,7 @@ import {
   Box,
   ActionIcon,
 } from "@mantine/core";
-import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle } from "@tabler/icons-react";
+import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube } from "@tabler/icons-react";
 import { authService, dbService, isConfigured, COLLECTIONS, type UserCollectionItemDoc, type DeckWithProgress } from "../services/appwrite";
 import { Navbar } from "../components/Navbar";
 
@@ -264,13 +264,35 @@ export default function Decks() {
                     {/* Header line info */}
                     <Group justify="space-between" align="start">
                       <Box style={{ flex: 1 }}>
-                        <Group gap="xs" mb={4}>
+                        <Group gap="xs" mb={4} align="center">
                           <Text fw={700} size="md" c="gray.1">
                             {deck.title}
                           </Text>
-                          <Badge size="xs" variant="outline" color="violet">
-                            Meta List
-                          </Badge>
+                          {deck.is_trending ? (
+                            <Badge size="xs" variant="gradient" gradient={{ from: "violet", to: "grape" }}>
+                              Trending Meta
+                            </Badge>
+                          ) : (
+                            <Badge size="xs" variant="outline" color="blue">
+                              Local Deck
+                            </Badge>
+                          )}
+                          {deck.youtube && (
+                            <Button
+                              component="a"
+                              href={`https://www.youtube.com/watch?v=${deck.youtube}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              size="10px"
+                              px="xs"
+                              variant="light"
+                              color="red"
+                              leftSection={<IconBrandYoutube size={12} />}
+                              style={{ height: 18 }}
+                            >
+                              Watch Guide
+                            </Button>
+                          )}
                         </Group>
                         <Text size="xs" c="gray.4">
                           {deck.description}

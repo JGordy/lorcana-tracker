@@ -49,7 +49,13 @@ export interface DeckWithProgress extends Deck {
     requiredQty: number;
     ownedQty: number;
   }>;
+  youtube?: string;
+  likes?: number;
+  views?: number;
+  creator_name?: string;
+  is_trending?: boolean;
 }
+
 
 // ---------------------------------------------------------
 // Appwrite Client Initialization
@@ -67,6 +73,24 @@ export const COLLECTIONS = {
 
 // Check if Appwrite is configured
 export const isConfigured = !!PROJECT_ID && PROJECT_ID !== "PLACEHOLDER";
+
+export const SET_INDEX_MAP: Record<number, string> = {
+  1: "The First Chapter",
+  2: "Rise of the Floodborn",
+  3: "Into the Inklands",
+  4: "Ursula's Return",
+  5: "Shimmering Skies",
+  6: "Azurite Sea",
+  7: "Archazia's Island",
+  8: "Reign of Jafar",
+  9: "Fabled",
+  10: "Whispers in the Well",
+  11: "Winterspell",
+  12: "Wilds Unknown",
+  13: "Attack of the Vine!",
+  14: "Format Coconut",
+};
+
 
 export const client = new Client();
 if (isConfigured) {
@@ -553,69 +577,188 @@ export const dbService = {
     sort: "progress" | "missing_cost" | "name" = "progress",
     cookieHeader?: string | null
   ): Promise<DeckWithProgress[]> {
-    // 1. Fetch data concurrently
-    const [cards, decks, allDeckCards, userCollection] = await Promise.all([
+    // 1. Fetch user collection and master cards catalog
+    const [cards, userCollection] = await Promise.all([
       this.getCollection<Card>(COLLECTIONS.CARDS, [], cookieHeader),
-      this.getCollection<Deck>(COLLECTIONS.DECKS, [Query.equal("is_public", true)], cookieHeader),
-      this.getCollection<DeckCardDoc>(COLLECTIONS.DECK_CARDS, [], cookieHeader),
       userId ? this.getCollection<UserCollectionItemDoc>(COLLECTIONS.USER_COLLECTIONS, [Query.equal("user_id", userId)], cookieHeader) : Promise.resolve([]),
     ]);
 
     // Create lookup index maps for efficiency
-    const cardsMap = new Map<string, Card>();
-    for (const card of cards) {
-      cardsMap.set(card.id, card);
-    }
-
     const ownedMap = new Map<string, number>();
     for (const item of userCollection) {
       ownedMap.set(item.card_id, (ownedMap.get(item.card_id) || 0) + item.quantity);
     }
 
-    // 2. Process decks and calculate completion
-    const decksWithProgress: DeckWithProgress[] = decks.map((deck) => {
-      // Filter junctions for this specific deck
-      const deckJunctions = allDeckCards.filter((dc) => dc.deck_id === deck.$id || deck.id === dc.deck_id);
+    const cardBySetAndNumber = new Map<string, Card>();
+    for (const card of cards) {
+      const key = `${card.set.toLowerCase()}_${card.number}`;
+      cardBySetAndNumber.set(key, card);
+    }
 
-      // Perform progress calculation
-      const progress = calculateDeckProgress(userCollection, deckJunctions);
+    const resolvedDecks: DeckWithProgress[] = [];
 
-      // Resolve actual card details for route rendering
-      const cardsInDeck = deckJunctions.map((dc) => {
-        const cardDetails = cardsMap.get(dc.card_id) || {
-          $id: dc.card_id,
-          id: dc.card_id,
-          name: "Unknown Card",
-          set: "Unknown",
-          number: 0,
-          ink_color: "Neutral",
-          cost: 0,
-          inkwell: true,
-          strength: null,
-          willpower: null,
-          lore: 0,
-          type: [],
-          classifications: [],
-          rarity: "Common",
-          image_url: "",
-          formats: ["core"],
-        };
-        return {
-          card: cardDetails,
-          requiredQty: dc.quantity,
-          ownedQty: ownedMap.get(dc.card_id) || 0,
-        };
+    // 2. Fetch trending decks from api-lorcana.com
+    let apiDecks: any[] = [];
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch("https://api-lorcana.com/decks/trending", {
+        headers: { "Accept": "application/json" },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
-      return {
-        ...deck,
-        progress,
-        cards: cardsInDeck,
-      };
-    });
+      if (res.ok) {
+        apiDecks = await res.json();
+      } else {
+        console.warn("api-lorcana.com trending endpoint returned status:", res.status);
+      }
+    } catch (err) {
+      console.warn("Failed to fetch trending decks from api-lorcana.com (using local backup):", err);
+    }
 
-    // 3. Sort decks based on parameters
-    return decksWithProgress.sort((a, b) => {
+    // 3. Process API decks if available
+    if (Array.isArray(apiDecks) && apiDecks.length > 0) {
+      for (const apiDeck of apiDecks) {
+        const deckJunctions: DeckCard[] = [];
+        const cardsInDeck: Array<{
+          card: Card;
+          requiredQty: number;
+          ownedQty: number;
+        }> = [];
+
+        if (Array.isArray(apiDeck.cards)) {
+          for (const apiCard of apiDeck.cards) {
+            if (!apiCard.dreamborn) continue;
+            const parts = apiCard.dreamborn.split("-");
+            if (parts.length === 2) {
+              const setNum = parseInt(parts[0], 10);
+              const cardNum = parseInt(parts[1], 10);
+              const setName = SET_INDEX_MAP[setNum];
+              if (setName) {
+                const lookupKey = `${setName.toLowerCase()}_${cardNum}`;
+                const cardDetails = cardBySetAndNumber.get(lookupKey);
+                const qty = apiCard.count || 0;
+                
+                if (cardDetails) {
+                  deckJunctions.push({
+                    deck_id: apiDeck.uuid,
+                    card_id: cardDetails.id,
+                    quantity: qty,
+                  });
+                  cardsInDeck.push({
+                    card: cardDetails,
+                    requiredQty: qty,
+                    ownedQty: ownedMap.get(cardDetails.id) || 0,
+                  });
+                } else {
+                  // Fallback placeholder card if not found in catalog
+                  const placeholderId = `missing-${apiCard.dreamborn}`;
+                  deckJunctions.push({
+                    deck_id: apiDeck.uuid,
+                    card_id: placeholderId,
+                    quantity: qty,
+                  });
+                  cardsInDeck.push({
+                    card: {
+                      $id: placeholderId,
+                      id: placeholderId,
+                      name: `Unknown Card (${apiCard.dreamborn})`,
+                      set: setName,
+                      number: cardNum,
+                      ink_color: "Neutral",
+                      cost: 0,
+                      inkwell: true,
+                      strength: null,
+                      willpower: null,
+                      lore: 0,
+                      type: [],
+                      classifications: [],
+                      rarity: "Common",
+                      image_url: "",
+                      formats: ["core"],
+                    },
+                    requiredQty: qty,
+                    ownedQty: 0,
+                  });
+                }
+              }
+            }
+          }
+        }
+
+        const progress = calculateDeckProgress(userCollection, deckJunctions);
+
+        resolvedDecks.push({
+          $id: apiDeck.uuid,
+          id: apiDeck.uuid,
+          title: apiDeck.name || "Trending Deck",
+          description: `Trending metagame deck created by ${apiDeck.creator_name || "Unknown"}. Views: ${apiDeck.views || 0}, Likes: ${apiDeck.likes || 0}.`,
+          creator_id: apiDeck.creator || "unknown",
+          is_public: !apiDeck.is_private,
+          progress,
+          cards: cardsInDeck,
+          youtube: apiDeck.youtube,
+          likes: apiDeck.likes,
+          views: apiDeck.views,
+          creator_name: apiDeck.creator_name,
+          is_trending: true,
+        });
+      }
+    }
+
+    // 4. Fallback: Parse local/Appwrite decks if API returned empty/failed
+    if (resolvedDecks.length === 0) {
+      const [decks, allDeckCards] = await Promise.all([
+        this.getCollection<Deck>(COLLECTIONS.DECKS, [Query.equal("is_public", true)], cookieHeader),
+        this.getCollection<DeckCardDoc>(COLLECTIONS.DECK_CARDS, [], cookieHeader),
+      ]);
+
+      const cardsMap = new Map<string, Card>();
+      for (const card of cards) {
+        cardsMap.set(card.id, card);
+      }
+
+      for (const deck of decks) {
+        const deckJunctions = allDeckCards.filter((dc) => dc.deck_id === deck.$id || deck.id === dc.deck_id);
+        const progress = calculateDeckProgress(userCollection, deckJunctions);
+        const cardsInDeck = deckJunctions.map((dc) => {
+          const cardDetails = cardsMap.get(dc.card_id) || {
+            $id: dc.card_id,
+            id: dc.card_id,
+            name: "Unknown Card",
+            set: "Unknown",
+            number: 0,
+            ink_color: "Neutral",
+            cost: 0,
+            inkwell: true,
+            strength: null,
+            willpower: null,
+            lore: 0,
+            type: [],
+            classifications: [],
+            rarity: "Common",
+            image_url: "",
+            formats: ["core"],
+          };
+          return {
+            card: cardDetails,
+            requiredQty: dc.quantity,
+            ownedQty: ownedMap.get(dc.card_id) || 0,
+          };
+        });
+
+        resolvedDecks.push({
+          ...deck,
+          progress,
+          cards: cardsInDeck,
+          is_trending: false,
+        });
+      }
+    }
+
+    // 5. Sort decks
+    return resolvedDecks.sort((a, b) => {
       if (sort === "progress") {
         if (b.progress.percentage !== a.progress.percentage) {
           return b.progress.percentage - a.progress.percentage;
