@@ -1,0 +1,638 @@
+import { Client, Account, Databases, ID, Query } from "appwrite";
+import { calculateDeckProgress, getCardSlug, type UserCollectionItem, type DeckCard, type ProgressResult } from "../utils/deck";
+
+// ---------------------------------------------------------
+// TypeScript Schema Types
+// ---------------------------------------------------------
+export interface Card {
+  $id: string;
+  id: string; // card unique slug ID, e.g. "mickey-mouse-brave-little-tailor"
+  name: string;
+  set: string;
+  number: number;
+  ink_color: string;
+  cost: number;
+  inkwell: boolean;
+  strength: number | null;
+  willpower: number | null;
+  lore: number;
+  type: string[];
+  classifications: string[];
+  rarity: string;
+  image_url: string;
+  formats: string[]; // e.g. ["core", "infinity"]
+}
+
+export interface UserCollectionItemDoc extends UserCollectionItem {
+  $id: string;
+  $createdAt?: string;
+  $updatedAt?: string;
+}
+
+export interface Deck {
+  $id: string;
+  id: string;
+  title: string;
+  description: string;
+  creator_id: string;
+  is_public: boolean;
+}
+
+export interface DeckCardDoc extends DeckCard {
+  $id: string;
+}
+
+export interface DeckWithProgress extends Deck {
+  progress: ProgressResult;
+  cards: Array<{
+    card: Card;
+    requiredQty: number;
+    ownedQty: number;
+  }>;
+}
+
+// ---------------------------------------------------------
+// Appwrite Client Initialization
+// ---------------------------------------------------------
+const ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
+const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID;
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || "lorcana_tracker";
+
+export const COLLECTIONS = {
+  CARDS: "cards",
+  USER_COLLECTIONS: "user_collections",
+  DECKS: "decks",
+  DECK_CARDS: "deck_cards",
+};
+
+// Check if Appwrite is configured
+export const isConfigured = !!PROJECT_ID && PROJECT_ID !== "PLACEHOLDER";
+
+export const client = new Client();
+if (isConfigured) {
+  client.setEndpoint(ENDPOINT).setProject(PROJECT_ID);
+}
+
+export const account = new Account(client);
+export const databases = new Databases(client);
+
+// ---------------------------------------------------------
+// Mock Data (Fallback for Local Testing/Demo)
+// ---------------------------------------------------------
+const RAW_MOCK_CARDS = [
+  {
+    $id: "mickey-mouse-brave-little-tailor",
+    id: "mickey-mouse-brave-little-tailor",
+    name: "Mickey Mouse - Brave Little Tailor",
+    set: "The First Chapter",
+    number: 115,
+    ink_color: "Ruby",
+    cost: 8,
+    rarity: "Legendary",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_e74ef94562b9440e8dd95ada098728d6.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "elsa-spirit-of-winter",
+    id: "elsa-spirit-of-winter",
+    name: "Elsa - Spirit of Winter",
+    set: "The First Chapter",
+    number: 42,
+    ink_color: "Amethyst",
+    cost: 8,
+    rarity: "Legendary",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_04bca46a8e2d4e9ba0fbdbfc6c99e51e.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "maleficent-monstrous-dragon",
+    id: "maleficent-monstrous-dragon",
+    name: "Maleficent - Monstrous Dragon",
+    set: "The First Chapter",
+    number: 113,
+    ink_color: "Ruby",
+    cost: 9,
+    rarity: "Legendary",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_f27f48f1eb8642a39de3ea91df67ccfc.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "maui-hero-to-all",
+    id: "maui-hero-to-all",
+    name: "Maui - Hero to All",
+    set: "The First Chapter",
+    number: 114,
+    ink_color: "Ruby",
+    cost: 5,
+    rarity: "Rare",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_407bb2a4ff5c4d46b0e4e76cbc2be949.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "a-whole-new-world",
+    id: "a-whole-new-world",
+    name: "A Whole New World",
+    set: "The First Chapter",
+    number: 195,
+    ink_color: "Steel",
+    cost: 5,
+    rarity: "Super Rare",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_3a299da6bf864690a188f07aeb55ffdf.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "be-prepared",
+    id: "be-prepared",
+    name: "Be Prepared",
+    set: "The First Chapter",
+    number: 104,
+    ink_color: "Ruby",
+    cost: 7,
+    rarity: "Rare",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_69b75104832b4cd6ada38b185f7bd579.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "stitch-carefree-surfer",
+    id: "stitch-carefree-surfer",
+    name: "Stitch - Carefree Surfer",
+    set: "The First Chapter",
+    number: 24,
+    ink_color: "Amber",
+    cost: 7,
+    rarity: "Legendary",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_fdaea5bd7f31497a8284771dd57894cf.avif?1755540238",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "tinker-bell-giant-fairy",
+    id: "tinker-bell-giant-fairy",
+    name: "Tinker Bell - Giant Fairy",
+    set: "The First Chapter",
+    number: 193,
+    ink_color: "Steel",
+    cost: 6,
+    rarity: "Super Rare",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_5fb3a8282fa34c2bbeb9a56b4ccc7e36.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "cinderella-stouthearted",
+    id: "cinderella-stouthearted",
+    name: "Cinderella - Stouthearted",
+    set: "Rise of the Floodborn",
+    number: 177,
+    ink_color: "Steel",
+    cost: 7,
+    rarity: "Super Rare",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_ac32bfe50af84f459d9cc9d4c0d659ef.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "flynn-rider-his-own-biggest-fan",
+    id: "flynn-rider-his-own-biggest-fan",
+    name: "Flynn Rider - His Own Biggest Fan",
+    set: "Rise of the Floodborn",
+    number: 82,
+    ink_color: "Emerald",
+    cost: 4,
+    rarity: "Rare",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_ce8e3338542f433193eaf3a3737ba1c4.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+  {
+    $id: "belle-strange-but-special",
+    id: "belle-strange-but-special",
+    name: "Belle - Strange but Special",
+    set: "The First Chapter",
+    number: 142,
+    ink_color: "Sapphire",
+    cost: 4,
+    rarity: "Legendary",
+    image_url: "https://cards.lorcast.io/card/digital/normal/crd_63c2ca66eeea417b9079d833e0fd88d4.avif?1709690747",
+    formats: ["core", "infinity"],
+  },
+];
+
+const MOCK_CARDS: Card[] = RAW_MOCK_CARDS.map(c => ({
+  ...c,
+  inkwell: true,
+  strength: 5,
+  willpower: 5,
+  lore: 2,
+  type: ["Character"],
+  classifications: ["Storyborn", "Hero"],
+}));
+
+const MOCK_DECKS: Deck[] = [
+  {
+    $id: "deck-1",
+    id: "deck-1",
+    title: "Ruby/Amethyst Control",
+    description: "An aggressive control list that wins via late-game lore generation and board wipes like Be Prepared.",
+    creator_id: "system-1",
+    is_public: true,
+  },
+  {
+    $id: "deck-2",
+    id: "deck-2",
+    title: "Amber/Steel Songs",
+    description: "Utilizes singers like Cinderella and Stitch to cast high-value song cards like A Whole New World early.",
+    creator_id: "system-1",
+    is_public: true,
+  },
+  {
+    $id: "deck-3",
+    id: "deck-3",
+    title: "Ruby/Steel Midrange",
+    description: "A solid mid-range list with heavy damage removal and evasive lore run capabilities.",
+    creator_id: "system-1",
+    is_public: true,
+  },
+];
+
+const MOCK_DECK_CARDS: DeckCardDoc[] = [
+  // Ruby/Amethyst Control requires Mickey Mouse (x2), Elsa (x4), Maleficent (x4), Maui (x4), Be Prepared (x4)
+  { $id: "dc1-1", deck_id: "deck-1", card_id: "mickey-mouse-brave-little-tailor", quantity: 2 },
+  { $id: "dc1-2", deck_id: "deck-1", card_id: "elsa-spirit-of-winter", quantity: 4 },
+  { $id: "dc1-3", deck_id: "deck-1", card_id: "maleficent-monstrous-dragon", quantity: 4 },
+  { $id: "dc1-4", deck_id: "deck-1", card_id: "maui-hero-to-all", quantity: 4 },
+  { $id: "dc1-5", deck_id: "deck-1", card_id: "be-prepared", quantity: 4 },
+
+  // Amber/Steel Songs requires Stitch (x4), Tinker Bell (x4), A Whole New World (x4), Cinderella (x4)
+  { $id: "dc2-1", deck_id: "deck-2", card_id: "stitch-carefree-surfer", quantity: 4 },
+  { $id: "dc2-2", deck_id: "deck-2", card_id: "tinker-bell-giant-fairy", quantity: 4 },
+  { $id: "dc2-3", deck_id: "deck-2", card_id: "a-whole-new-world", quantity: 4 },
+  { $id: "dc2-4", deck_id: "deck-2", card_id: "cinderella-stouthearted", quantity: 4 },
+
+  // Ruby/Steel Midrange requires Mickey Mouse (x2), Maui (x4), Be Prepared (x2), Tinker Bell (x4), Cinderella (x2)
+  { $id: "dc3-1", deck_id: "deck-3", card_id: "mickey-mouse-brave-little-tailor", quantity: 2 },
+  { $id: "dc3-2", deck_id: "deck-3", card_id: "maui-hero-to-all", quantity: 4 },
+  { $id: "dc3-3", deck_id: "deck-3", card_id: "be-prepared", quantity: 2 },
+  { $id: "dc3-4", deck_id: "deck-3", card_id: "tinker-bell-giant-fairy", quantity: 4 },
+  { $id: "dc3-5", deck_id: "deck-3", card_id: "cinderella-stouthearted", quantity: 2 },
+];
+
+// Helper to parse cookies
+export function parseCookies(cookieString: string | null): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  if (!cookieString) return cookies;
+  cookieString.split(";").forEach((pair) => {
+    const parts = pair.split("=");
+    const key = parts[0]?.trim();
+    const val = parts[1]?.trim();
+    if (key && val) {
+      cookies[key] = decodeURIComponent(val);
+    }
+  });
+  return cookies;
+}
+
+// Helper to initialize user inventory with full cookie support for SSR
+const getMockUserInventory = (cookieHeader?: string | null): UserCollectionItemDoc[] => {
+  // 1. If cookie is present (runs on server or client), parse it
+  if (cookieHeader) {
+    const cookies = parseCookies(cookieHeader);
+    const cookieVal = cookies["lorcana_user_inventory"];
+    if (cookieVal) {
+      try {
+        return JSON.parse(cookieVal);
+      } catch (e) {
+        console.error("Failed to parse user inventory from cookie", e);
+      }
+    }
+  }
+
+  // 2. Fallback to client-side localStorage
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("lorcana_user_inventory");
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  }
+
+  // 3. Fallback defaults
+  const defaults: UserCollectionItemDoc[] = [
+    { $id: "inv-1", user_id: "mock-user-123", card_id: "mickey-mouse-brave-little-tailor", quantity: 1, is_foil: false },
+    { $id: "inv-2", user_id: "mock-user-123", card_id: "mickey-mouse-brave-little-tailor", quantity: 1, is_foil: true },
+    { $id: "inv-3", user_id: "mock-user-123", card_id: "maui-hero-to-all", quantity: 3, is_foil: false },
+    { $id: "inv-4", user_id: "mock-user-123", card_id: "a-whole-new-world", quantity: 1, is_foil: false },
+    { $id: "inv-5", user_id: "mock-user-123", card_id: "tinker-bell-giant-fairy", quantity: 4, is_foil: false },
+  ];
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem("lorcana_user_inventory", JSON.stringify(defaults));
+    document.cookie = `lorcana_user_inventory=${encodeURIComponent(JSON.stringify(defaults))}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+  return defaults;
+};
+
+const saveMockUserInventory = (inventory: UserCollectionItemDoc[]) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("lorcana_user_inventory", JSON.stringify(inventory));
+    document.cookie = `lorcana_user_inventory=${encodeURIComponent(JSON.stringify(inventory))}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+};
+
+// ---------------------------------------------------------
+// Core Authentication Services
+// ---------------------------------------------------------
+export const authService = {
+  async getSessionUser() {
+    if (!isConfigured) {
+      // Mock session user
+      return {
+        $id: "mock-user-123",
+        email: "lorcana.player@example.com",
+        name: "LoreWise Player",
+      };
+    }
+    try {
+      return await account.get();
+    } catch {
+      return null;
+    }
+  },
+
+  async anonymousLogin() {
+    if (!isConfigured) {
+      console.log("Mock: Logged in anonymously");
+      return this.getSessionUser();
+    }
+    try {
+      return await account.createAnonymousSession();
+    } catch (error) {
+      console.error("Anonymous login failed", error);
+      throw error;
+    }
+  },
+
+  async logout() {
+    if (!isConfigured) {
+      console.log("Mock: Logged out");
+      return;
+    }
+    try {
+      await account.deleteSession("current");
+    } catch (error) {
+      console.error("Logout failed", error);
+      throw error;
+    }
+  },
+};
+
+// ---------------------------------------------------------
+// Database & Collection Services
+// ---------------------------------------------------------
+export const dbService = {
+  /**
+   * Fetch all records of a specific collection.
+   */
+  async getCollection<T>(
+    collectionId: string,
+    queries: string[] = [],
+    cookieHeader?: string | null
+  ): Promise<T[]> {
+    if (!isConfigured) {
+      // Return Mock Collections
+      if (collectionId === COLLECTIONS.CARDS) {
+        let cards: Card[] = [];
+        if (typeof window === "undefined") {
+          // Server-side (Node.js): Read the minified public/cards.json file directly using relative module URL paths
+          try {
+            const fs = await import("fs");
+            const path = await import("path");
+            
+            const devUrl = new URL("../../public/cards.json", import.meta.url);
+            const prodUrl = new URL("../client/cards.json", import.meta.url);
+            
+            let rawData = "";
+            if (fs.existsSync(prodUrl)) {
+              rawData = fs.readFileSync(prodUrl, "utf8");
+            } else if (fs.existsSync(devUrl)) {
+              rawData = fs.readFileSync(devUrl, "utf8");
+            } else {
+              const fallbackPath = path.join(process.cwd(), "public", "cards.json");
+              rawData = fs.readFileSync(fallbackPath, "utf8");
+            }
+            
+            cards = JSON.parse(rawData);
+          } catch (e) {
+            console.error("Server failed to load public/cards.json:", e);
+            cards = MOCK_CARDS;
+          }
+        } else {
+          // Client-side: Read from cache or fetch
+          const cached = localStorage.getItem("lorcana_cards_cache_v6");
+          if (cached) {
+            cards = JSON.parse(cached);
+          } else {
+            // If no cache, fetch the local minified public/cards.json asset
+            try {
+              const response = await fetch("/cards.json");
+              if (!response.ok) throw new Error("Local cards.json asset failed to load");
+              cards = await response.json();
+              localStorage.setItem("lorcana_cards_cache_v6", JSON.stringify(cards));
+            } catch (error) {
+              console.warn("Failed to fetch local cards database. Falling back to mock cards.", error);
+              cards = MOCK_CARDS;
+            }
+          }
+        }
+
+        return cards as unknown as T[];
+      }
+      if (collectionId === COLLECTIONS.DECKS) {
+        return MOCK_DECKS as unknown as T[];
+      }
+      if (collectionId === COLLECTIONS.DECK_CARDS) {
+        return MOCK_DECK_CARDS as unknown as T[];
+      }
+      if (collectionId === COLLECTIONS.USER_COLLECTIONS) {
+        return getMockUserInventory(cookieHeader) as unknown as T[];
+      }
+      return [];
+    }
+
+    try {
+      const response = await databases.listDocuments(DATABASE_ID, collectionId, queries);
+      return response.documents as unknown as T[];
+    } catch (error) {
+      console.error(`Error fetching collection ${collectionId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Add or update quantity in the user's inventory
+   */
+  async updateInventory(
+    userId: string,
+    cardId: string,
+    quantity: number,
+    isFoil: boolean,
+    cookieHeader?: string | null
+  ): Promise<UserCollectionItemDoc> {
+    if (!isConfigured) {
+      const inventory = getMockUserInventory(cookieHeader);
+      const existingIdx = inventory.findIndex(
+        (item) => item.card_id === cardId && item.is_foil === isFoil && item.user_id === userId
+      );
+
+      let updatedItem: UserCollectionItemDoc;
+      if (existingIdx > -1) {
+        if (quantity <= 0) {
+          updatedItem = inventory.splice(existingIdx, 1)[0];
+          updatedItem.quantity = 0;
+        } else {
+          inventory[existingIdx].quantity = quantity;
+          updatedItem = inventory[existingIdx];
+        }
+      } else {
+        if (quantity <= 0) {
+          updatedItem = { $id: `temp-${Date.now()}`, user_id: userId, card_id: cardId, quantity: 0, is_foil: isFoil };
+        } else {
+          const newItem: UserCollectionItemDoc = {
+            $id: `inv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            user_id: userId,
+            card_id: cardId,
+            quantity,
+            is_foil: isFoil,
+          };
+          inventory.push(newItem);
+          updatedItem = newItem;
+        }
+      }
+      saveMockUserInventory(inventory);
+      return updatedItem;
+    }
+
+    // Appwrite Implementation
+    const docId = `${userId}_${cardId.replace(/[^a-zA-Z0-9]/g, "-")}_${isFoil ? "foil" : "normal"}`;
+
+    try {
+      if (quantity <= 0) {
+        try {
+          await databases.deleteDocument(DATABASE_ID, COLLECTIONS.USER_COLLECTIONS, docId);
+        } catch (e: any) {
+          if (e.code !== 404) throw e;
+        }
+        return { $id: docId, user_id: userId, card_id: cardId, quantity: 0, is_foil: isFoil };
+      }
+
+      return (await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.USER_COLLECTIONS,
+        docId,
+        { quantity }
+      )) as unknown as UserCollectionItemDoc;
+    } catch (error: any) {
+      if (error.code === 404) {
+        return (await databases.createDocument(
+          DATABASE_ID,
+          COLLECTIONS.USER_COLLECTIONS,
+          docId,
+          {
+            user_id: userId,
+            card_id: cardId,
+            quantity,
+            is_foil: isFoil,
+          }
+        )) as unknown as UserCollectionItemDoc;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Retrieves all public decks, maps them against the user's collection,
+   * calculates percentage completion, and sorts them accordingly.
+   */
+  async getDecksWithProgress(
+    userId: string | null,
+    sort: "progress" | "missing_cost" | "name" = "progress",
+    cookieHeader?: string | null
+  ): Promise<DeckWithProgress[]> {
+    // 1. Fetch data concurrently
+    const [cards, decks, allDeckCards, userCollection] = await Promise.all([
+      this.getCollection<Card>(COLLECTIONS.CARDS, [], cookieHeader),
+      this.getCollection<Deck>(COLLECTIONS.DECKS, [Query.equal("is_public", true)], cookieHeader),
+      this.getCollection<DeckCardDoc>(COLLECTIONS.DECK_CARDS, [], cookieHeader),
+      userId ? this.getCollection<UserCollectionItemDoc>(COLLECTIONS.USER_COLLECTIONS, [Query.equal("user_id", userId)], cookieHeader) : Promise.resolve([]),
+    ]);
+
+    // Create lookup index maps for efficiency
+    const cardsMap = new Map<string, Card>();
+    for (const card of cards) {
+      cardsMap.set(card.id, card);
+    }
+
+    const ownedMap = new Map<string, number>();
+    for (const item of userCollection) {
+      ownedMap.set(item.card_id, (ownedMap.get(item.card_id) || 0) + item.quantity);
+    }
+
+    // 2. Process decks and calculate completion
+    const decksWithProgress: DeckWithProgress[] = decks.map((deck) => {
+      // Filter junctions for this specific deck
+      const deckJunctions = allDeckCards.filter((dc) => dc.deck_id === deck.$id || deck.id === dc.deck_id);
+
+      // Perform progress calculation
+      const progress = calculateDeckProgress(userCollection, deckJunctions);
+
+      // Resolve actual card details for route rendering
+      const cardsInDeck = deckJunctions.map((dc) => {
+        const cardDetails = cardsMap.get(dc.card_id) || {
+          $id: dc.card_id,
+          id: dc.card_id,
+          name: "Unknown Card",
+          set: "Unknown",
+          number: 0,
+          ink_color: "Neutral",
+          cost: 0,
+          inkwell: true,
+          strength: null,
+          willpower: null,
+          lore: 0,
+          type: [],
+          classifications: [],
+          rarity: "Common",
+          image_url: "",
+          formats: ["core"],
+        };
+        return {
+          card: cardDetails,
+          requiredQty: dc.quantity,
+          ownedQty: ownedMap.get(dc.card_id) || 0,
+        };
+      });
+
+      return {
+        ...deck,
+        progress,
+        cards: cardsInDeck,
+      };
+    });
+
+    // 3. Sort decks based on parameters
+    return decksWithProgress.sort((a, b) => {
+      if (sort === "progress") {
+        if (b.progress.percentage !== a.progress.percentage) {
+          return b.progress.percentage - a.progress.percentage;
+        }
+        return b.progress.totalCount - a.progress.totalCount;
+      }
+
+      if (sort === "missing_cost") {
+        const missingA = a.progress.totalCount - a.progress.ownedCount;
+        const missingB = b.progress.totalCount - b.progress.ownedCount;
+        if (missingA !== missingB) {
+          return missingA - missingB;
+        }
+        return b.progress.percentage - a.progress.percentage;
+      }
+
+      return a.title.localeCompare(b.title);
+    });
+  },
+};
