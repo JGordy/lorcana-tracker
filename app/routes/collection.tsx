@@ -1,6 +1,6 @@
 import type { Route } from "./+types/collection";
-import { useLoaderData, useFetcher, data } from "react-router";
-import { useState, useEffect, useRef } from "react";
+import { useLoaderData, useFetcher } from "react-router";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Container,
   Title,
@@ -16,11 +16,10 @@ import {
   SimpleGrid,
   Paper,
   Select,
-  Accordion,
 } from "@mantine/core";
 import { IconSearch, IconPlus, IconMinus, IconSparkles, IconCards } from "@tabler/icons-react";
 import { Query } from "appwrite";
-import { authService, dbService, isConfigured, COLLECTIONS, type Card as LorcanaCard, type UserCollectionItemDoc } from "../services/appwrite";
+import { authService, dbService, COLLECTIONS, type Card as LorcanaCard, type UserCollectionItemDoc } from "../services/appwrite";
 import { Navbar } from "../components/Navbar";
 
 // ---------------------------------------------------------
@@ -39,26 +38,20 @@ export async function loader({ request }: Route.LoaderArgs) {
     userId ? dbService.getCollection<UserCollectionItemDoc>(COLLECTIONS.USER_COLLECTIONS, [Query.equal("user_id", userId)], cookieHeader) : Promise.resolve([]),
   ]);
 
-  return { cards, userCollection, user };
+  return {
+    cards,
+    userCollection,
+    user,
+  };
 }
 
 // ---------------------------------------------------------
 // Action (Runs on the Server in SSR mode)
 // ---------------------------------------------------------
 export async function action({ request }: Route.ActionArgs) {
+  const cookieHeader = request.headers.get("Cookie");
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const cookieHeader = request.headers.get("Cookie");
-
-  if (intent === "logout") {
-    await authService.logout();
-    return { success: true };
-  }
-
-  if (intent === "login-demo") {
-    await authService.anonymousLogin();
-    return { success: true };
-  }
 
   if (intent === "update-quantity") {
     const userId = formData.get("userId") as string;
@@ -66,55 +59,39 @@ export async function action({ request }: Route.ActionArgs) {
     const quantity = parseInt(formData.get("quantity") as string, 10);
     const isFoil = formData.get("isFoil") === "true";
 
-    const updatedItem = await dbService.updateInventory(userId, cardId, quantity, isFoil, cookieHeader);
-
-    if (!isConfigured) {
-      const allMockInventory = await dbService.getCollection<UserCollectionItemDoc>(
-        COLLECTIONS.USER_COLLECTIONS,
-        [],
-        cookieHeader
-      );
-      const serialized = encodeURIComponent(JSON.stringify(allMockInventory));
-      return data(
-        { success: true, updatedItem },
-        {
-          headers: {
-            "Set-Cookie": `lorcana_user_inventory=${serialized}; Path=/; Max-Age=31536000; SameSite=Lax`,
-          },
-        }
-      );
-    }
-    return { success: true, updatedItem };
+    const result = await dbService.updateInventory(userId, cardId, quantity, isFoil, cookieHeader);
+    return { success: true, item: result };
   }
 
   return { success: false };
 }
 
-// Helper to map Lorcana ink colors to custom hex styling
-function getInkBadgeStyle(color: string) {
-  const normalized = color.toLowerCase();
-  let hex = "#94a3b8"; // default slate
+// ---------------------------------------------------------
+// Color Utilities & Ink Badges Configuration
+// ---------------------------------------------------------
+const INK_COLORS: Record<string, string> = {
+  amber: "#F5B041",
+  amethyst: "#AF7AC5",
+  emerald: "#2ECC71",
+  ruby: "#EC7063",
+  sapphire: "#5DADE2",
+  steel: "#A6ACAF"
+};
 
-  switch (normalized) {
-    case "amber":
-      hex = "#F5B041"; // Vibrant Gold-Amber
-      break;
-    case "amethyst":
-      hex = "#AF7AC5"; // Vibrant Amethyst Violet
-      break;
-    case "emerald":
-      hex = "#2ECC71"; // Jade Emerald Green
-      break;
-    case "ruby":
-      hex = "#EC7063"; // Ruby Crimson
-      break;
-    case "sapphire":
-      hex = "#5DADE2"; // Sapphire Blue
-      break;
-    case "steel":
-      hex = "#A6ACAF"; // Steel Metallic Grey
-      break;
+function getInkBadgeStyle(inkColorString: string | null) {
+  if (!inkColorString) {
+    return {
+      backgroundColor: "rgba(255,255,255,0.05)",
+      borderColor: "rgba(255,255,255,0.15)",
+      color: "#ffffff",
+      textTransform: "uppercase" as const,
+      fontWeight: 700,
+      letterSpacing: "0.5px",
+    };
   }
+
+  const primaryInk = inkColorString.split("/")[0].trim().toLowerCase();
+  const hex = INK_COLORS[primaryInk] || "#ffffff";
 
   return {
     backgroundColor: `${hex}1F`, // ~12% opacity background
@@ -129,15 +106,23 @@ function getInkBadgeStyle(color: string) {
 // ---------------------------------------------------------
 // Special Rarity Shiny Effect
 // ---------------------------------------------------------
-const SPECIAL_RARITIES = new Set(["Enchanted", "Epic", "Iconic"]);
+const SPECIAL_RARITIES = new Set(["Enchanted", "Epic", "Iconic", "Promo"]);
 
 function ShinyCardImage({ card }: { card: LorcanaCard }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 50, active: false });
 
+  useEffect(() => {
+    return () => {
+      if (animFrameRef.current !== null) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
+    };
+  }, []);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current);
     animFrameRef.current = requestAnimationFrame(() => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -148,14 +133,12 @@ function ShinyCardImage({ card }: { card: LorcanaCard }) {
   };
 
   const handleMouseLeave = () => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    if (animFrameRef.current !== null) cancelAnimationFrame(animFrameRef.current);
     setTilt({ rx: 0, ry: 0, gx: 50, gy: 50, active: false });
   };
 
   const isSpecial = SPECIAL_RARITIES.has(card.rarity);
-  // Holo rainbow: Enchanted + Iconic only
   const hasHolo = card.rarity === "Enchanted" || card.rarity === "Iconic";
-  // Shimmer sweep: Epic only, hover only
   const hasShimmer = card.rarity === "Epic";
 
   if (!card.image_url) return null;
@@ -180,7 +163,6 @@ function ShinyCardImage({ card }: { card: LorcanaCard }) {
         alt={card.name}
         style={{ width: "100%", height: "auto", display: "block" }}
       />
-      {/* Holo rainbow – Enchanted & Iconic, on hover */}
       {hasHolo && (
         <div
           className="shiny-holo-layer"
@@ -195,13 +177,71 @@ function ShinyCardImage({ card }: { card: LorcanaCard }) {
           }}
         />
       )}
-      {/* Shimmer sweep – Epic only, on hover */}
       {hasShimmer && tilt.active && (
         <div className="shiny-shimmer-layer" />
       )}
     </div>
   );
 }
+
+// Character-to-Franchise Mapping (derived from Lorcana card catalog)
+const CHARACTER_FRANCHISE_MAP: Record<string, string> = {
+  "Elsa": "Frozen", "Anna": "Frozen", "Kristoff": "Frozen", "Olaf": "Frozen", "Sven": "Frozen", "Hans": "Frozen", "Marshmallow": "Frozen", "Bruni": "Frozen", "Gale": "Frozen", "Nokk": "Frozen", "Yelena": "Frozen", "Honeymaren": "Frozen", "Ryder": "Frozen",
+  "Buzz Lightyear": "Toy Story", "Woody": "Toy Story", "Jessie": "Toy Story", "Rex": "Toy Story", "Slinky Dog": "Toy Story", "Bullseye": "Toy Story", "Hamm": "Toy Story", "Squeeze Toy Aliens": "Toy Story", "Aliens": "Toy Story", "Zurg": "Toy Story", "Al": "Toy Story", "Lotso": "Toy Story", "Green Army Men": "Toy Story", "Sarge": "Toy Story",
+  "Carl Fredricksen": "Up", "Ellie Fredricksen": "Up", "Russell": "Up", "Dug": "Up", "Kevin": "Up", "Alpha": "Up", "Beta": "Up", "Gamma": "Up",
+  "Mickey Mouse": "Mickey Mouse & Friends", "Minnie Mouse": "Mickey Mouse & Friends", "Donald Duck": "Mickey Mouse & Friends", "Daisy Duck": "Mickey Mouse & Friends", "Goofy": "Mickey Mouse & Friends", "Pluto": "Mickey Mouse & Friends", "Pete": "Mickey Mouse & Friends", "Scrooge McDuck": "Mickey Mouse & Friends", "Huey": "Mickey Mouse & Friends", "Dewey": "Mickey Mouse & Friends", "Louie": "Mickey Mouse & Friends", "Clarabelle Cow": "Mickey Mouse & Friends", "Horace Horsecollar": "Mickey Mouse & Friends", "Max Goof": "Mickey Mouse & Friends", "Ludwig Von Drake": "Mickey Mouse & Friends", "Gus Goose": "Mickey Mouse & Friends", "Pete's Bad Boys": "Mickey Mouse & Friends",
+  "Aladdin": "Aladdin", "Jasmine": "Aladdin", "Genie": "Aladdin", "Jafar": "Aladdin", "Abu": "Aladdin", "Iago": "Aladdin", "Sultan": "Aladdin", "Rajah": "Aladdin", "Razoul": "Aladdin", "Cave of Wonders": "Aladdin", "Peddler": "Aladdin", "Cassim": "Aladdin", "Sa'luk": "Aladdin",
+  "Cinderella": "Cinderella", "Prince Charming": "Cinderella", "Lady Tremaine": "Cinderella", "Anastasia": "Cinderella", "Drizella": "Cinderella", "Gus": "Cinderella", "Jaq": "Cinderella", "Fairy Godmother": "Cinderella", "Perla": "Cinderella", "Suzy": "Cinderella", "Lucifer": "Cinderella", "Bruno": "Cinderella", "Major": "Cinderella", "The King": "Cinderella", "Grand Duke": "Cinderella",
+  "Bruno Madrigal": "Encanto", "Mirabel Madrigal": "Encanto", "Isabela Madrigal": "Encanto", "Luisa Madrigal": "Encanto", "Pepa Madrigal": "Encanto", "Dolores Madrigal": "Encanto", "Camilo Madrigal": "Encanto", "Antonio Madrigal": "Encanto", "Abuela Alma": "Encanto", "Felix Madrigal": "Encanto", "Augustin Madrigal": "Encanto", "Julieta Madrigal": "Encanto", "The Family Madrigal": "Encanto",
+  "Mulan": "Mulan", "Mushu": "Mulan", "Li Shang": "Mulan", "Grandmother Fa": "Mulan", "Shan Yu": "Mulan", "Cri-Kee": "Mulan", "Khan": "Mulan", "Yao": "Mulan", "Ling": "Mulan", "Chien-Po": "Mulan", "Emperor of China": "Mulan", "General Li": "Mulan",
+  "Stitch": "Lilo & Stitch", "Lilo": "Lilo & Stitch", "Jumba Jookiba": "Lilo & Stitch", "Agent Pleakley": "Lilo & Stitch", "Gantu": "Lilo & Stitch", "Dr. Hämsterviel": "Lilo & Stitch", "Nani": "Lilo & Stitch", "David Kawena": "Lilo & Stitch", "Cobra Bubbles": "Lilo & Stitch", "Grand Councilwoman": "Lilo & Stitch", "Captain Gantu": "Lilo & Stitch", "Bucky": "Lilo & Stitch",
+  "Pongo": "101 Dalmatians", "Perdita": "101 Dalmatians", "Cruella De Vil": "101 Dalmatians", "Lucky": "101 Dalmatians", "Patch": "101 Dalmatians", "Rolly": "101 Dalmatians", "Penny": "101 Dalmatians", "Freckles": "101 Dalmatians", "Pepper": "101 Dalmatians", "Jasper": "101 Dalmatians", "Horace": "101 Dalmatians", "Nanny": "101 Dalmatians", "Anita Radcliffe": "101 Dalmatians", "Roger Radcliffe": "101 Dalmatians", "Pongo & Perdita": "101 Dalmatians",
+  "Tramp": "Lady and the Tramp", "Lady": "Lady and the Tramp", "Trusty": "Lady and the Tramp", "Jock": "Lady and the Tramp", "Peg": "Lady and the Tramp", "Tony": "Lady and the Tramp", "Joe": "Lady and the Tramp", "Aunt Sarah": "Lady and the Tramp", "Si & Am": "Lady and the Tramp", "Bull": "Lady and the Tramp", "Boris": "Lady and the Tramp", "Toughy": "Lady and the Tramp", "Pedro": "Lady and the Tramp",
+  "Kuzco": "The Emperor's New Groove", "Yzma": "The Emperor's New Groove", "Kronk": "The Emperor's New Groove", "Pacha": "The Emperor's New Groove", "Chicha": "The Emperor's New Groove", "Tipo": "The Emperor's New Groove", "Chaca": "The Emperor's New Groove", "Bucky the Squirrel": "The Emperor's New Groove",
+  "Hades": "Hercules", "Hercules": "Hercules", "Megara": "Hercules", "Philoctetes": "Hercules", "Pegasus": "Hercules", "Zeus": "Hercules", "Pain": "Hercules", "Panic": "Hercules", "Cerberus": "Hercules", "Hydra": "Hercules", "Hermes": "Hercules", "Hera": "Hercules", "Nessus": "Hercules", "Cyclops": "Hercules", "Titans": "Hercules", "Lythos": "Hercules", "Hydros": "Hercules", "Pyros": "Hercules", "Stratos": "Hercules", "Muse": "Hercules", "Calliope": "Hercules", "Melpomene": "Hercules", "Terpsichore": "Hercules", "Thalia": "Hercules", "Clio": "Hercules",
+  "Wendy Darling": "Peter Pan", "Peter Pan": "Peter Pan", "Tinker Bell": "Peter Pan", "Captain Hook": "Peter Pan", "Mr. Smee": "Peter Pan", "John Darling": "Peter Pan", "Michael Darling": "Peter Pan", "Lost Boys": "Peter Pan", "Slightly": "Peter Pan", "Cubby": "Peter Pan", "Nibs": "Peter Pan", "Twins": "Peter Pan", "Tiger Lily": "Peter Pan", "Great Big Little Panther": "Peter Pan", "Crocodile": "Peter Pan", "Nana": "Peter Pan", "George Darling": "Peter Pan", "Mary Darling": "Peter Pan",
+  "Rufus": "The Rescuers", "Bernard": "The Rescuers", "Miss Bianca": "The Rescuers", "Madame Medusa": "The Rescuers", "Mr. Snoops": "The Rescuers", "Orville": "The Rescuers", "Evinrude": "The Rescuers", "Luke": "The Rescuers", "Ellie Mae": "The Rescuers", "Brutus & Nero": "The Rescuers",
+  "Simba": "The Lion King", "Nala": "The Lion King", "Mufasa": "The Lion King", "Scar": "The Lion King", "Timon": "The Lion King", "Pumbaa": "The Lion King", "Rafiki": "The Lion King", "Zazu": "The Lion King", "Shenzi": "The Lion King", "Banzai": "The Lion King", "Ed": "The Lion King", "Sarabi": "The Lion King", "Sarafina": "The Lion King", "Kovu": "The Lion King", "Kiara": "The Lion King",
+  "Moana": "Moana", "Maui": "Moana", "Heihei": "Moana", "Pua": "Moana", "Tamatoa": "Moana", "Te Kā": "Moana", "Te Fiti": "Moana", "Gramma Tala": "Moana", "Chief Tui": "Moana", "Sina": "Moana", "Kakamora": "Moana", "Mauri": "Moana",
+  "Robin Hood": "Robin Hood", "Maid Marian": "Robin Hood", "Little John": "Robin Hood", "Prince John": "Robin Hood", "Sir Hiss": "Robin Hood", "Sheriff of Nottingham": "Robin Hood", "Friar Tuck": "Robin Hood", "Alan-a-Dale": "Robin Hood", "Lady Kluck": "Robin Hood", "Trigger": "Robin Hood", "Nutsy": "Robin Hood", "Otto": "Robin Hood", "Mother Rabbit": "Robin Hood", "Skippy": "Robin Hood", "Sis": "Robin Hood", "Tagalong": "Robin Hood", "Toby Turtle": "Robin Hood",
+  "Ariel": "The Little Mermaid", "Prince Eric": "The Little Mermaid", "King Triton": "The Little Mermaid", "Ursula": "The Little Mermaid", "Sebastian": "The Little Mermaid", "Flounder": "The Little Mermaid", "Scuttle": "The Little Mermaid", "Chef Louis": "The Little Mermaid", "Flotsam": "The Little Mermaid", "Jetsam": "The Little Mermaid", "Grimsby": "The Little Mermaid", "Carlotta": "The Little Mermaid", "Max": "The Little Mermaid", "Harold the Seahorse": "The Little Mermaid",
+  "Belle": "Beauty and the Beast", "Beast": "Beauty and the Beast", "Gaston": "Beauty and the Beast", "Lumiere": "Beauty and the Beast", "Cogsworth": "Beauty and the Beast", "Mrs. Potts": "Beauty and the Beast", "Chip": "Beauty and the Beast", "Maurice": "Beauty and the Beast", "Lefou": "Beauty and the Beast", "Monsieur D'Arque": "Beauty and the Beast", "Billette": "Beauty and the Beast", "Madame de la Grande Bouche": "Beauty and the Beast", "Plumette": "Beauty and the Beast", "Chef Bouche": "Beauty and the Beast", "Phillipe": "Beauty and the Beast", "Wardrobe": "Beauty and the Beast", "Footstool": "Beauty and the Beast",
+  "Snow White": "Snow White and the Seven Dwarfs", "The Queen": "Snow White and the Seven Dwarfs", "Doc": "Snow White and the Seven Dwarfs", "Grumpy": "Snow White and the Seven Dwarfs", "Happy": "Snow White and the Seven Dwarfs", "Sleepy": "Snow White and the Seven Dwarfs", "Sneezy": "Snow White and the Seven Dwarfs", "Bashful": "Snow White and the Seven Dwarfs", "Dopey": "Snow White and the Seven Dwarfs", "The Prince": "Snow White and the Seven Dwarfs", "Huntsman": "Snow White and the Seven Dwarfs", "Magic Mirror": "Snow White and the Seven Dwarfs",
+  "Baymax": "Big Hero 6", "Hiro Hamada": "Big Hero 6", "Go Go Tomago": "Big Hero 6", "Honey Lemon": "Big Hero 6", "Wasabi": "Big Hero 6", "Fred": "Big Hero 6", "Yokai": "Big Hero 6", "Tadashi Hamada": "Big Hero 6", "Aunt Cass": "Big Hero 6", "Robert Callaghan": "Big Hero 6", "Abigail Callaghan": "Big Hero 6", "Alitheia": "Big Hero 6", "Yama": "Big Hero 6",
+  "Koda": "Brother Bear", "Kenai": "Brother Bear", "Denahi": "Brother Bear", "Rutt": "Brother Bear", "Tuke": "Brother Bear", "Tanana": "Brother Bear", "Tug": "Brother Bear", "Sitka": "Brother Bear",
+  "Rapunzel": "Tangled", "Flynn Rider": "Tangled", "Mother Gothel": "Tangled", "Pascal": "Tangled", "Maximus": "Tangled", "Hook Hand": "Tangled", "Big Nose": "Tangled", "Stabbington Brothers": "Tangled", "Stabbington Brother": "Tangled", "Shorty": "Tangled", "Attila": "Tangled", "Vlad": "Tangled", "Ulrich": "Tangled", "Captain of the Guards": "Tangled", "King Frederic": "Tangled", "Queen Arianna": "Tangled",
+  "Alice": "Alice in Wonderland", "Mad Hatter": "Alice in Wonderland", "March Hare": "Alice in Wonderland", "Cheshire Cat": "Alice in Wonderland", "Queen of Hearts": "Alice in Wonderland", "King of Hearts": "Alice in Wonderland", "White Rabbit": "Alice in Wonderland", "Caterpillar": "Alice in Wonderland", "Tweedledee & Tweedledum": "Alice in Wonderland", "Tweedledee": "Alice in Wonderland", "Tweedledum": "Alice in Wonderland", "Dormouse": "Alice in Wonderland", "Bill the Lizard": "Alice in Wonderland", "Doorknob": "Alice in Wonderland", "Walrus": "Alice in Wonderland", "Carpenter": "Alice in Wonderland", "Card Soldiers": "Alice in Wonderland", "Card Soldier": "Alice in Wonderland", "Dodo": "Alice in Wonderland", "Dinah": "Alice in Wonderland",
+  "Wreck-It Ralph": "Wreck-It Ralph", "Vanellope von Schweetz": "Wreck-It Ralph", "Fix-It Felix, Jr.": "Wreck-It Ralph", "Sergeant Calhoun": "Wreck-It Ralph", "Calhoun": "Wreck-It Ralph", "King Candy": "Wreck-It Ralph", "Sour Bill": "Wreck-It Ralph", "Taffyta Muttonfudge": "Wreck-It Ralph", "Candlehead": "Wreck-It Ralph", "Rancis Fluggerbutter": "Wreck-It Ralph", "Jubileena Bing-Bing": "Wreck-It Ralph", "Snowanna Rainbeau": "Wreck-It Ralph", "Gloyd Orangeboar": "Wreck-It Ralph", "Swizzle Malarkey": "Wreck-It Ralph", "Adorabeezle Winterpop": "Wreck-It Ralph", "Torus": "Wreck-It Ralph", "Cy-Bug": "Wreck-It Ralph", "Cy-Bugs": "Wreck-It Ralph", "Gene": "Wreck-It Ralph", "Mary": "Wreck-It Ralph", "Don": "Wreck-It Ralph", "Roy": "Wreck-It Ralph", "Markowski": "Wreck-It Ralph", "General Hologram": "Wreck-It Ralph",
+  "Peter Pan's Shadow": "Peter Pan", "Jiminy Cricket": "Pinocchio", "Pinocchio": "Pinocchio", "Geppetto": "Pinocchio", "Blue Fairy": "Pinocchio", "Honest John": "Pinocchio", "Gideon": "Pinocchio", "Stromboli": "Pinocchio", "Monstro": "Pinocchio", "Cleo": "Pinocchio", "Figaro": "Pinocchio", "Coachman": "Pinocchio",
+  "Arthur": "The Sword in the Stone", "Merlin": "The Sword in the Stone", "Madam Mim": "The Sword in the Stone", "Archimedes": "The Sword in the Stone", "Sir Ector": "The Sword in the Stone", "Sir Kay": "The Sword in the Stone", "Black Bart": "The Sword in the Stone", "Sugar Bowl": "The Sword in the Stone",
+  "Tiana": "The Princess and the Frog", "Prince Naveen": "The Princess and the Frog", "Dr. Facilier": "The Princess and the Frog", "Ray": "The Princess and the Frog", "Louis": "The Princess and the Frog", "Mama Odie": "The Princess and the Frog", "Charlotte La Bouff": "The Princess and the Frog", "Big Daddy La Bouff": "The Princess and the Frog", "Lawrence": "The Princess and the Frog", "Juju": "The Princess and the Frog"
+};
+
+const getCardFranchise = (cardName: string) => {
+  const characterName = cardName.split(" - ")[0].trim();
+  if (CHARACTER_FRANCHISE_MAP[characterName]) return CHARACTER_FRANCHISE_MAP[characterName];
+  for (const key of Object.keys(CHARACTER_FRANCHISE_MAP)) {
+    if (characterName.includes(key)) return CHARACTER_FRANCHISE_MAP[key];
+  }
+  return "Other";
+};
+
+// Reverse chronological release order of Lorcana sets (newest at the top)
+const KNOWN_SETS = [
+  "Attack of the Vine!",
+  "Wilds Unknown",
+  "Winterspell",
+  "Whispers in the Well",
+  "Fabled",
+  "Reign of Jafar",
+  "Archazia's Island",
+  "Azurite Sea",
+  "Shimmering Skies",
+  "Ursula's Return",
+  "Into the Inklands",
+  "Rise of the Floodborn",
+  "The First Chapter"
+];
 
 export default function Collection() {
   const { cards, userCollection, user } = useLoaderData<typeof loader>();
@@ -222,55 +262,17 @@ export default function Collection() {
   const [selectedDefense, setSelectedDefense] = useState<string>("All");
   const [selectedLore, setSelectedLore] = useState<string>("All");
 
-  // Character-to-Franchise Mapping (derived from Lorcana card catalog)
-  const CHARACTER_FRANCHISE_MAP: Record<string, string> = {
-    "Elsa": "Frozen", "Anna": "Frozen", "Kristoff": "Frozen", "Olaf": "Frozen", "Sven": "Frozen", "Hans": "Frozen", "Marshmallow": "Frozen", "Bruni": "Frozen", "Gale": "Frozen", "Nokk": "Frozen", "Yelena": "Frozen", "Honeymaren": "Frozen", "Ryder": "Frozen",
-    "Buzz Lightyear": "Toy Story", "Woody": "Toy Story", "Jessie": "Toy Story", "Rex": "Toy Story", "Slinky Dog": "Toy Story", "Bullseye": "Toy Story", "Hamm": "Toy Story", "Squeeze Toy Aliens": "Toy Story", "Aliens": "Toy Story", "Zurg": "Toy Story", "Al": "Toy Story", "Lotso": "Toy Story", "Green Army Men": "Toy Story", "Sarge": "Toy Story",
-    "Carl Fredricksen": "Up", "Ellie Fredricksen": "Up", "Russell": "Up", "Dug": "Up", "Kevin": "Up", "Alpha": "Up", "Beta": "Up", "Gamma": "Up",
-    "Mickey Mouse": "Mickey Mouse & Friends", "Minnie Mouse": "Mickey Mouse & Friends", "Donald Duck": "Mickey Mouse & Friends", "Daisy Duck": "Mickey Mouse & Friends", "Goofy": "Mickey Mouse & Friends", "Pluto": "Mickey Mouse & Friends", "Pete": "Mickey Mouse & Friends", "Scrooge McDuck": "Mickey Mouse & Friends", "Huey": "Mickey Mouse & Friends", "Dewey": "Mickey Mouse & Friends", "Louie": "Mickey Mouse & Friends", "Clarabelle Cow": "Mickey Mouse & Friends", "Horace Horsecollar": "Mickey Mouse & Friends", "Max Goof": "Mickey Mouse & Friends", "Ludwig Von Drake": "Mickey Mouse & Friends", "Gus Goose": "Mickey Mouse & Friends", "Pete's Bad Boys": "Mickey Mouse & Friends",
-    "Aladdin": "Aladdin", "Jasmine": "Aladdin", "Genie": "Aladdin", "Jafar": "Aladdin", "Abu": "Aladdin", "Iago": "Aladdin", "Sultan": "Aladdin", "Rajah": "Aladdin", "Razoul": "Aladdin", "Cave of Wonders": "Aladdin", "Peddler": "Aladdin", "Cassim": "Aladdin", "Sa'luk": "Aladdin",
-    "Cinderella": "Cinderella", "Prince Charming": "Cinderella", "Lady Tremaine": "Cinderella", "Anastasia": "Cinderella", "Drizella": "Cinderella", "Gus": "Cinderella", "Jaq": "Cinderella", "Fairy Godmother": "Cinderella", "Perla": "Cinderella", "Suzy": "Cinderella", "Lucifer": "Cinderella", "Bruno": "Cinderella", "Major": "Cinderella", "The King": "Cinderella", "Grand Duke": "Cinderella",
-    "Bruno Madrigal": "Encanto", "Mirabel Madrigal": "Encanto", "Isabela Madrigal": "Encanto", "Luisa Madrigal": "Encanto", "Pepa Madrigal": "Encanto", "Dolores Madrigal": "Encanto", "Camilo Madrigal": "Encanto", "Antonio Madrigal": "Encanto", "Abuela Alma": "Encanto", "Felix Madrigal": "Encanto", "Augustin Madrigal": "Encanto", "Julieta Madrigal": "Encanto", "The Family Madrigal": "Encanto",
-    "Mulan": "Mulan", "Mushu": "Mulan", "Li Shang": "Mulan", "Grandmother Fa": "Mulan", "Shan Yu": "Mulan", "Cri-Kee": "Mulan", "Khan": "Mulan", "Yao": "Mulan", "Ling": "Mulan", "Chien-Po": "Mulan", "Emperor of China": "Mulan", "General Li": "Mulan",
-    "Stitch": "Lilo & Stitch", "Lilo": "Lilo & Stitch", "Jumba Jookiba": "Lilo & Stitch", "Agent Pleakley": "Lilo & Stitch", "Gantu": "Lilo & Stitch", "Dr. Hämsterviel": "Lilo & Stitch", "Nani": "Lilo & Stitch", "David Kawena": "Lilo & Stitch", "Cobra Bubbles": "Lilo & Stitch", "Grand Councilwoman": "Lilo & Stitch", "Captain Gantu": "Lilo & Stitch", "Bucky": "Lilo & Stitch",
-    "Pongo": "101 Dalmatians", "Perdita": "101 Dalmatians", "Cruella De Vil": "101 Dalmatians", "Lucky": "101 Dalmatians", "Patch": "101 Dalmatians", "Rolly": "101 Dalmatians", "Penny": "101 Dalmatians", "Freckles": "101 Dalmatians", "Pepper": "101 Dalmatians", "Jasper": "101 Dalmatians", "Horace": "101 Dalmatians", "Nanny": "101 Dalmatians", "Anita Radcliffe": "101 Dalmatians", "Roger Radcliffe": "101 Dalmatians", "Pongo & Perdita": "101 Dalmatians",
-    "Tramp": "Lady and the Tramp", "Lady": "Lady and the Tramp", "Trusty": "Lady and the Tramp", "Jock": "Lady and the Tramp", "Peg": "Lady and the Tramp", "Tony": "Lady and the Tramp", "Joe": "Lady and the Tramp", "Aunt Sarah": "Lady and the Tramp", "Si & Am": "Lady and the Tramp", "Bull": "Lady and the Tramp", "Boris": "Lady and the Tramp", "Toughy": "Lady and the Tramp", "Pedro": "Lady and the Tramp",
-    "Kuzco": "The Emperor's New Groove", "Yzma": "The Emperor's New Groove", "Kronk": "The Emperor's New Groove", "Pacha": "The Emperor's New Groove", "Chicha": "The Emperor's New Groove", "Tipo": "The Emperor's New Groove", "Chaca": "The Emperor's New Groove", "Bucky the Squirrel": "The Emperor's New Groove",
-    "Hades": "Hercules", "Hercules": "Hercules", "Megara": "Hercules", "Philoctetes": "Hercules", "Pegasus": "Hercules", "Zeus": "Hercules", "Pain": "Hercules", "Panic": "Hercules", "Cerberus": "Hercules", "Hydra": "Hercules", "Hermes": "Hercules", "Hera": "Hercules", "Nessus": "Hercules", "Cyclops": "Hercules", "Titans": "Hercules", "Lythos": "Hercules", "Hydros": "Hercules", "Pyros": "Hercules", "Stratos": "Hercules", "Muse": "Hercules", "Calliope": "Hercules", "Melpomene": "Hercules", "Terpsichore": "Hercules", "Thalia": "Hercules", "Clio": "Hercules",
-    "Wendy Darling": "Peter Pan", "Peter Pan": "Peter Pan", "Tinker Bell": "Peter Pan", "Captain Hook": "Peter Pan", "Mr. Smee": "Peter Pan", "John Darling": "Peter Pan", "Michael Darling": "Peter Pan", "Lost Boys": "Peter Pan", "Slightly": "Peter Pan", "Cubby": "Peter Pan", "Nibs": "Peter Pan", "Twins": "Peter Pan", "Tiger Lily": "Peter Pan", "Great Big Little Panther": "Peter Pan", "Crocodile": "Peter Pan", "Nana": "Peter Pan", "George Darling": "Peter Pan", "Mary Darling": "Peter Pan",
-    "Rufus": "The Rescuers", "Bernard": "The Rescuers", "Miss Bianca": "The Rescuers", "Madame Medusa": "The Rescuers", "Mr. Snoops": "The Rescuers", "Orville": "The Rescuers", "Evinrude": "The Rescuers", "Luke": "The Rescuers", "Ellie Mae": "The Rescuers", "Brutus & Nero": "The Rescuers",
-    "Simba": "The Lion King", "Nala": "The Lion King", "Mufasa": "The Lion King", "Scar": "The Lion King", "Timon": "The Lion King", "Pumbaa": "The Lion King", "Rafiki": "The Lion King", "Zazu": "The Lion King", "Shenzi": "The Lion King", "Banzai": "The Lion King", "Ed": "The Lion King", "Sarabi": "The Lion King", "Sarafina": "The Lion King", "Kovu": "The Lion King", "Kiara": "The Lion King",
-    "Moana": "Moana", "Maui": "Moana", "Heihei": "Moana", "Pua": "Moana", "Tamatoa": "Moana", "Te Kā": "Moana", "Te Fiti": "Moana", "Gramma Tala": "Moana", "Chief Tui": "Moana", "Sina": "Moana", "Kakamora": "Moana", "Mauri": "Moana",
-    "Robin Hood": "Robin Hood", "Maid Marian": "Robin Hood", "Little John": "Robin Hood", "Prince John": "Robin Hood", "Sir Hiss": "Robin Hood", "Sheriff of Nottingham": "Robin Hood", "Friar Tuck": "Robin Hood", "Alan-a-Dale": "Robin Hood", "Lady Kluck": "Robin Hood", "Trigger": "Robin Hood", "Nutsy": "Robin Hood", "Otto": "Robin Hood", "Mother Rabbit": "Robin Hood", "Skippy": "Robin Hood", "Sis": "Robin Hood", "Tagalong": "Robin Hood", "Toby Turtle": "Robin Hood",
-    "Ariel": "The Little Mermaid", "Prince Eric": "The Little Mermaid", "King Triton": "The Little Mermaid", "Ursula": "The Little Mermaid", "Sebastian": "The Little Mermaid", "Flounder": "The Little Mermaid", "Scuttle": "The Little Mermaid", "Chef Louis": "The Little Mermaid", "Flotsam": "The Little Mermaid", "Jetsam": "The Little Mermaid", "Grimsby": "The Little Mermaid", "Carlotta": "The Little Mermaid", "Max": "The Little Mermaid", "Harold the Seahorse": "The Little Mermaid",
-    "Belle": "Beauty and the Beast", "Beast": "Beauty and the Beast", "Gaston": "Beauty and the Beast", "Lumiere": "Beauty and the Beast", "Cogsworth": "Beauty and the Beast", "Mrs. Potts": "Beauty and the Beast", "Chip": "Beauty and the Beast", "Maurice": "Beauty and the Beast", "Lefou": "Beauty and the Beast", "Monsieur D'Arque": "Beauty and the Beast", "Billette": "Beauty and the Beast", "Madame de la Grande Bouche": "Beauty and the Beast", "Plumette": "Beauty and the Beast", "Chef Bouche": "Beauty and the Beast", "Phillipe": "Beauty and the Beast", "Wardrobe": "Beauty and the Beast", "Footstool": "Beauty and the Beast",
-    "Snow White": "Snow White and the Seven Dwarfs", "The Queen": "Snow White and the Seven Dwarfs", "Doc": "Snow White and the Seven Dwarfs", "Grumpy": "Snow White and the Seven Dwarfs", "Happy": "Snow White and the Seven Dwarfs", "Sleepy": "Snow White and the Seven Dwarfs", "Sneezy": "Snow White and the Seven Dwarfs", "Bashful": "Snow White and the Seven Dwarfs", "Dopey": "Snow White and the Seven Dwarfs", "The Prince": "Snow White and the Seven Dwarfs", "Huntsman": "Snow White and the Seven Dwarfs", "Magic Mirror": "Snow White and the Seven Dwarfs",
-    "Baymax": "Big Hero 6", "Hiro Hamada": "Big Hero 6", "Go Go Tomago": "Big Hero 6", "Honey Lemon": "Big Hero 6", "Wasabi": "Big Hero 6", "Fred": "Big Hero 6", "Yokai": "Big Hero 6", "Tadashi Hamada": "Big Hero 6", "Aunt Cass": "Big Hero 6", "Robert Callaghan": "Big Hero 6", "Abigail Callaghan": "Big Hero 6", "Alitheia": "Big Hero 6", "Yama": "Big Hero 6",
-    "Koda": "Brother Bear", "Kenai": "Brother Bear", "Denahi": "Brother Bear", "Rutt": "Brother Bear", "Tuke": "Brother Bear", "Tanana": "Brother Bear", "Tug": "Brother Bear", "Sitka": "Brother Bear",
-    "Rapunzel": "Tangled", "Flynn Rider": "Tangled", "Mother Gothel": "Tangled", "Pascal": "Tangled", "Maximus": "Tangled", "Hook Hand": "Tangled", "Big Nose": "Tangled", "Stabbington Brothers": "Tangled", "Stabbington Brother": "Tangled", "Shorty": "Tangled", "Attila": "Tangled", "Vlad": "Tangled", "Ulrich": "Tangled", "Captain of the Guards": "Tangled", "King Frederic": "Tangled", "Queen Arianna": "Tangled",
-    "Alice": "Alice in Wonderland", "Mad Hatter": "Alice in Wonderland", "March Hare": "Alice in Wonderland", "Cheshire Cat": "Alice in Wonderland", "Queen of Hearts": "Alice in Wonderland", "King of Hearts": "Alice in Wonderland", "White Rabbit": "Alice in Wonderland", "Caterpillar": "Alice in Wonderland", "Tweedledee & Tweedledum": "Alice in Wonderland", "Tweedledee": "Alice in Wonderland", "Tweedledum": "Alice in Wonderland", "Dormouse": "Alice in Wonderland", "Bill the Lizard": "Alice in Wonderland", "Doorknob": "Alice in Wonderland", "Walrus": "Alice in Wonderland", "Carpenter": "Alice in Wonderland", "Card Soldiers": "Alice in Wonderland", "Card Soldier": "Alice in Wonderland", "Dodo": "Alice in Wonderland", "Dinah": "Alice in Wonderland",
-    "Wreck-It Ralph": "Wreck-It Ralph", "Vanellope von Schweetz": "Wreck-It Ralph", "Fix-It Felix, Jr.": "Wreck-It Ralph", "Sergeant Calhoun": "Wreck-It Ralph", "Calhoun": "Wreck-It Ralph", "King Candy": "Wreck-It Ralph", "Sour Bill": "Wreck-It Ralph", "Taffyta Muttonfudge": "Wreck-It Ralph", "Candlehead": "Wreck-It Ralph", "Rancis Fluggerbutter": "Wreck-It Ralph", "Jubileena Bing-Bing": "Wreck-It Ralph", "Snowanna Rainbeau": "Wreck-It Ralph", "Gloyd Orangeboar": "Wreck-It Ralph", "Swizzle Malarkey": "Wreck-It Ralph", "Adorabeezle Winterpop": "Wreck-It Ralph", "Torus": "Wreck-It Ralph", "Cy-Bug": "Wreck-It Ralph", "Cy-Bugs": "Wreck-It Ralph", "Gene": "Wreck-It Ralph", "Mary": "Wreck-It Ralph", "Don": "Wreck-It Ralph", "Roy": "Wreck-It Ralph", "Markowski": "Wreck-It Ralph", "General Hologram": "Wreck-It Ralph",
-    "Peter Pan's Shadow": "Peter Pan", "Jiminy Cricket": "Pinocchio", "Pinocchio": "Pinocchio", "Geppetto": "Pinocchio", "Blue Fairy": "Pinocchio", "Honest John": "Pinocchio", "Gideon": "Pinocchio", "Stromboli": "Pinocchio", "Monstro": "Pinocchio", "Cleo": "Pinocchio", "Figaro": "Pinocchio", "Coachman": "Pinocchio",
-    "Arthur": "The Sword in the Stone", "Merlin": "The Sword in the Stone", "Madam Mim": "The Sword in the Stone", "Archimedes": "The Sword in the Stone", "Sir Ector": "The Sword in the Stone", "Sir Kay": "The Sword in the Stone", "Black Bart": "The Sword in the Stone", "Sugar Bowl": "The Sword in the Stone",
-    "Tiana": "The Princess and the Frog", "Prince Naveen": "The Princess and the Frog", "Dr. Facilier": "The Princess and the Frog", "Ray": "The Princess and the Frog", "Louis": "The Princess and the Frog", "Mama Odie": "The Princess and the Frog", "Charlotte La Bouff": "The Princess and the Frog", "Big Daddy La Bouff": "The Princess and the Frog", "Lawrence": "The Princess and the Frog", "Juju": "The Princess and the Frog"
-  };
+  const allClassifications = useMemo(() => {
+    return Array.from(
+      new Set(cards.flatMap(c => c.classifications || []))
+    ).sort();
+  }, [cards]);
 
-  const getCardFranchise = (cardName: string) => {
-    const characterName = cardName.split(" - ")[0].trim();
-    if (CHARACTER_FRANCHISE_MAP[characterName]) return CHARACTER_FRANCHISE_MAP[characterName];
-    for (const key of Object.keys(CHARACTER_FRANCHISE_MAP)) {
-      if (characterName.includes(key)) return CHARACTER_FRANCHISE_MAP[key];
-    }
-    return "Other";
-  };
-
-  const allClassifications = Array.from(
-    new Set(cards.flatMap(c => c.classifications || []))
-  ).sort();
-
-  const allFranchises = Array.from(
-    new Set(cards.map(c => getCardFranchise(c.name)))
-  ).sort();
+  const allFranchises = useMemo(() => {
+    return Array.from(
+      new Set(cards.map(c => getCardFranchise(c.name)))
+    ).sort();
+  }, [cards]);
 
   const hasActiveFilters = 
     searchQuery !== "" ||
@@ -326,11 +328,23 @@ export default function Collection() {
     selectedLore
   ]);
 
-  // Create a lookup of owned quantities by cardId & isFoil
-  const inventoryMap = new Map<string, number>(); // key: `cardId_foil` or `cardId_normal`
-  for (const item of userCollection) {
-    inventoryMap.set(`${item.card_id}_${item.is_foil ? "foil" : "normal"}`, item.quantity);
-  }
+  // Create a lookup of owned quantities by cardId & isFoil (memoized and supports Optimistic UI updates)
+  const inventoryMap = useMemo(() => {
+    const map = new Map<string, number>(); // key: `cardId_foil` or `cardId_normal`
+    for (const item of userCollection) {
+      map.set(`${item.card_id}_${item.is_foil ? "foil" : "normal"}`, item.quantity);
+    }
+
+    // Apply optimistic updates from active submissions
+    if (fetcher.formData && fetcher.formData.get("intent") === "update-quantity") {
+      const cardId = fetcher.formData.get("cardId") as string;
+      const isFoil = fetcher.formData.get("isFoil") === "true";
+      const quantity = parseInt(fetcher.formData.get("quantity") as string, 10);
+      map.set(`${cardId}_${isFoil ? "foil" : "normal"}`, quantity);
+    }
+
+    return map;
+  }, [userCollection, fetcher.formData]);
 
   // Handle quantity adjustment
   const handleAdjustQuantity = (cardId: string, isFoil: boolean, currentQty: number, change: number) => {
@@ -353,135 +367,139 @@ export default function Collection() {
 
   const inks = ["All", "Amber", "Amethyst", "Emerald", "Ruby", "Sapphire", "Steel"];
   
-  // Reverse chronological release order of Lorcana sets (newest at the top)
-  const KNOWN_SETS = [
-    "Attack of the Vine!",
-    "Wilds Unknown",
-    "Winterspell",
-    "Whispers in the Well",
-    "Fabled",
-    "Reign of Jafar",
-    "Archazia's Island",
-    "Azurite Sea",
-    "Shimmering Skies",
-    "Ursula's Return",
-    "Into the Inklands",
-    "Rise of the Floodborn",
-    "The First Chapter"
-  ];
-
   // Dynamically extract unique sets present in the database catalog
-  const databaseSets = Array.from(new Set(cards.map((c) => c.set).filter(Boolean)));
-  
-  // Sort sets chronologically by reverse release sequence, with any extra/promo sets sorted alphabetically at the bottom
-  const sortedSets = databaseSets.sort((a, b) => {
-    const idxA = KNOWN_SETS.indexOf(a);
-    const idxB = KNOWN_SETS.indexOf(b);
-    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-    if (idxA !== -1) return -1;
-    if (idxB !== -1) return 1;
-    return a.localeCompare(b);
-  });
+  const databaseSets = useMemo(() => {
+    return Array.from(new Set(cards.map((c) => c.set).filter(Boolean)));
+  }, [cards]);
 
-  const sets = ["All", ...sortedSets];
+  // Sort sets chronologically by reverse release sequence, with any extra/promo sets sorted alphabetically at the bottom
+  const sortedSets = useMemo(() => {
+    return [...databaseSets].sort((a, b) => {
+      const idxA = KNOWN_SETS.indexOf(a);
+      const idxB = KNOWN_SETS.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }, [databaseSets]);
+
+  const sets = useMemo(() => ["All", ...sortedSets], [sortedSets]);
 
   // Filter cards catalog
-  const filteredCards = cards.filter((card) => {
-    // 1. Search Query
-    const matchesSearch = card.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // 2. Ink Colors (using Rule 1 & Rule 2 subset check)
-    const cardColors = card.ink_color ? card.ink_color.split("/") : [];
-    const matchesInk = selectedInks.length === 0
-      ? true
-      : selectedInks.length === 1
-        ? (cardColors.length > 0 && cardColors.includes(selectedInks[0]))
-        : (cardColors.length > 0 && cardColors.every(color => selectedInks.includes(color)));
+  const filteredCards = useMemo(() => {
+    return cards.filter((card) => {
+      // 1. Search Query
+      const matchesSearch = card.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // 2. Ink Colors (using Rule 1 & Rule 2 subset check)
+      const cardColors = card.ink_color ? card.ink_color.split("/") : [];
+      const matchesInk = selectedInks.length === 0
+        ? true
+        : selectedInks.length === 1
+          ? (cardColors.length > 0 && cardColors.includes(selectedInks[0]))
+          : (cardColors.length > 0 && cardColors.every(color => selectedInks.includes(color)));
 
-    // 3. Set
-    const matchesSet = selectedSet === "All" || card.set === selectedSet;
+      // 3. Set
+      const matchesSet = selectedSet === "All" || card.set === selectedSet;
 
-    // 4. Rarity
-    const matchesRarity = selectedRarity === "All" || card.rarity === selectedRarity;
+      // 4. Rarity
+      const matchesRarity = selectedRarity === "All" || card.rarity === selectedRarity;
 
-    // 5. Cost (Ink Cost)
-    let matchesCost = true;
-    if (selectedCost !== "All") {
-      if (selectedCost === "8+") {
-        matchesCost = card.cost >= 8;
-      } else {
-        matchesCost = card.cost === parseInt(selectedCost, 10);
+      // 5. Cost (Ink Cost)
+      let matchesCost = true;
+      if (selectedCost !== "All") {
+        if (selectedCost === "8+") {
+          matchesCost = card.cost >= 8;
+        } else {
+          matchesCost = card.cost === parseInt(selectedCost, 10);
+        }
       }
-    }
 
-    // 6. Inkable
-    let matchesInkable = true;
-    if (selectedInkable !== "All") {
-      matchesInkable = selectedInkable === "Inkable" ? card.inkwell : !card.inkwell;
-    }
-
-    // 7. Format (Legality)
-    let matchesFormat = true;
-    if (selectedFormat !== "All") {
-      matchesFormat = card.formats?.includes(selectedFormat.toLowerCase()) || false;
-    }
-
-    // 8. Type
-    let matchesType = true;
-    if (selectedType !== "All") {
-      matchesType = card.type?.includes(selectedType) || false;
-    }
-
-    // 9. Classification
-    let matchesClassification = true;
-    if (selectedClassification !== "All") {
-      matchesClassification = card.classifications?.includes(selectedClassification) || false;
-    }
-
-    // 10. Franchise
-    let matchesFranchise = true;
-    if (selectedFranchise !== "All") {
-      matchesFranchise = getCardFranchise(card.name) === selectedFranchise;
-    }
-
-    // 11. Attack (Strength)
-    let matchesAttack = true;
-    if (selectedAttack !== "All") {
-      if (card.strength === null) {
-        matchesAttack = false;
-      } else if (selectedAttack === "7+") {
-        matchesAttack = card.strength >= 7;
-      } else {
-        matchesAttack = card.strength === parseInt(selectedAttack, 10);
+      // 6. Inkable
+      let matchesInkable = true;
+      if (selectedInkable !== "All") {
+        matchesInkable = selectedInkable === "Inkable" ? card.inkwell : !card.inkwell;
       }
-    }
 
-    // 12. Defense (Willpower)
-    let matchesDefense = true;
-    if (selectedDefense !== "All") {
-      if (card.willpower === null) {
-        matchesDefense = false;
-      } else if (selectedDefense === "8+") {
-        matchesDefense = card.willpower >= 8;
-      } else {
-        matchesDefense = card.willpower === parseInt(selectedDefense, 10);
+      // 7. Format (Legality)
+      let matchesFormat = true;
+      if (selectedFormat !== "All") {
+        matchesFormat = card.formats?.includes(selectedFormat.toLowerCase()) || false;
       }
-    }
 
-    // 13. Lore
-    let matchesLore = true;
-    if (selectedLore !== "All") {
-      if (selectedLore === "4+") {
-        matchesLore = card.lore >= 4;
-      } else {
-        matchesLore = card.lore === parseInt(selectedLore, 10);
+      // 8. Type
+      let matchesType = true;
+      if (selectedType !== "All") {
+        matchesType = card.type?.includes(selectedType) || false;
       }
-    }
 
-    return matchesSearch && matchesInk && matchesSet && matchesRarity && matchesCost && 
-           matchesInkable && matchesFormat && matchesType && matchesClassification && 
-           matchesFranchise && matchesAttack && matchesDefense && matchesLore;
-  });
+      // 9. Classification
+      let matchesClassification = true;
+      if (selectedClassification !== "All") {
+        matchesClassification = card.classifications?.includes(selectedClassification) || false;
+      }
+
+      // 10. Franchise
+      let matchesFranchise = true;
+      if (selectedFranchise !== "All") {
+        matchesFranchise = getCardFranchise(card.name) === selectedFranchise;
+      }
+
+      // 11. Attack (Strength)
+      let matchesAttack = true;
+      if (selectedAttack !== "All") {
+        if (card.strength === null) {
+          matchesAttack = false;
+        } else if (selectedAttack === "7+") {
+          matchesAttack = card.strength >= 7;
+        } else {
+          matchesAttack = card.strength === parseInt(selectedAttack, 10);
+        }
+      }
+
+      // 12. Defense (Willpower)
+      let matchesDefense = true;
+      if (selectedDefense !== "All") {
+        if (card.willpower === null) {
+          matchesDefense = false;
+        } else if (selectedDefense === "8+") {
+          matchesDefense = card.willpower >= 8;
+        } else {
+          matchesDefense = card.willpower === parseInt(selectedDefense, 10);
+        }
+      }
+
+      // 13. Lore
+      let matchesLore = true;
+      if (selectedLore !== "All") {
+        if (selectedLore === "4+") {
+          matchesLore = card.lore >= 4;
+        } else {
+          matchesLore = card.lore === parseInt(selectedLore, 10);
+        }
+      }
+
+      return matchesSearch && matchesInk && matchesSet && matchesRarity && matchesCost && 
+             matchesInkable && matchesFormat && matchesType && matchesClassification && 
+             matchesFranchise && matchesAttack && matchesDefense && matchesLore;
+    });
+  }, [
+    cards,
+    searchQuery,
+    selectedInks,
+    selectedSet,
+    selectedRarity,
+    selectedCost,
+    selectedInkable,
+    selectedFormat,
+    selectedType,
+    selectedClassification,
+    selectedFranchise,
+    selectedAttack,
+    selectedDefense,
+    selectedLore
+  ]);
 
   // Infinite Scroll intersection observer to append cards as the user scrolls
   useEffect(() => {
@@ -509,35 +527,61 @@ export default function Collection() {
   }, [filteredCards.length, visibleCount]);
 
   // Sort the filtered cards to respect reverse chronological release order of sets, and by card number ascending within the same set
-  const sortedFilteredCards = [...filteredCards].sort((a, b) => {
-    const idxA = KNOWN_SETS.indexOf(a.set);
-    const idxB = KNOWN_SETS.indexOf(b.set);
-    if (idxA !== -1 && idxB !== -1) {
-      if (idxA !== idxB) {
-        return idxA - idxB;
+  const sortedFilteredCards = useMemo(() => {
+    return [...filteredCards].sort((a, b) => {
+      const idxA = KNOWN_SETS.indexOf(a.set);
+      const idxB = KNOWN_SETS.indexOf(b.set);
+      if (idxA !== -1 && idxB !== -1) {
+        if (idxA !== idxB) {
+          return idxA - idxB;
+        }
+      } else if (idxA !== -1) {
+        return -1;
+      } else if (idxB !== -1) {
+        return 1;
+      } else {
+        const setComp = a.set.localeCompare(b.set);
+        if (setComp !== 0) return setComp;
       }
-    } else if (idxA !== -1) {
-      return -1;
-    } else if (idxB !== -1) {
-      return 1;
-    } else {
-      const setComp = a.set.localeCompare(b.set);
-      if (setComp !== 0) return setComp;
-    }
-    return a.number - b.number;
-  });
+      return a.number - b.number;
+    });
+  }, [filteredCards]);
 
-  const slicedCards = sortedFilteredCards.slice(0, visibleCount);
+  const slicedCards = useMemo(() => sortedFilteredCards.slice(0, visibleCount), [sortedFilteredCards, visibleCount]);
 
-  // Calculate totals
-  let totalCardsOwned = 0;
-  let uniqueCardsOwned = new Set<string>();
-  for (const item of userCollection) {
-    if (item.quantity > 0) {
-      totalCardsOwned += item.quantity;
-      uniqueCardsOwned.add(item.card_id);
+  // Calculate totals optimistically (incorporating pending update-quantity forms)
+  const totals = useMemo(() => {
+    let totalCardsOwned = 0;
+    const uniqueCardsOwned = new Set<string>();
+
+    // Start with server userCollection
+    const localQuantities = new Map<string, number>(); // key: `cardId_foil` or `cardId_normal`
+    for (const item of userCollection) {
+      localQuantities.set(`${item.card_id}_${item.is_foil ? "foil" : "normal"}`, item.quantity);
     }
-  }
+
+    // Apply optimistic updates from active submissions
+    if (fetcher.formData && fetcher.formData.get("intent") === "update-quantity") {
+      const cardId = fetcher.formData.get("cardId") as string;
+      const isFoil = fetcher.formData.get("isFoil") === "true";
+      const quantity = parseInt(fetcher.formData.get("quantity") as string, 10);
+      localQuantities.set(`${cardId}_${isFoil ? "foil" : "normal"}`, quantity);
+    }
+
+    // Accumulate total counts
+    for (const [key, qty] of localQuantities.entries()) {
+      if (qty > 0) {
+        totalCardsOwned += qty;
+        const cardId = key.substring(0, key.lastIndexOf("_"));
+        uniqueCardsOwned.add(cardId);
+      }
+    }
+
+    return {
+      totalCardsOwned,
+      uniqueCardsCount: uniqueCardsOwned.size
+    };
+  }, [userCollection, fetcher.formData]);
 
   return (
     <Box mih="100vh" bg="dark.9" c="gray.1">
@@ -567,7 +611,7 @@ export default function Collection() {
             <Group gap="md">
               <Paper py={8} px="md" radius="sm" bg="dark.9" style={{ border: "1px solid rgba(255,255,255,0.05)", textAlign: "center" }}>
                 <Text size="md" fw={900} variant="gradient" gradient={{ from: "violet.4", to: "indigo.4" }}>
-                  {totalCardsOwned}
+                  {totals.totalCardsOwned}
                 </Text>
                 <Text size="9px" fw={700} c="dimmed" style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Total Cards
@@ -575,7 +619,7 @@ export default function Collection() {
               </Paper>
               <Paper py={8} px="md" radius="sm" bg="dark.9" style={{ border: "1px solid rgba(255,255,255,0.05)", textAlign: "center" }}>
                 <Text size="md" fw={900} variant="gradient" gradient={{ from: "pink.4", to: "orange.4" }}>
-                  {uniqueCardsOwned.size}
+                  {totals.uniqueCardsCount}
                 </Text>
                 <Text size="9px" fw={700} c="dimmed" style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
                   Unique Cards
@@ -681,8 +725,8 @@ export default function Collection() {
                         { value: "Inkable", label: "Inkable" },
                         { value: "Non-Inkable", label: "Non-Inkable" }
                       ]}
-                      value={selectedFormat}
-                      onChange={(val) => setSelectedFormat(val || "All")}
+                      value={selectedInkable}
+                      onChange={(val) => setSelectedInkable(val || "All")}
                       allowDeselect={false}
                       size="xs"
                     />
