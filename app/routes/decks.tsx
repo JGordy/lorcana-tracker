@@ -18,9 +18,11 @@ import {
   Box,
   ActionIcon,
   Tabs,
+  Modal,
+  Textarea,
 } from "@mantine/core";
-import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube, IconCards, IconInfinity } from "@tabler/icons-react";
-import { authService, dbService, isConfigured, COLLECTIONS, type UserCollectionItemDoc, type DeckWithProgress } from "../services/appwrite";
+import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube, IconCards, IconInfinity, IconUpload } from "@tabler/icons-react";
+import { authService, dbService, isConfigured, COLLECTIONS, type UserCollectionItemDoc, type DeckWithProgress, type Card as LorcanaCard, SET_NAME_TO_INDEX } from "../services/appwrite";
 import { Navbar } from "../components/Navbar";
 
 // ---------------------------------------------------------
@@ -35,10 +37,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   const user = await authService.getSessionUser();
   const userId = user ? user.$id : null;
 
-  // Retrieve public decks with computed progress
-  const decks = await dbService.getDecksWithProgress(userId, sort, cookieHeader);
+  // Retrieve public decks and cards concurrently
+  const [decks, cards] = await Promise.all([
+    dbService.getDecksWithProgress(userId, sort, cookieHeader),
+    dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], cookieHeader),
+  ]);
 
-  return { decks, user, sort };
+  return { decks, cards, user, sort };
 }
 
 // ---------------------------------------------------------
@@ -86,6 +91,34 @@ export async function action({ request }: Route.ActionArgs) {
     return { success: true, updatedItem };
   }
 
+  if (intent === "import-deck") {
+    const userId = formData.get("userId") as string;
+    const title = formData.get("title") as string;
+    const description = formData.get("description") as string;
+    const cardsJson = formData.get("cards") as string;
+    const cardsList = JSON.parse(cardsJson) as Array<{ cardId: string; quantity: number }>;
+
+    const result = await dbService.createDeck(userId, title, description, cardsList, cookieHeader);
+
+    if (!isConfigured) {
+      const [allMockDecks, allMockDeckCards] = await Promise.all([
+        dbService.getCollection<any>(COLLECTIONS.DECKS, [], cookieHeader),
+        dbService.getCollection<any>(COLLECTIONS.DECK_CARDS, [], cookieHeader),
+      ]);
+      
+      const serializedDecks = encodeURIComponent(JSON.stringify(allMockDecks));
+      const serializedDeckCards = encodeURIComponent(JSON.stringify(allMockDeckCards));
+
+      const headers = new Headers();
+      headers.append("Set-Cookie", `lorcana_user_decks=${serializedDecks}; Path=/; Max-Age=31536000; SameSite=Lax`);
+      headers.append("Set-Cookie", `lorcana_user_deck_cards=${serializedDeckCards}; Path=/; Max-Age=31536000; SameSite=Lax`);
+
+      return data({ success: true, result }, { headers });
+    }
+
+    return { success: true, result };
+  }
+
   return { success: false };
 }
 
@@ -127,11 +160,135 @@ function getInkBadgeStyle(color: string) {
 }
 
 export default function Decks() {
-  const { decks, user, sort } = useLoaderData<typeof loader>();
+  const { decks, cards, user, sort } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const fetcher = useFetcher();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedDecks, setExpandedDecks] = useState<Record<string, boolean>>({});
+
+  // Import Deck states
+  const submit = useSubmit();
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importTitle, setImportTitle] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [parsedResults, setParsedResults] = useState<{
+    matched: Array<{ card: LorcanaCard; quantity: number }>;
+    unmatched: Array<{ name: string; quantity: number; setCode?: string }>;
+  } | null>(null);
+
+  const handleValidateImport = () => {
+    if (!importText.trim()) {
+      setImportError("Please paste a decklist first.");
+      setParsedResults(null);
+      return;
+    }
+
+    const lines = importText.split("\n");
+    const matched: Array<{ card: LorcanaCard; quantity: number }> = [];
+    const unmatched: Array<{ name: string; quantity: number; setCode?: string }> = [];
+
+    const cardsByName = new Map<string, LorcanaCard>();
+    const cardsBySetNum = new Map<string, LorcanaCard>();
+
+    cards.forEach((c) => {
+      cardsByName.set(c.name.toLowerCase().trim(), c);
+      const setIdx = SET_NAME_TO_INDEX[c.set];
+      if (setIdx !== undefined) {
+        const setCode = `${setIdx.toString().padStart(3, "0")}-${c.number.toString().padStart(3, "0")}`;
+        cardsBySetNum.set(setCode, c);
+        cardsBySetNum.set(`${setIdx}-${c.number}`, c);
+      }
+    });
+
+    for (let line of lines) {
+      line = line.trim();
+      if (!line || line.startsWith("//") || line.startsWith("#") || line.toLowerCase().startsWith("deck:")) {
+        continue;
+      }
+
+      const match = line.match(/^(\d+)\s+x?\s*([^(]+)(?:\(([^)]+)\))?/i);
+      if (!match) {
+        const simpleMatch = line.match(/^(\d+)\s+(.+)$/);
+        if (simpleMatch) {
+          const qty = parseInt(simpleMatch[1], 10);
+          const name = simpleMatch[2].trim();
+          const card = cardsByName.get(name.toLowerCase());
+          if (card) {
+            matched.push({ card, quantity: qty });
+          } else {
+            unmatched.push({ name, quantity: qty });
+          }
+        }
+        continue;
+      }
+
+      const qty = parseInt(match[1], 10);
+      const rawName = match[2].trim();
+      const setCodeRaw = match[3]?.trim();
+
+      const cardName = rawName.replace(/\s+x\d+$/i, "").trim();
+      let resolvedCard: LorcanaCard | undefined = undefined;
+
+      if (setCodeRaw) {
+        resolvedCard = cardsBySetNum.get(setCodeRaw);
+        if (!resolvedCard) {
+          const normalizedCode = setCodeRaw.replace(/[\/\s]/g, "-");
+          resolvedCard = cardsBySetNum.get(normalizedCode);
+        }
+      }
+
+      if (!resolvedCard) {
+        resolvedCard = cardsByName.get(cardName.toLowerCase());
+      }
+
+      if (!resolvedCard) {
+        const normalizedInput = cardName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        resolvedCard = cards.find(c => c.name.toLowerCase().replace(/[^a-z0-9]/g, "") === normalizedInput);
+      }
+
+      if (resolvedCard) {
+        matched.push({ card: resolvedCard, quantity: qty });
+      } else {
+        unmatched.push({ name: cardName, quantity: qty, setCode: setCodeRaw });
+      }
+    }
+
+    setParsedResults({ matched, unmatched });
+    setImportError(null);
+  };
+
+  const handleSubmitImport = () => {
+    if (!importTitle.trim()) {
+      setImportError("Please enter a Deck Title.");
+      return;
+    }
+    if (!parsedResults || parsedResults.matched.length === 0) {
+      setImportError("Please validate the deck first and ensure at least one card is matched.");
+      return;
+    }
+
+    const payload = parsedResults.matched.map((m) => ({
+      cardId: m.card.id,
+      quantity: m.quantity,
+    }));
+
+    submit(
+      {
+        intent: "import-deck",
+        userId: user ? user.$id : "guest-user",
+        title: importTitle,
+        description: "User imported custom deck",
+        cards: JSON.stringify(payload),
+      },
+      { method: "post" }
+    );
+
+    setImportModalOpen(false);
+    setImportTitle("");
+    setImportText("");
+    setParsedResults(null);
+  };
 
   const toggleDeckExpand = (deckId: string) => {
     setExpandedDecks((prev) => ({
@@ -442,13 +599,25 @@ export default function Decks() {
 
         {/* Filter Controls Row */}
         <Group justify="space-between" mb="lg" gap="md">
-          <TextInput
-            placeholder="Search meta decks..."
-            leftSection={<IconSearch size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ flex: 1, maxWidth: 350 }}
-          />
+          <Group gap="md" style={{ flex: 1, maxWidth: 600 }} align="end">
+            <TextInput
+              placeholder="Search meta decks..."
+              leftSection={<IconSearch size={16} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            {user && (
+              <Button
+                variant="light"
+                color="violet"
+                leftSection={<IconUpload size={16} />}
+                onClick={() => setImportModalOpen(true)}
+              >
+                Import Deck
+              </Button>
+            )}
+          </Group>
 
           <Select
             label="Sort by:"
@@ -487,6 +656,120 @@ export default function Decks() {
           </Tabs.Panel>
         </Tabs>
       </Container>
+
+      {/* Import Deck Modal */}
+      <Modal
+        opened={importModalOpen}
+        onClose={() => {
+          setImportModalOpen(false);
+          setImportTitle("");
+          setImportText("");
+          setParsedResults(null);
+          setImportError(null);
+        }}
+        title={
+          <Text fw={700} size="lg">
+            Import Lorcana Deck List
+          </Text>
+        }
+        size="lg"
+        centered
+        styles={{
+          content: { backgroundColor: "var(--mantine-color-dark-8)", color: "var(--mantine-color-gray-1)" },
+          header: { backgroundColor: "var(--mantine-color-dark-8)", color: "var(--mantine-color-gray-1)" },
+        }}
+      >
+        <Stack gap="md">
+          <Text size="xs" c="gray.4">
+            Paste a decklist from Dreamborn.ink or Inkdecks.com. The parser supports quantities and card names (e.g. <code>4 Elsa - Spirit of Winter</code> or <code>4 Elsa - Spirit of Winter (001-042)</code>).
+          </Text>
+
+          <TextInput
+            label="Deck Title"
+            placeholder="e.g. Amber/Emerald Toys"
+            required
+            value={importTitle}
+            onChange={(e) => setImportTitle(e.target.value)}
+            styles={{ input: { backgroundColor: "var(--mantine-color-dark-9)" } }}
+          />
+
+          <Textarea
+            label="Decklist Text"
+            placeholder="Paste decklist here, e.g.&#10;4 Elsa - Spirit of Winter&#10;4 Koda - Talkative Cub (005-001)"
+            minRows={8}
+            required
+            value={importText}
+            onChange={(e) => setImportText(e.target.value)}
+            styles={{ input: { backgroundColor: "var(--mantine-color-dark-9)", fontFamily: "monospace", fontSize: 12 } }}
+          />
+
+          {importError && (
+            <Text size="xs" c="red.4" fw={500}>
+              {importError}
+            </Text>
+          )}
+
+          {parsedResults && (
+            <Stack gap="xs" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 12 }}>
+              <Text size="sm" fw={600}>
+                Parser Validation Summary:
+              </Text>
+              <Group gap="md">
+                <Badge color="teal" variant="light">
+                  {parsedResults.matched.reduce((acc, curr) => acc + curr.quantity, 0)} Cards Matched ({parsedResults.matched.length} Unique)
+                </Badge>
+                {parsedResults.unmatched.length > 0 && (
+                  <Badge color="red" variant="light">
+                    {parsedResults.unmatched.reduce((acc, curr) => acc + curr.quantity, 0)} Unknown Cards
+                  </Badge>
+                )}
+              </Group>
+
+              {parsedResults.unmatched.length > 0 && (
+                <Box>
+                  <Text size="xs" c="red.4" fw={500} mb={4}>
+                    Warning: The following cards could not be found in the database (they will be skipped):
+                  </Text>
+                  <Box style={{ maxHeight: 100, overflowY: "auto", backgroundColor: "rgba(255,0,0,0.05)", padding: 8, borderRadius: 4 }}>
+                    {parsedResults.unmatched.map((item, idx) => (
+                      <Text key={idx} size="xs" c="gray.4" style={{ fontFamily: "monospace" }}>
+                        - {item.quantity}x {item.name} {item.setCode ? `(${item.setCode})` : ""}
+                      </Text>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+            </Stack>
+          )}
+
+          <Group justify="end" mt="md">
+            <Button
+              variant="outline"
+              color="gray"
+              onClick={() => {
+                setImportModalOpen(false);
+                setImportTitle("");
+                setImportText("");
+                setParsedResults(null);
+                setImportError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="light" color="blue" onClick={handleValidateImport}>
+              Validate List
+            </Button>
+            <Button
+              variant="filled"
+              color="violet"
+              disabled={!parsedResults || parsedResults.matched.length === 0}
+              onClick={handleSubmitImport}
+            >
+              Import Deck
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Box>
   );
 }

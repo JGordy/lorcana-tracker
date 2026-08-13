@@ -287,49 +287,65 @@ const MOCK_DECKS: Deck[] = [
   {
     $id: "deck-1",
     id: "deck-1",
-    title: "Ruby/Amethyst Control",
-    description: "An aggressive control list that wins via late-game lore generation and board wipes like Be Prepared.",
+    title: "Amber/Emerald Toys (Set 13)",
+    description: "An aggressive toy-based midrange deck utilizing the synergy between Woody and Meilin Lee, focusing on lore rushes.",
     creator_id: "system-1",
     is_public: true,
   },
   {
     $id: "deck-2",
     id: "deck-2",
-    title: "Amber/Steel Songs",
-    description: "Utilizes singers like Cinderella and Stitch to cast high-value song cards like A Whole New World early.",
+    title: "Emerald/Steel Darkwing (Set 13)",
+    description: "A removal-heavy deck that wins through board manipulation and evasive damage.",
     creator_id: "system-1",
     is_public: true,
   },
   {
     $id: "deck-3",
     id: "deck-3",
-    title: "Ruby/Steel Midrange",
-    description: "A solid mid-range list with heavy damage removal and evasive lore run capabilities.",
+    title: "Amethyst/Steel Monsters (Set 13)",
+    description: "A powerful control deck showcasing Monsters Inc. characters like Sulley and Mike Wazowski, using massive strength control.",
     creator_id: "system-1",
     is_public: true,
   },
 ];
 
 const MOCK_DECK_CARDS: DeckCardDoc[] = [
-  // Ruby/Amethyst Control requires Mickey Mouse (x2), Elsa (x4), Maleficent (x4), Maui (x4), Be Prepared (x4)
-  { $id: "dc1-1", deck_id: "deck-1", card_id: "mickey-mouse-brave-little-tailor", quantity: 2 },
-  { $id: "dc1-2", deck_id: "deck-1", card_id: "elsa-spirit-of-winter", quantity: 4 },
-  { $id: "dc1-3", deck_id: "deck-1", card_id: "maleficent-monstrous-dragon", quantity: 4 },
-  { $id: "dc1-4", deck_id: "deck-1", card_id: "maui-hero-to-all", quantity: 4 },
-  { $id: "dc1-5", deck_id: "deck-1", card_id: "be-prepared", quantity: 4 },
+  // Amber/Emerald Toys
+  { $id: "dc1-1", deck_id: "deck-1", card_id: "woody-helping-a-friend", quantity: 4 },
+  { $id: "dc1-2", deck_id: "deck-1", card_id: "ming-lee-proud-parent", quantity: 4 },
+  { $id: "dc1-3", deck_id: "deck-1", card_id: "isabela-madrigal-kind-cultivator", quantity: 4 },
+  { $id: "dc1-4", deck_id: "deck-1", card_id: "tyler-nguyen-baker-4-town-fan", quantity: 4 },
+  { $id: "dc1-5", deck_id: "deck-1", card_id: "rabbit-hunny-paladin", quantity: 4 },
+  { $id: "dc1-6", deck_id: "deck-1", card_id: "celia-mae-friendly-receptionist", quantity: 4 },
+  { $id: "dc1-7", deck_id: "deck-1", card_id: "meilin-lee-lead-vocalist", quantity: 4 },
+  { $id: "dc1-8", deck_id: "deck-1", card_id: "priya-mangal-serious-music-lover", quantity: 4 },
+  { $id: "dc1-9", deck_id: "deck-1", card_id: "miriam-mendelsohn-ticket-holder", quantity: 4 },
+  { $id: "dc1-10", deck_id: "deck-1", card_id: "lilo-patient-weaver", quantity: 4 },
 
-  // Amber/Steel Songs requires Stitch (x4), Tinker Bell (x4), A Whole New World (x4), Cinderella (x4)
-  { $id: "dc2-1", deck_id: "deck-2", card_id: "stitch-carefree-surfer", quantity: 4 },
-  { $id: "dc2-2", deck_id: "deck-2", card_id: "tinker-bell-giant-fairy", quantity: 4 },
-  { $id: "dc2-3", deck_id: "deck-2", card_id: "a-whole-new-world", quantity: 4 },
-  { $id: "dc2-4", deck_id: "deck-2", card_id: "cinderella-stouthearted", quantity: 4 },
+  // Emerald/Steel Darkwing
+  { $id: "dc2-1", deck_id: "deck-2", card_id: "kocoum-defender-of-the-tribe", quantity: 4 },
+  { $id: "dc2-2", deck_id: "deck-2", card_id: "pocahontas-guiding-the-tribe", quantity: 4 },
+  { $id: "dc2-3", deck_id: "deck-2", card_id: "woody-town-sheriff", quantity: 4 },
+  { $id: "dc2-4", deck_id: "deck-2", card_id: "abby-park-over-the-top", quantity: 4 },
+  { $id: "dc2-5", deck_id: "deck-2", card_id: "gaston-superior-archer", quantity: 4 },
+  { $id: "dc2-6", deck_id: "deck-2", card_id: "meilin-lee-losing-control", quantity: 4 },
+  { $id: "dc2-7", deck_id: "deck-2", card_id: "4-town-hottest-band-of-the-year", quantity: 4 },
+  { $id: "dc2-8", deck_id: "deck-2", card_id: "mike-wazowski-heroic-climber", quantity: 4 },
+  { $id: "dc2-9", deck_id: "deck-2", card_id: "boo-in-disguise", quantity: 4 },
+  { $id: "dc2-10", deck_id: "deck-2", card_id: "jasmine-vine-expert", quantity: 4 },
 
-  // Ruby/Steel Midrange requires Mickey Mouse (x2), Maui (x4), Be Prepared (x2), Tinker Bell (x4), Cinderella (x2)
-  { $id: "dc3-1", deck_id: "deck-3", card_id: "mickey-mouse-brave-little-tailor", quantity: 2 },
-  { $id: "dc3-2", deck_id: "deck-3", card_id: "maui-hero-to-all", quantity: 4 },
-  { $id: "dc3-3", deck_id: "deck-3", card_id: "be-prepared", quantity: 2 },
-  { $id: "dc3-4", deck_id: "deck-3", card_id: "tinker-bell-giant-fairy", quantity: 4 },
-  { $id: "dc3-5", deck_id: "deck-3", card_id: "cinderella-stouthearted", quantity: 2 },
+  // Amethyst/Steel Monsters
+  { $id: "dc3-1", deck_id: "deck-3", card_id: "mike-wazowski-well-rounded-entertainer", quantity: 4 },
+  { $id: "dc3-2", deck_id: "deck-3", card_id: "the-horned-king-merciless-master", quantity: 4 },
+  { $id: "dc3-3", deck_id: "deck-3", card_id: "kanga-hunny-bard", quantity: 4 },
+  { $id: "dc3-4", deck_id: "deck-3", card_id: "sulley-the-new-boss", quantity: 4 },
+  { $id: "dc3-5", deck_id: "deck-3", card_id: "mirabel-madrigal-family-guardian", quantity: 4 },
+  { $id: "dc3-6", deck_id: "deck-3", card_id: "woody-town-sheriff", quantity: 4 },
+  { $id: "dc3-7", deck_id: "deck-3", card_id: "gaston-superior-archer", quantity: 4 },
+  { $id: "dc3-8", deck_id: "deck-3", card_id: "pocahontas-guiding-the-tribe", quantity: 4 },
+  { $id: "dc3-9", deck_id: "deck-3", card_id: "abby-park-over-the-top", quantity: 4 },
+  { $id: "dc3-10", deck_id: "deck-3", card_id: "boo-in-disguise", quantity: 4 },
 ];
 
 // Helper to parse cookies
@@ -346,6 +362,49 @@ export function parseCookies(cookieString: string | null): Record<string, string
   });
   return cookies;
 }
+
+export function getMockDecks(cookieHeader?: string | null): Deck[] {
+  let userDecks: Deck[] = [];
+  if (cookieHeader) {
+    const cookies = parseCookies(cookieHeader);
+    const cookieVal = cookies["lorcana_user_decks"];
+    if (cookieVal) {
+      try {
+        userDecks = JSON.parse(cookieVal);
+      } catch (e) {}
+    }
+  } else if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("lorcana_user_decks");
+    if (stored) {
+      try {
+        userDecks = JSON.parse(stored);
+      } catch (e) {}
+    }
+  }
+  return [...MOCK_DECKS, ...userDecks];
+}
+
+export function getMockDeckCards(cookieHeader?: string | null): DeckCardDoc[] {
+  let userDeckCards: DeckCardDoc[] = [];
+  if (cookieHeader) {
+    const cookies = parseCookies(cookieHeader);
+    const cookieVal = cookies["lorcana_user_deck_cards"];
+    if (cookieVal) {
+      try {
+        userDeckCards = JSON.parse(cookieVal);
+      } catch (e) {}
+    }
+  } else if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("lorcana_user_deck_cards");
+    if (stored) {
+      try {
+        userDeckCards = JSON.parse(stored);
+      } catch (e) {}
+    }
+  }
+  return [...MOCK_DECK_CARDS, ...userDeckCards];
+}
+
 
 // Helper to initialize user inventory with full cookie support for SSR
 const getMockUserInventory = (cookieHeader?: string | null): UserCollectionItemDoc[] => {
@@ -392,6 +451,21 @@ const saveMockUserInventory = (inventory: UserCollectionItemDoc[]) => {
     document.cookie = `lorcana_user_inventory=${encodeURIComponent(JSON.stringify(inventory))}; Path=/; Max-Age=31536000; SameSite=Lax`;
   }
 };
+
+const saveMockDecks = (decks: Deck[]) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("lorcana_user_decks", JSON.stringify(decks));
+    document.cookie = `lorcana_user_decks=${encodeURIComponent(JSON.stringify(decks))}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+};
+
+const saveMockDeckCards = (deckCards: DeckCardDoc[]) => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("lorcana_user_deck_cards", JSON.stringify(deckCards));
+    document.cookie = `lorcana_user_deck_cards=${encodeURIComponent(JSON.stringify(deckCards))}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }
+};
+
 
 // ---------------------------------------------------------
 // Core Authentication Services
@@ -502,10 +576,10 @@ export const dbService = {
         return postProcessCardLegality(cards) as unknown as T[];
       }
       if (collectionId === COLLECTIONS.DECKS) {
-        return MOCK_DECKS as unknown as T[];
+        return getMockDecks(cookieHeader) as unknown as T[];
       }
       if (collectionId === COLLECTIONS.DECK_CARDS) {
-        return MOCK_DECK_CARDS as unknown as T[];
+        return getMockDeckCards(cookieHeader) as unknown as T[];
       }
       if (collectionId === COLLECTIONS.USER_COLLECTIONS) {
         return getMockUserInventory(cookieHeader) as unknown as T[];
@@ -816,5 +890,83 @@ export const dbService = {
 
       return a.title.localeCompare(b.title);
     });
+  },
+
+  async createDeck(
+    userId: string,
+    title: string,
+    description: string,
+    cards: Array<{ cardId: string; quantity: number }>,
+    cookieHeader?: string | null
+  ): Promise<{ deck: Deck; deckCards: DeckCardDoc[] }> {
+    const deckId = `deck-${Date.now()}`;
+    const newDeck: Deck = {
+      $id: deckId,
+      id: deckId,
+      title,
+      description,
+      creator_id: userId,
+      is_public: true,
+    };
+
+    const newDeckCards: DeckCardDoc[] = cards.map((c, index) => ({
+      $id: `dc-${deckId}-${index}`,
+      deck_id: deckId,
+      card_id: c.cardId,
+      quantity: c.quantity,
+    }));
+
+    if (!isConfigured) {
+      let userDecks: Deck[] = [];
+      let userDeckCards: DeckCardDoc[] = [];
+
+      if (cookieHeader) {
+        const cookies = parseCookies(cookieHeader);
+        const decksVal = cookies["lorcana_user_decks"];
+        if (decksVal) {
+          try {
+            userDecks = JSON.parse(decksVal);
+          } catch (e) {}
+        }
+        const deckCardsVal = cookies["lorcana_user_deck_cards"];
+        if (deckCardsVal) {
+          try {
+            userDeckCards = JSON.parse(deckCardsVal);
+          } catch (e) {}
+        }
+      }
+
+      userDecks.push(newDeck);
+      userDeckCards.push(...newDeckCards);
+
+      saveMockDecks(userDecks);
+      saveMockDeckCards(userDeckCards);
+
+      return { deck: newDeck, deckCards: newDeckCards };
+    }
+
+    try {
+      await databases.createDocument(DATABASE_ID, COLLECTIONS.DECKS, deckId, {
+        id: deckId,
+        title,
+        description,
+        creator_id: userId,
+        is_public: true,
+      });
+
+      const promises = newDeckCards.map((dc) =>
+        databases.createDocument(DATABASE_ID, COLLECTIONS.DECK_CARDS, dc.$id, {
+          deck_id: dc.deck_id,
+          card_id: dc.card_id,
+          quantity: dc.quantity,
+        })
+      );
+      await Promise.all(promises);
+
+      return { deck: newDeck, deckCards: newDeckCards };
+    } catch (error) {
+      console.error("Failed to create deck in Appwrite:", error);
+      throw error;
+    }
   },
 };
