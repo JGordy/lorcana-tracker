@@ -1,18 +1,14 @@
-# Welcome to React Router!
+# Lorcana Tracker & Deck Builder
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+A modern, full-stack web application designed for Disney Lorcana TCG players to manage their collections and build decks.
 
 ## Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- 🎴 **Collection Management**: Track owned cards with support for quantities, foil variants, set numbers, and ink colors.
+- 🛠️ **Deck Building**: Design custom decks, toggle deck privacy, and view detailed card breakdowns.
+- 📊 **Progress Calculations**: Automatically calculate collection progress for any deck, showing overall percentage and listing specific missing cards.
+- ⚡ **Modern Stack**: Built with React Router (v8), TypeScript, Tailwind CSS, and Mantine UI components for a premium user interface.
+- 🔌 **Appwrite Integration**: Configured with Appwrite for secure database storage and user authentication, featuring a fully functional cookie-based local fallback for testing without configuration.
 
 ## Getting Started
 
@@ -34,6 +30,14 @@ npm run dev
 
 Your application will be available at `http://localhost:5173`.
 
+### Testing
+
+Run the unit test suite:
+
+```bash
+npm run test
+```
+
 ## Building for Production
 
 Create a production build:
@@ -49,39 +53,26 @@ npm run build
 To build and run using Docker:
 
 ```bash
-docker build -t my-app .
+docker build -t lorcana-tracker .
 
 # Run the container
-docker run -p 3000:3000 my-app
+docker run -p 3000:3000 lorcana-tracker
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
+The containerized application can be deployed to any platform that supports Docker (e.g., AWS ECS, Google Cloud Run, Azure Container Apps, etc.).
 
 ### DIY Deployment
 
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
+If you're deploying manually, the built-in app server is production-ready. Make sure to deploy the output of `npm run build`:
 
 ```
 ├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
+├── package-lock.json
 ├── build/
 │   ├── client/    # Static assets
 │   └── server/    # Server-side code
 ```
 
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
 ---
 
-Built with ❤️ using React Router.
+Built with ❤️ using React Router and Mantine.
