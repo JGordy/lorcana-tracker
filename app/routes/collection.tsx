@@ -1,5 +1,5 @@
 import type { Route } from "./+types/collection";
-import { useLoaderData, useFetcher } from "react-router";
+import { useLoaderData, useFetcher, data } from "react-router";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Container,
@@ -19,7 +19,7 @@ import {
 } from "@mantine/core";
 import { IconSearch, IconPlus, IconMinus, IconSparkles, IconCards } from "@tabler/icons-react";
 import { Query } from "appwrite";
-import { authService, dbService, COLLECTIONS, type Card as LorcanaCard, type UserCollectionItemDoc } from "../services/appwrite";
+import { authService, dbService, COLLECTIONS, type Card as LorcanaCard, type UserCollectionItemDoc, isConfigured } from "../services/appwrite";
 import { Navbar } from "../components/Navbar";
 
 // ---------------------------------------------------------
@@ -60,6 +60,46 @@ export async function action({ request }: Route.ActionArgs) {
     const isFoil = formData.get("isFoil") === "true";
 
     const result = await dbService.updateInventory(userId, cardId, quantity, isFoil, cookieHeader);
+
+    // If Appwrite database is not configured, send cookie header updates to match
+    if (!isConfigured) {
+      const allMockInventory = await dbService.getCollection<UserCollectionItemDoc>(
+        COLLECTIONS.USER_COLLECTIONS,
+        [],
+        cookieHeader
+      );
+      
+      // Manually apply the update to the server-side copy before serializing it
+      const existingIdx = allMockInventory.findIndex(
+        (item) => item.card_id === cardId && item.is_foil === isFoil && item.user_id === userId
+      );
+      if (existingIdx > -1) {
+        if (quantity <= 0) {
+          allMockInventory.splice(existingIdx, 1);
+        } else {
+          allMockInventory[existingIdx].quantity = quantity;
+        }
+      } else if (quantity > 0) {
+        allMockInventory.push({
+          $id: `inv-${Date.now()}`,
+          user_id: userId,
+          card_id: cardId,
+          quantity,
+          is_foil: isFoil,
+        });
+      }
+
+      const serialized = encodeURIComponent(JSON.stringify(allMockInventory));
+      return data(
+        { success: true, item: result },
+        {
+          headers: {
+            "Set-Cookie": `lorcana_user_inventory=${serialized}; Path=/; Max-Age=31536000; SameSite=Lax`,
+          },
+        }
+      );
+    }
+
     return { success: true, item: result };
   }
 
