@@ -20,6 +20,7 @@ import {
   Tabs,
   Modal,
   Textarea,
+  Tooltip,
 } from "@mantine/core";
 import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube, IconCards, IconInfinity, IconUpload } from "@tabler/icons-react";
 import { authService, dbService, isConfigured, COLLECTIONS, type UserCollectionItemDoc, type DeckWithProgress, type Card as LorcanaCard, SET_NAME_TO_INDEX } from "../services/appwrite";
@@ -499,7 +500,37 @@ export default function Decks() {
                             <Table.Tr key={card.$id}>
                               <Table.Td style={{ fontWeight: 500 }}>
                                 <Group gap="xs">
-                                  <Text size="xs">{card.name}</Text>
+                                  <Tooltip
+                                    label={
+                                      <Box style={{ width: 165, height: 230, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                        {card.image_url ? (
+                                          <img
+                                            src={card.image_url}
+                                            alt={card.name}
+                                            style={{ width: "100%", height: "100%", borderRadius: 8, objectFit: "contain" }}
+                                          />
+                                        ) : (
+                                          <Text size="xs" c="gray.5">No image available</Text>
+                                        )}
+                                      </Box>
+                                    }
+                                    color="transparent"
+                                    withArrow={false}
+                                    position="right"
+                                    openDelay={150}
+                                    styles={{
+                                      tooltip: {
+                                        padding: 0,
+                                        backgroundColor: "transparent",
+                                        border: "none",
+                                        boxShadow: "none",
+                                      }
+                                    }}
+                                  >
+                                    <Text size="xs" style={{ cursor: "pointer", borderBottom: "1px dotted rgba(255, 255, 255, 0.4)", display: "inline-block" }}>
+                                      {card.name}
+                                    </Text>
+                                  </Tooltip>
                                   {card.formats.includes("core") ? (
                                     <Badge size="10px" variant="outline" color="teal">
                                       Core
