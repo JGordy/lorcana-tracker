@@ -374,7 +374,7 @@ const MOCK_DECK_CARDS: DeckCardDoc[] = [
   { $id: "dc4-1", deck_id: "deck-4", card_id: "woody-leader-of-the-toys", quantity: 4 },
   { $id: "dc4-2", deck_id: "deck-4", card_id: "woody-helping-a-friend", quantity: 4 },
   { $id: "dc4-3", deck_id: "deck-4", card_id: "woody-town-sheriff", quantity: 4 },
-  { $id: "dc4-4", deck_id: "deck-4", card_id: "woody-buzz-lightyear-best-buddies", quantity: 4 },
+  { $id: "dc4-4", deck_id: "deck-4", card_id: "rex-protective-dinosaur", quantity: 4 },
   { $id: "dc4-5", deck_id: "deck-4", card_id: "woody-waiting-for-a-friend", quantity: 4 },
   { $id: "dc4-6", deck_id: "deck-4", card_id: "woody-jungle-guide", quantity: 4 },
   { $id: "dc4-7", deck_id: "deck-4", card_id: "sid-phillips-toy-surgeon", quantity: 4 },

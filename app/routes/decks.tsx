@@ -373,6 +373,24 @@ export default function Decks() {
                       <Text fw={700} size="md" c="gray.1">
                         {deck.title}
                       </Text>
+                      {/* Ink color icons */}
+                      <Group gap={4} mr="xs">
+                        {Array.from(
+                          new Set(
+                            deck.cards.flatMap((dc) =>
+                              dc.card.ink_color ? dc.card.ink_color.split("/") : []
+                            )
+                          )
+                        ).map((inkName) => (
+                          <img
+                            key={inkName}
+                            src={`/inks/${inkName.toLowerCase().trim()}.svg`}
+                            alt={inkName}
+                            style={{ width: 18, height: 18, display: "block" }}
+                            title={inkName}
+                          />
+                        ))}
+                      </Group>
                       {deck.is_trending ? (
                         <Badge size="xs" variant="gradient" gradient={{ from: "violet", to: "grape" }}>
                           Trending Meta
