@@ -628,13 +628,59 @@ export const dbService = {
     }
 
     try {
-      const response = await databases.listDocuments(DATABASE_ID, collectionId, queries);
-      let docs = response.documents as unknown as T[];
+      // Cards always come from the local JSON asset — not stored in Appwrite
       if (collectionId === COLLECTIONS.CARDS) {
-        docs = postProcessCardLegality(docs as unknown as Card[]) as unknown as T[];
+        let cards: Card[] = [];
+        if (typeof window === "undefined") {
+          try {
+            const fs = await import("fs");
+            const path = await import("path");
+            const devUrl = new URL("../../public/cards.json", import.meta.url);
+            const prodUrl = new URL("../client/cards.json", import.meta.url);
+            let rawData = "";
+            if (fs.existsSync(prodUrl)) {
+              rawData = fs.readFileSync(prodUrl, "utf8");
+            } else if (fs.existsSync(devUrl)) {
+              rawData = fs.readFileSync(devUrl, "utf8");
+            } else {
+              const fallbackPath = path.join(process.cwd(), "public", "cards.json");
+              rawData = fs.readFileSync(fallbackPath, "utf8");
+            }
+            cards = JSON.parse(rawData);
+          } catch (e) {
+            console.error("Server failed to load public/cards.json:", e);
+            cards = MOCK_CARDS;
+          }
+        } else {
+          const cached = localStorage.getItem("lorcana_cards_cache_v6");
+          if (cached) {
+            cards = JSON.parse(cached);
+          } else {
+            try {
+              const response = await fetch("/cards.json");
+              if (!response.ok) throw new Error("Local cards.json asset failed to load");
+              cards = await response.json();
+              localStorage.setItem("lorcana_cards_cache_v6", JSON.stringify(cards));
+            } catch (error) {
+              console.warn("Failed to fetch local cards database. Falling back to mock cards.", error);
+              cards = MOCK_CARDS;
+            }
+          }
+        }
+        return postProcessCardLegality(cards) as unknown as T[];
       }
-      return docs;
-    } catch (error) {
+
+      const response = await databases.listDocuments(DATABASE_ID, collectionId, queries);
+      return response.documents as unknown as T[];
+    } catch (error: any) {
+      // Gracefully fall back to mock data if the database/collection isn't provisioned yet
+      if (error?.code === 404 || error?.type === "database_not_found" || error?.type === "collection_not_found") {
+        console.warn(`[Appwrite] Collection '${collectionId}' not found — falling back to mock data.`);
+        if (collectionId === COLLECTIONS.DECKS) return getMockDecks(cookieHeader) as unknown as T[];
+        if (collectionId === COLLECTIONS.DECK_CARDS) return getMockDeckCards(cookieHeader) as unknown as T[];
+        if (collectionId === COLLECTIONS.USER_COLLECTIONS) return getMockUserInventory(cookieHeader) as unknown as T[];
+        return [];
+      }
       console.error(`Error fetching collection ${collectionId}:`, error);
       throw error;
     }
@@ -704,6 +750,11 @@ export const dbService = {
         { quantity }
       )) as unknown as UserCollectionItemDoc;
     } catch (error: any) {
+      // Fall back to mock if DB not provisioned yet
+      if (error?.code === 404 && (error?.type === "database_not_found" || error?.type === "collection_not_found")) {
+        console.warn("[Appwrite] user_collections not provisioned — falling back to mock updateInventory.");
+        return this.updateInventory(userId, cardId, quantity, isFoil, cookieHeader);
+      }
       if (error.code === 404) {
         return (await databases.createDocument(
           DATABASE_ID,
@@ -1009,7 +1060,14 @@ export const dbService = {
       await Promise.all(promises);
 
       return { deck: newDeck, deckCards: newDeckCards };
-    } catch (error) {
+    } catch (error: any) {
+      // Fall back to mock storage if DB not provisioned yet
+      if (error?.code === 404 || error?.type === "database_not_found" || error?.type === "collection_not_found") {
+        console.warn("[Appwrite] Decks collection not provisioned — falling back to mock createDeck.");
+        saveMockDecks([newDeck]);
+        saveMockDeckCards(newDeckCards);
+        return { deck: newDeck, deckCards: newDeckCards };
+      }
       console.error("Failed to create deck in Appwrite:", error);
       throw error;
     }
