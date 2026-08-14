@@ -311,7 +311,7 @@ const MOCK_DECKS: Deck[] = [
 ];
 
 const MOCK_DECK_CARDS: DeckCardDoc[] = [
-  // Amber/Emerald Toys
+  // Amber/Emerald Toys (Set 13) - 15 cards * 4 copies = 60 cards
   { $id: "dc1-1", deck_id: "deck-1", card_id: "woody-helping-a-friend", quantity: 4 },
   { $id: "dc1-2", deck_id: "deck-1", card_id: "ming-lee-proud-parent", quantity: 4 },
   { $id: "dc1-3", deck_id: "deck-1", card_id: "isabela-madrigal-kind-cultivator", quantity: 4 },
@@ -320,32 +320,47 @@ const MOCK_DECK_CARDS: DeckCardDoc[] = [
   { $id: "dc1-6", deck_id: "deck-1", card_id: "celia-mae-friendly-receptionist", quantity: 4 },
   { $id: "dc1-7", deck_id: "deck-1", card_id: "meilin-lee-lead-vocalist", quantity: 4 },
   { $id: "dc1-8", deck_id: "deck-1", card_id: "priya-mangal-serious-music-lover", quantity: 4 },
-  { $id: "dc1-9", deck_id: "deck-1", card_id: "miriam-mendelsohn-ticket-holder", quantity: 4 },
-  { $id: "dc1-10", deck_id: "deck-1", card_id: "lilo-patient-weaver", quantity: 4 },
+  { $id: "dc1-9", deck_id: "deck-1", card_id: "carl-fredricksen-loving-husband", quantity: 4 },
+  { $id: "dc1-10", deck_id: "deck-1", card_id: "ellie-fredricksen-loving-wife", quantity: 4 },
+  { $id: "dc1-11", deck_id: "deck-1", card_id: "buzz-lightyear-grounded", quantity: 4 },
+  { $id: "dc1-12", deck_id: "deck-1", card_id: "buzz-lightyear-providing-cover", quantity: 4 },
+  { $id: "dc1-13", deck_id: "deck-1", card_id: "gopher-hunny-cook", quantity: 4 },
+  { $id: "dc1-14", deck_id: "deck-1", card_id: "russell-senior-wilderness-explorer", quantity: 4 },
+  { $id: "dc1-15", deck_id: "deck-1", card_id: "rapunzel-tower-defender", quantity: 4 },
 
-  // Emerald/Steel Darkwing
-  { $id: "dc2-1", deck_id: "deck-2", card_id: "kocoum-defender-of-the-tribe", quantity: 4 },
-  { $id: "dc2-2", deck_id: "deck-2", card_id: "pocahontas-guiding-the-tribe", quantity: 4 },
-  { $id: "dc2-3", deck_id: "deck-2", card_id: "woody-town-sheriff", quantity: 4 },
-  { $id: "dc2-4", deck_id: "deck-2", card_id: "abby-park-over-the-top", quantity: 4 },
-  { $id: "dc2-5", deck_id: "deck-2", card_id: "gaston-superior-archer", quantity: 4 },
-  { $id: "dc2-6", deck_id: "deck-2", card_id: "meilin-lee-losing-control", quantity: 4 },
-  { $id: "dc2-7", deck_id: "deck-2", card_id: "4-town-hottest-band-of-the-year", quantity: 4 },
-  { $id: "dc2-8", deck_id: "deck-2", card_id: "mike-wazowski-heroic-climber", quantity: 4 },
-  { $id: "dc2-9", deck_id: "deck-2", card_id: "boo-in-disguise", quantity: 4 },
-  { $id: "dc2-10", deck_id: "deck-2", card_id: "jasmine-vine-expert", quantity: 4 },
+  // Emerald/Steel Darkwing (Set 13) - 15 cards * 4 copies = 60 cards
+  { $id: "dc2-1", deck_id: "deck-2", card_id: "tod-clever-fox", quantity: 4 },
+  { $id: "dc2-2", deck_id: "deck-2", card_id: "russell-junior-wilderness-explorer", quantity: 4 },
+  { $id: "dc2-3", deck_id: "deck-2", card_id: "roo-hunny-rogue", quantity: 4 },
+  { $id: "dc2-4", deck_id: "deck-2", card_id: "winifred-exasperated-elephant", quantity: 4 },
+  { $id: "dc2-5", deck_id: "deck-2", card_id: "aladdin-doing-his-part", quantity: 4 },
+  { $id: "dc2-6", deck_id: "deck-2", card_id: "madam-mim-hummingbird", quantity: 4 },
+  { $id: "dc2-7", deck_id: "deck-2", card_id: "minnie-mouse-curious-adventurer", quantity: 4 },
+  { $id: "dc2-8", deck_id: "deck-2", card_id: "kevin-flightless-bird", quantity: 4 },
+  { $id: "dc2-9", deck_id: "deck-2", card_id: "violet-parr-super-resilient", quantity: 4 },
+  { $id: "dc2-10", deck_id: "deck-2", card_id: "aladdin-created-by-the-vine", quantity: 4 },
+  { $id: "dc2-11", deck_id: "deck-2", card_id: "willie-the-giant-created-by-the-vine", quantity: 4 },
+  { $id: "dc2-12", deck_id: "deck-2", card_id: "sprout-experiment-509", quantity: 4 },
+  { $id: "dc2-13", deck_id: "deck-2", card_id: "stitch-protector-of-frogs", quantity: 4 },
+  { $id: "dc2-14", deck_id: "deck-2", card_id: "sheriff-of-nottingham-vine-slayer", quantity: 4 },
+  { $id: "dc2-15", deck_id: "deck-2", card_id: "mata-meat-hut-waitress", quantity: 4 },
 
-  // Amethyst/Steel Monsters
-  { $id: "dc3-1", deck_id: "deck-3", card_id: "mike-wazowski-well-rounded-entertainer", quantity: 4 },
-  { $id: "dc3-2", deck_id: "deck-3", card_id: "the-horned-king-merciless-master", quantity: 4 },
-  { $id: "dc3-3", deck_id: "deck-3", card_id: "kanga-hunny-bard", quantity: 4 },
-  { $id: "dc3-4", deck_id: "deck-3", card_id: "sulley-the-new-boss", quantity: 4 },
-  { $id: "dc3-5", deck_id: "deck-3", card_id: "mirabel-madrigal-family-guardian", quantity: 4 },
-  { $id: "dc3-6", deck_id: "deck-3", card_id: "woody-town-sheriff", quantity: 4 },
-  { $id: "dc3-7", deck_id: "deck-3", card_id: "gaston-superior-archer", quantity: 4 },
-  { $id: "dc3-8", deck_id: "deck-3", card_id: "pocahontas-guiding-the-tribe", quantity: 4 },
-  { $id: "dc3-9", deck_id: "deck-3", card_id: "abby-park-over-the-top", quantity: 4 },
-  { $id: "dc3-10", deck_id: "deck-3", card_id: "boo-in-disguise", quantity: 4 },
+  // Amethyst/Steel Monsters (Set 13) - 15 cards * 4 copies = 60 cards
+  { $id: "dc3-1", deck_id: "deck-3", card_id: "fflewddur-fflam-luckless-bard", quantity: 4 },
+  { $id: "dc3-2", deck_id: "deck-3", card_id: "maleficent-exultant-spellcaster", quantity: 4 },
+  { $id: "dc3-3", deck_id: "deck-3", card_id: "winnie-the-pooh-hunny-archmage", quantity: 4 },
+  { $id: "dc3-4", deck_id: "deck-3", card_id: "panic-hammer-enthusiast", quantity: 4 },
+  { $id: "dc3-5", deck_id: "deck-3", card_id: "lumpy-hunny-druid", quantity: 4 },
+  { $id: "dc3-6", deck_id: "deck-3", card_id: "abu-wise-sultan", quantity: 4 },
+  { $id: "dc3-7", deck_id: "deck-3", card_id: "meilin-lee-superficially-obedient", quantity: 4 },
+  { $id: "dc3-8", deck_id: "deck-3", card_id: "genie-hard-to-grasp", quantity: 4 },
+  { $id: "dc3-9", deck_id: "deck-3", card_id: "violet-parr-force-field-practice", quantity: 4 },
+  { $id: "dc3-10", deck_id: "deck-3", card_id: "dr-hamsterviel-evil-observer", quantity: 4 },
+  { $id: "dc3-11", deck_id: "deck-3", card_id: "owl-hunny-ranger", quantity: 4 },
+  { $id: "dc3-12", deck_id: "deck-3", card_id: "megavolt-electrical-menace", quantity: 4 },
+  { $id: "dc3-13", deck_id: "deck-3", card_id: "darkwing-duck-shadowy-superhero", quantity: 4 },
+  { $id: "dc3-14", deck_id: "deck-3", card_id: "omnidroid-scanning-for-threats", quantity: 4 },
+  { $id: "dc3-15", deck_id: "deck-3", card_id: "flynn-rider-high-climbing-rogue", quantity: 4 },
 ];
 
 // Helper to parse cookies
