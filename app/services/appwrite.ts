@@ -308,6 +308,14 @@ const MOCK_DECKS: Deck[] = [
     creator_id: "system-1",
     is_public: true,
   },
+  {
+    $id: "deck-4",
+    id: "deck-4",
+    title: "Amber/Ruby Toy Story (Set 13)",
+    description: "A highly thematic and competitive Toy Story deck featuring Woody's leadership and Sid Phillips' toy surgeon modifications.",
+    creator_id: "system-1",
+    is_public: true,
+  },
 ];
 
 const MOCK_DECK_CARDS: DeckCardDoc[] = [
@@ -361,6 +369,23 @@ const MOCK_DECK_CARDS: DeckCardDoc[] = [
   { $id: "dc3-13", deck_id: "deck-3", card_id: "darkwing-duck-shadowy-superhero", quantity: 4 },
   { $id: "dc3-14", deck_id: "deck-3", card_id: "omnidroid-scanning-for-threats", quantity: 4 },
   { $id: "dc3-15", deck_id: "deck-3", card_id: "flynn-rider-high-climbing-rogue", quantity: 4 },
+
+  // Amber/Ruby Toy Story (Set 13) - 15 cards * 4 copies = 60 cards
+  { $id: "dc4-1", deck_id: "deck-4", card_id: "woody-leader-of-the-toys", quantity: 4 },
+  { $id: "dc4-2", deck_id: "deck-4", card_id: "woody-helping-a-friend", quantity: 4 },
+  { $id: "dc4-3", deck_id: "deck-4", card_id: "woody-town-sheriff", quantity: 4 },
+  { $id: "dc4-4", deck_id: "deck-4", card_id: "woody-buzz-lightyear-best-buddies", quantity: 4 },
+  { $id: "dc4-5", deck_id: "deck-4", card_id: "woody-waiting-for-a-friend", quantity: 4 },
+  { $id: "dc4-6", deck_id: "deck-4", card_id: "woody-jungle-guide", quantity: 4 },
+  { $id: "dc4-7", deck_id: "deck-4", card_id: "sid-phillips-toy-surgeon", quantity: 4 },
+  { $id: "dc4-8", deck_id: "deck-4", card_id: "jingle-joe-sid-s-toy", quantity: 4 },
+  { $id: "dc4-9", deck_id: "deck-4", card_id: "wind-up-frog-sid-s-toy", quantity: 4 },
+  { $id: "dc4-10", deck_id: "deck-4", card_id: "roller-bob-sid-s-toy", quantity: 4 },
+  { $id: "dc4-11", deck_id: "deck-4", card_id: "hand-in-the-box-sid-s-toy", quantity: 4 },
+  { $id: "dc4-12", deck_id: "deck-4", card_id: "babyhead-leader-of-sid-s-toys", quantity: 4 },
+  { $id: "dc4-13", deck_id: "deck-4", card_id: "bouncing-ducky-sid-s-toy", quantity: 4 },
+  { $id: "dc4-14", deck_id: "deck-4", card_id: "pterodactyl-janie-doll-sid-s-toy", quantity: 4 },
+  { $id: "dc4-15", deck_id: "deck-4", card_id: "isabela-madrigal-kind-cultivator", quantity: 4 },
 ];
 
 // Helper to parse cookies
