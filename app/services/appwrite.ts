@@ -517,7 +517,7 @@ export const authService = {
       return {
         $id: "mock-user-123",
         email: "lorcana.player@example.com",
-        name: "LoreWise Player",
+        name: "GlimmerForge Player",
       };
     }
     try {

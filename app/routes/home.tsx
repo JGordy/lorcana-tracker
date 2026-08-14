@@ -99,11 +99,11 @@ export default function Home() {
               zIndex: 1,
             })}
           >
-            LoreWise
+            GlimmerForge
           </Title>
 
           <Text size="md" c="gray.4" maw={600} mx="auto" style={{ zIndex: 1, lineHeight: 1.6 }}>
-            Stop guessing which decks you can build. Manage your physical collection card-by-card, and let LoreWise calculate ownership scores across meta decks instantly.
+            Stop guessing which decks you can build. Manage your physical collection card-by-card, and let GlimmerForge calculate ownership scores across meta decks instantly.
           </Text>
 
           <Group gap="md" mt="md" style={{ zIndex: 1 }}>

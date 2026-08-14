@@ -31,27 +31,34 @@ export function Navbar({ user }: NavbarProps) {
         zIndex: 100,
         backgroundColor: "rgba(10, 10, 10, 0.8)",
         backdropFilter: "blur(12px)",
-        borderBottom: `1px solid ${theme.colors.dark[8]}`,
+        borderBottom: `1px solid rgba(255, 255, 255, 0.06)`,
       })}
     >
-      <Container size="lg" h={64}>
-        <Group justify="between" h="100%" align="center">
+      <Container size="lg" style={{ height: 64, display: "flex", alignItems: "center" }}>
+        <Group justify="between" w="100%" align="center">
           {/* Logo and Nav links */}
           <Group gap="xl">
-            <Link to="/" style={{ textDecoration: "none" }}>
-              <Text
-                size="lg"
-                fw={900}
-                style={{
-                  letterSpacing: "1.5px",
-                  textTransform: "uppercase",
-                  background: "linear-gradient(to right, #a78bfa, #ec4899, #f43f5e)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                LoreWise
-              </Text>
+            <Link to="/" style={{ textDecoration: "none", outline: "none", display: "flex", alignItems: "center" }}>
+              <Group gap={8} align="center" wrap="nowrap">
+                <img
+                  src="/icon-transparent.png"
+                  alt="GlimmerForge"
+                  style={{ height: 40, width: "auto", display: "block", border: 0, outline: "none", flexShrink: 0 }}
+                />
+                <Text
+                  size="lg"
+                  fw={700}
+                  style={{
+                    fontFamily: "'Cinzel Decorative', serif",
+                    letterSpacing: "0.5px",
+                    background: "linear-gradient(to right, #a78bfa, #ec4899, #f43f5e)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  GlimmerForge
+                </Text>
+              </Group>
             </Link>
 
             {/* Desktop Navigation */}
