@@ -502,7 +502,7 @@ export default function Decks() {
                                 <Group gap="xs">
                                   <Tooltip
                                     label={
-                                      <Box style={{ width: 165, height: 230, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                      <Box style={{ width: 260, height: 365, display: "flex", justifyContent: "center", alignItems: "center" }}>
                                         {card.image_url ? (
                                           <img
                                             src={card.image_url}
