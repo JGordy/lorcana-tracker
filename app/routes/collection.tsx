@@ -18,24 +18,22 @@ import {
   Select,
 } from "@mantine/core";
 import { IconSearch, IconPlus, IconMinus, IconSparkles, IconCards } from "@tabler/icons-react";
-import { Query } from "appwrite";
-import { authService, dbService, COLLECTIONS, type Card as LorcanaCard, type UserCollectionItemDoc, isConfigured } from "../services/appwrite";
+import { authService, dbService } from "../services/appwrite.server";
+import { COLLECTIONS, type Card as LorcanaCard, type UserCollectionItemDoc } from "../types/lorcana";
 import { Navbar } from "../components/Navbar";
 
 // ---------------------------------------------------------
 // Loader (Runs on the Server in SSR mode)
 // ---------------------------------------------------------
 export async function loader({ request }: Route.LoaderArgs) {
-  const cookieHeader = request.headers.get("Cookie");
-
   // Get active session user
-  const user = await authService.getSessionUser();
+  const user = await authService.getSessionUser(request);
   const userId = user ? user.$id : null;
 
   // Retrieve master cards catalog and user's current inventory
   const [cards, userCollection] = await Promise.all([
-    dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], cookieHeader),
-    userId ? dbService.getCollection<UserCollectionItemDoc>(COLLECTIONS.USER_COLLECTIONS, [Query.equal("user_id", userId)], cookieHeader) : Promise.resolve([]),
+    dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], request),
+    userId ? dbService.getUserInventory(userId, request) : Promise.resolve([]),
   ]);
 
   return {
@@ -49,7 +47,6 @@ export async function loader({ request }: Route.LoaderArgs) {
 // Action (Runs on the Server in SSR mode)
 // ---------------------------------------------------------
 export async function action({ request }: Route.ActionArgs) {
-  const cookieHeader = request.headers.get("Cookie");
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -59,46 +56,7 @@ export async function action({ request }: Route.ActionArgs) {
     const quantity = parseInt(formData.get("quantity") as string, 10);
     const isFoil = formData.get("isFoil") === "true";
 
-    const result = await dbService.updateInventory(userId, cardId, quantity, isFoil, cookieHeader);
-
-    // If Appwrite database is not configured, send cookie header updates to match
-    if (!isConfigured) {
-      const allMockInventory = await dbService.getCollection<UserCollectionItemDoc>(
-        COLLECTIONS.USER_COLLECTIONS,
-        [],
-        cookieHeader
-      );
-      
-      // Manually apply the update to the server-side copy before serializing it
-      const existingIdx = allMockInventory.findIndex(
-        (item) => item.card_id === cardId && item.is_foil === isFoil && item.user_id === userId
-      );
-      if (existingIdx > -1) {
-        if (quantity <= 0) {
-          allMockInventory.splice(existingIdx, 1);
-        } else {
-          allMockInventory[existingIdx].quantity = quantity;
-        }
-      } else if (quantity > 0) {
-        allMockInventory.push({
-          $id: `inv-${Date.now()}`,
-          user_id: userId,
-          card_id: cardId,
-          quantity,
-          is_foil: isFoil,
-        });
-      }
-
-      const serialized = encodeURIComponent(JSON.stringify(allMockInventory));
-      return data(
-        { success: true, item: result },
-        {
-          headers: {
-            "Set-Cookie": `lorcana_user_inventory=${serialized}; Path=/; Max-Age=31536000; SameSite=Lax`,
-          },
-        }
-      );
-    }
+    const result = await dbService.updateInventory(userId, cardId, quantity, isFoil, request);
 
     return { success: true, item: result };
   }
