@@ -2,14 +2,16 @@ import type { Route } from "./+types/home";
 import { Link, useLoaderData } from "react-router";
 import { Container, Title, Text, Button, SimpleGrid, Card, Group, Stack, ThemeIcon, Box, Badge } from "@mantine/core";
 import { IconCards, IconDatabase, IconFilter, IconArrowRight, IconSparkles } from "@tabler/icons-react";
-import { authService } from "../services/appwrite";
+import { authService } from "../services/auth.server";
 import { Navbar } from "../components/Navbar";
+
+import { data } from "react-router";
 
 // ---------------------------------------------------------
 // Loader (Runs on the Server in SSR mode)
 // ---------------------------------------------------------
 export async function loader({ request }: Route.LoaderArgs) {
-  const user = await authService.getSessionUser();
+  const user = await authService.getSessionUser(request);
   return { user };
 }
 
@@ -21,13 +23,80 @@ export async function action({ request }: Route.ActionArgs) {
   const intent = formData.get("intent");
 
   if (intent === "logout") {
-    await authService.logout();
-    return { success: true };
+    const { cookieHeader } = await authService.logout(request);
+    return data(
+      { success: true },
+      {
+        headers: {
+          "Set-Cookie": cookieHeader,
+        },
+      }
+    );
+  }
+
+  if (intent === "auth-register") {
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !password || !name) {
+      return { error: "Name, email, and password are required." };
+    }
+
+    try {
+      const origin = new URL(request.url).origin;
+      const { user, cookieHeader } = await authService.register({
+        name,
+        email,
+        password,
+        origin,
+      });
+
+      return data(
+        { success: true, user },
+        {
+          headers: {
+            "Set-Cookie": cookieHeader,
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error("Register error:", error);
+      return { error: error?.message || "Failed to create account." };
+    }
+  }
+
+  if (intent === "auth-login") {
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !password) {
+      return { error: "Email and password are required." };
+    }
+
+    try {
+      const { session, cookieHeader } = await authService.login({ email, password });
+      return data(
+        { success: true, session },
+        {
+          headers: {
+            "Set-Cookie": cookieHeader,
+          },
+        }
+      );
+    } catch (error: any) {
+      console.error("Login error:", error);
+      return { error: error?.message || "Invalid email or password." };
+    }
   }
 
   if (intent === "login-demo") {
-    await authService.anonymousLogin();
-    return { success: true };
+    const { user, cookieHeader } = await authService.anonymousLogin(request);
+    const headers: Record<string, string> = {};
+    if (cookieHeader) {
+      headers["Set-Cookie"] = cookieHeader;
+    }
+    return data({ success: true, user }, { headers });
   }
 
   return { success: false };

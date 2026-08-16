@@ -23,7 +23,14 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { IconSearch, IconChevronDown, IconChevronUp, IconPlus, IconCheck, IconAlertTriangle, IconBrandYoutube, IconCards, IconInfinity, IconUpload } from "@tabler/icons-react";
-import { authService, dbService, isConfigured, COLLECTIONS, type UserCollectionItemDoc, type DeckWithProgress, type Card as LorcanaCard, SET_NAME_TO_INDEX } from "../services/appwrite";
+import { authService, dbService } from "../services/appwrite.server";
+import {
+  COLLECTIONS,
+  type UserCollectionItemDoc,
+  type DeckWithProgress,
+  type Card as LorcanaCard,
+  SET_NAME_TO_INDEX,
+} from "../types/lorcana";
 import { Navbar } from "../components/Navbar";
 
 // ---------------------------------------------------------
@@ -32,16 +39,15 @@ import { Navbar } from "../components/Navbar";
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const sort = (url.searchParams.get("sort") || "progress") as "progress" | "missing_cost" | "name";
-  const cookieHeader = request.headers.get("Cookie");
 
   // Get active session user
-  const user = await authService.getSessionUser();
+  const user = await authService.getSessionUser(request);
   const userId = user ? user.$id : null;
 
   // Retrieve public decks and cards concurrently
   const [decks, cards] = await Promise.all([
-    dbService.getDecksWithProgress(userId, sort, cookieHeader),
-    dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], cookieHeader),
+    dbService.getDecksWithProgress(userId, sort, request),
+    dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], request),
   ]);
 
   return { decks, cards, user, sort };
@@ -53,16 +59,26 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const formData = await request.formData();
   const intent = formData.get("intent");
-  const cookieHeader = request.headers.get("Cookie");
 
   if (intent === "logout") {
-    await authService.logout();
-    return { success: true };
+    const { cookieHeader } = await authService.logout(request);
+    return data(
+      { success: true },
+      {
+        headers: {
+          "Set-Cookie": cookieHeader,
+        },
+      }
+    );
   }
 
   if (intent === "login-demo") {
-    await authService.anonymousLogin();
-    return { success: true };
+    const { user, cookieHeader } = await authService.anonymousLogin(request);
+    const headers: Record<string, string> = {};
+    if (cookieHeader) {
+      headers["Set-Cookie"] = cookieHeader;
+    }
+    return data({ success: true, user }, { headers });
   }
 
   if (intent === "quick-add") {
@@ -71,24 +87,7 @@ export async function action({ request }: Route.ActionArgs) {
     const quantity = parseInt(formData.get("quantity") as string, 10);
     const isFoil = formData.get("isFoil") === "true";
 
-    const updatedItem = await dbService.updateInventory(userId, cardId, quantity, isFoil, cookieHeader);
-
-    if (!isConfigured) {
-      const allMockInventory = await dbService.getCollection<UserCollectionItemDoc>(
-        COLLECTIONS.USER_COLLECTIONS,
-        [],
-        cookieHeader
-      );
-      const serialized = encodeURIComponent(JSON.stringify(allMockInventory));
-      return data(
-        { success: true, updatedItem },
-        {
-          headers: {
-            "Set-Cookie": `lorcana_user_inventory=${serialized}; Path=/; Max-Age=31536000; SameSite=Lax`,
-          },
-        }
-      );
-    }
+    const updatedItem = await dbService.updateInventory(userId, cardId, quantity, isFoil, request);
     return { success: true, updatedItem };
   }
 
@@ -99,24 +98,7 @@ export async function action({ request }: Route.ActionArgs) {
     const cardsJson = formData.get("cards") as string;
     const cardsList = JSON.parse(cardsJson) as Array<{ cardId: string; quantity: number }>;
 
-    const result = await dbService.createDeck(userId, title, description, cardsList, cookieHeader);
-
-    if (!isConfigured) {
-      const [allMockDecks, allMockDeckCards] = await Promise.all([
-        dbService.getCollection<any>(COLLECTIONS.DECKS, [], cookieHeader),
-        dbService.getCollection<any>(COLLECTIONS.DECK_CARDS, [], cookieHeader),
-      ]);
-      
-      const serializedDecks = encodeURIComponent(JSON.stringify(allMockDecks));
-      const serializedDeckCards = encodeURIComponent(JSON.stringify(allMockDeckCards));
-
-      const headers = new Headers();
-      headers.append("Set-Cookie", `lorcana_user_decks=${serializedDecks}; Path=/; Max-Age=31536000; SameSite=Lax`);
-      headers.append("Set-Cookie", `lorcana_user_deck_cards=${serializedDeckCards}; Path=/; Max-Age=31536000; SameSite=Lax`);
-
-      return data({ success: true, result }, { headers });
-    }
-
+    const result = await dbService.createDeck(userId, title, description, cardsList, request);
     return { success: true, result };
   }
 
