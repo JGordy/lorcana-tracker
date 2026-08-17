@@ -13,6 +13,7 @@ vi.mock('../services/auth.server', () => ({
 
 import { loader as verifyLoader } from './verify';
 import { loader as homeLoader, action as homeAction } from './home';
+import { loader as logoutLoader, action as logoutAction } from './logout';
 import { authService } from '../services/auth.server';
 
 describe('Route Loaders & Actions', () => {
@@ -103,6 +104,37 @@ describe('Route Loaders & Actions', () => {
             expect(actionResponse.data || actionResponse).toMatchObject({
                 success: true,
             });
+        });
+    });
+
+    describe('/logout Loader and Action', () => {
+        it('should redirect to home on GET loader', async () => {
+            const response = await logoutLoader();
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toBe('/');
+        });
+
+        it('should call authService.logout and redirect to home with cleared cookie header', async () => {
+            vi.mocked(authService.logout).mockResolvedValueOnce({
+                cookieHeader: 'appwrite-session=; Max-Age=0; Path=/',
+            });
+
+            const request = new Request('http://localhost:5173/logout', {
+                method: 'POST',
+            });
+
+            const response = await logoutAction({
+                request,
+                params: {},
+                context: {},
+            } as any);
+
+            expect(authService.logout).toHaveBeenCalledWith(request);
+            expect(response.status).toBe(302);
+            expect(response.headers.get('Location')).toBe('/');
+            expect(response.headers.get('Set-Cookie')).toBe(
+                'appwrite-session=; Max-Age=0; Path=/',
+            );
         });
     });
 });
