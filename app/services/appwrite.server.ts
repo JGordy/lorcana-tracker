@@ -87,12 +87,37 @@ export const dbService = {
             const { databases } = request
                 ? createSessionClient(request)
                 : createAdminClient();
-            const response = await databases.listDocuments(
-                appwriteConfig.databaseId,
-                collectionId,
-                queries,
+
+            const hasLimit = queries.some(
+                (q) => typeof q === 'string' && q.includes('"method":"limit"'),
             );
-            return response.documents as unknown as T[];
+
+            if (hasLimit) {
+                const response = await databases.listDocuments(
+                    appwriteConfig.databaseId,
+                    collectionId,
+                    queries,
+                );
+                return response.documents as unknown as T[];
+            }
+
+            const allDocs: T[] = [];
+            const pageSize = 5000;
+            let offset = 0;
+            let total = 0;
+
+            do {
+                const response = await databases.listDocuments(
+                    appwriteConfig.databaseId,
+                    collectionId,
+                    [...queries, Query.limit(pageSize), Query.offset(offset)],
+                );
+                allDocs.push(...(response.documents as unknown as T[]));
+                total = response.total ?? response.documents.length;
+                offset += pageSize;
+            } while (allDocs.length < total);
+
+            return allDocs;
         } catch (error: any) {
             if (
                 error?.code === 404 ||

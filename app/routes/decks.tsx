@@ -470,13 +470,24 @@ export default function Decks() {
                                                 >
                                                     Trending Meta
                                                 </Badge>
+                                            ) : deck.creator_id === 'system' ? (
+                                                <Badge
+                                                    size="xs"
+                                                    variant="gradient"
+                                                    gradient={{
+                                                        from: 'cyan',
+                                                        to: 'blue',
+                                                    }}
+                                                >
+                                                    Featured Meta
+                                                </Badge>
                                             ) : (
                                                 <Badge
                                                     size="xs"
                                                     variant="outline"
                                                     color="blue"
                                                 >
-                                                    Local Deck
+                                                    Custom Deck
                                                 </Badge>
                                             )}
 
