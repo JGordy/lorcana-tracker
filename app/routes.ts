@@ -5,4 +5,5 @@ export default [
     route('decks', 'routes/decks.tsx'),
     route('collection', 'routes/collection.tsx'),
     route('verify', 'routes/verify.tsx'),
+    route('logout', 'routes/logout.tsx'),
 ] satisfies RouteConfig;
