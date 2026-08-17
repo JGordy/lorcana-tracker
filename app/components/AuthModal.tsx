@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFetcher } from 'react-router';
 import {
     Modal,
@@ -25,6 +25,12 @@ export function AuthModal({ opened, onClose }: AuthModalProps) {
     const isSubmitting = fetcher.state === 'submitting';
     const actionData: any = fetcher.data;
     const isRegisteredSuccess = mode === 'register' && actionData?.success;
+
+    useEffect(() => {
+        if (mode === 'login' && actionData?.success) {
+            onClose();
+        }
+    }, [actionData, mode, onClose]);
 
     return (
         <Modal
