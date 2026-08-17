@@ -40,13 +40,14 @@ describe('dbService (Server-Side)', () => {
         it('should fetch documents from databases service for other collections', async () => {
             mockDatabases.listDocuments.mockResolvedValueOnce({
                 documents: [{ $id: 'deck-1', title: 'Amethyst Deck' }],
+                total: 1,
             });
 
             const docs = await dbService.getCollection(COLLECTIONS.DECKS);
             expect(mockDatabases.listDocuments).toHaveBeenCalledWith(
                 'test_db',
                 'decks',
-                [],
+                expect.any(Array),
             );
             expect(docs).toHaveLength(1);
         });
