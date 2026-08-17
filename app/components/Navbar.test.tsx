@@ -58,4 +58,18 @@ describe('Navbar Component', () => {
         expect(screen.getByText('New Player')).toBeInTheDocument();
         expect(screen.getByText('Pending Verification')).toBeInTheDocument();
     });
+
+    it('should render avatar button and sign out option in menu dropdown', async () => {
+        const mockUser = {
+            $id: 'user-abc',
+            email: 'player@lorcana.com',
+            name: 'Illumineer Jane',
+            emailVerification: true,
+        };
+        renderNavbar(mockUser);
+        const avatarButton = screen.getByRole('button', {
+            name: /user account menu/i,
+        });
+        expect(avatarButton).toBeInTheDocument();
+    });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useSubmit } from 'react-router';
 import {
     Container,
@@ -8,6 +8,7 @@ import {
     Box,
     Menu,
     Avatar,
+    UnstyledButton,
 } from '@mantine/core';
 import {
     IconLogout,
@@ -32,8 +33,17 @@ export function Navbar({ user }: NavbarProps) {
     const submit = useSubmit();
     const [authModalOpened, setAuthModalOpened] = useState(false);
 
+    useEffect(() => {
+        if (user) {
+            setAuthModalOpened(false);
+        }
+    }, [user]);
+
     const handleLogout = () => {
-        submit({ intent: 'logout' }, { method: 'post', replace: true });
+        submit(
+            { intent: 'logout' },
+            { method: 'post', action: '/logout', replace: true },
+        );
     };
 
     return (
@@ -213,25 +223,38 @@ export function Navbar({ user }: NavbarProps) {
                                     <Menu
                                         shadow="md"
                                         width={220}
-                                        trigger="click"
                                         position="bottom-end"
+                                        withinPortal
                                     >
                                         <Menu.Target>
-                                            <Avatar
-                                                color="violet"
-                                                radius="xl"
-                                                size="md"
-                                                style={{ cursor: 'pointer' }}
+                                            <UnstyledButton
+                                                aria-label="User account menu"
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    borderRadius: '9999px',
+                                                    cursor: 'pointer',
+                                                }}
                                             >
-                                                <IconUser size={18} />
-                                            </Avatar>
+                                                <Avatar
+                                                    color="violet"
+                                                    radius="xl"
+                                                    size="md"
+                                                >
+                                                    <IconUser size={18} />
+                                                </Avatar>
+                                            </UnstyledButton>
                                         </Menu.Target>
                                         <Menu.Dropdown>
                                             <Menu.Label>
                                                 Signed in as
                                             </Menu.Label>
                                             <Menu.Item disabled>
-                                                <Text size="xs" fw={500}>
+                                                <Text
+                                                    size="xs"
+                                                    fw={500}
+                                                    truncate
+                                                >
                                                     {user.email}
                                                 </Text>
                                             </Menu.Item>
