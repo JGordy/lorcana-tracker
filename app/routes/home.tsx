@@ -1,284 +1,376 @@
-import type { Route } from "./+types/home";
-import { Link, useLoaderData } from "react-router";
-import { Container, Title, Text, Button, SimpleGrid, Card, Group, Stack, ThemeIcon, Box, Badge } from "@mantine/core";
-import { IconCards, IconDatabase, IconFilter, IconArrowRight, IconSparkles } from "@tabler/icons-react";
-import { authService } from "../services/auth.server";
-import { Navbar } from "../components/Navbar";
+import type { Route } from './+types/home';
+import { Link, useLoaderData } from 'react-router';
+import {
+    Container,
+    Title,
+    Text,
+    Button,
+    SimpleGrid,
+    Card,
+    Group,
+    Stack,
+    ThemeIcon,
+    Box,
+    Badge,
+} from '@mantine/core';
+import {
+    IconCards,
+    IconDatabase,
+    IconFilter,
+    IconArrowRight,
+    IconSparkles,
+} from '@tabler/icons-react';
+import { authService } from '../services/auth.server';
+import { Navbar } from '../components/Navbar';
 
-import { data } from "react-router";
+import { data } from 'react-router';
 
 // ---------------------------------------------------------
 // Loader (Runs on the Server in SSR mode)
 // ---------------------------------------------------------
 export async function loader({ request }: Route.LoaderArgs) {
-  const user = await authService.getSessionUser(request);
-  return { user };
+    const user = await authService.getSessionUser(request);
+    return { user };
 }
 
 // ---------------------------------------------------------
 // Action (Runs on the Server in SSR mode)
 // ---------------------------------------------------------
 export async function action({ request }: Route.ActionArgs) {
-  const formData = await request.formData();
-  const intent = formData.get("intent");
+    const formData = await request.formData();
+    const intent = formData.get('intent');
 
-  if (intent === "logout") {
-    const { cookieHeader } = await authService.logout(request);
-    return data(
-      { success: true },
-      {
-        headers: {
-          "Set-Cookie": cookieHeader,
-        },
-      }
-    );
-  }
-
-  if (intent === "auth-register") {
-    const name = formData.get("name") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    if (!email || !password || !name) {
-      return { error: "Name, email, and password are required." };
+    if (intent === 'logout') {
+        const { cookieHeader } = await authService.logout(request);
+        return data(
+            { success: true },
+            {
+                headers: {
+                    'Set-Cookie': cookieHeader,
+                },
+            },
+        );
     }
 
-    try {
-      const origin = new URL(request.url).origin;
-      const { user, cookieHeader } = await authService.register({
-        name,
-        email,
-        password,
-        origin,
-      });
+    if (intent === 'auth-register') {
+        const name = formData.get('name') as string;
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
 
-      return data(
-        { success: true, user },
-        {
-          headers: {
-            "Set-Cookie": cookieHeader,
-          },
+        if (!email || !password || !name) {
+            return { error: 'Name, email, and password are required.' };
         }
-      );
-    } catch (error: any) {
-      console.error("Register error:", error);
-      return { error: error?.message || "Failed to create account." };
-    }
-  }
 
-  if (intent === "auth-login") {
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+        try {
+            const origin = new URL(request.url).origin;
+            const { user, cookieHeader } = await authService.register({
+                name,
+                email,
+                password,
+                origin,
+            });
 
-    if (!email || !password) {
-      return { error: "Email and password are required." };
-    }
-
-    try {
-      const { session, cookieHeader } = await authService.login({ email, password });
-      return data(
-        { success: true, session },
-        {
-          headers: {
-            "Set-Cookie": cookieHeader,
-          },
+            return data(
+                { success: true, user },
+                {
+                    headers: {
+                        'Set-Cookie': cookieHeader,
+                    },
+                },
+            );
+        } catch (error: any) {
+            console.error('Register error:', error);
+            return { error: error?.message || 'Failed to create account.' };
         }
-      );
-    } catch (error: any) {
-      console.error("Login error:", error);
-      return { error: error?.message || "Invalid email or password." };
     }
-  }
 
-  if (intent === "login-demo") {
-    const { user, cookieHeader } = await authService.anonymousLogin(request);
-    const headers: Record<string, string> = {};
-    if (cookieHeader) {
-      headers["Set-Cookie"] = cookieHeader;
+    if (intent === 'auth-login') {
+        const email = formData.get('email') as string;
+        const password = formData.get('password') as string;
+
+        if (!email || !password) {
+            return { error: 'Email and password are required.' };
+        }
+
+        try {
+            const { session, cookieHeader } = await authService.login({
+                email,
+                password,
+            });
+            return data(
+                { success: true, session },
+                {
+                    headers: {
+                        'Set-Cookie': cookieHeader,
+                    },
+                },
+            );
+        } catch (error: any) {
+            console.error('Login error:', error);
+            return { error: error?.message || 'Invalid email or password.' };
+        }
     }
-    return data({ success: true, user }, { headers });
-  }
 
-  return { success: false };
+    if (intent === 'login-demo') {
+        const { user, cookieHeader } =
+            await authService.anonymousLogin(request);
+        const headers: Record<string, string> = {};
+        if (cookieHeader) {
+            headers['Set-Cookie'] = cookieHeader;
+        }
+        return data({ success: true, user }, { headers });
+    }
+
+    return { success: false };
 }
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Disney Lorcana Deck Matcher & Collection Tracker" },
-    {
-      name: "description",
-      content:
-        "Seamlessly catalog your Disney Lorcana card collections (foil & non-foil) and instantly calculate completion matches against competitive deck lists.",
-    },
-  ];
+export function meta(_args: Route.MetaArgs) {
+    return [
+        { title: 'Disney Lorcana Deck Matcher & Collection Tracker' },
+        {
+            name: 'description',
+            content:
+                'Seamlessly catalog your Disney Lorcana card collections (foil & non-foil) and instantly calculate completion matches against competitive deck lists.',
+        },
+    ];
 }
 
 export default function Home() {
-  const { user } = useLoaderData<typeof loader>();
+    const { user } = useLoaderData<typeof loader>();
 
-  const triggerDemoLogin = () => {
-    const form = document.createElement("form");
-    form.method = "post";
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = "intent";
-    input.value = "login-demo";
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-  };
+    const triggerDemoLogin = () => {
+        const form = document.createElement('form');
+        form.method = 'post';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'intent';
+        input.value = 'login-demo';
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    };
 
-  return (
-    <Box mih="100vh" bg="dark.9" c="gray.1">
-      <Navbar user={user} />
+    return (
+        <Box mih="100vh" bg="dark.9" c="gray.1">
+            <Navbar user={user} />
 
-      <Container size="lg" py={60}>
-        {/* Hero Section */}
-        <Stack align="center" gap="lg" style={{ textAlign: "center", position: "relative" }}>
-          {/* Subtle violet highlight blur background */}
-          <Box
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "320px",
-              height: "320px",
-              backgroundColor: "rgba(124, 58, 237, 0.08)",
-              filter: "blur(80px)",
-              borderRadius: "100%",
-              zIndex: 0,
-            }}
-          />
+            <Container size="lg" py={60}>
+                {/* Hero Section */}
+                <Stack
+                    align="center"
+                    gap="lg"
+                    style={{ textAlign: 'center', position: 'relative' }}
+                >
+                    {/* Subtle violet highlight blur background */}
+                    <Box
+                        style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            width: '320px',
+                            height: '320px',
+                            backgroundColor: 'rgba(124, 58, 237, 0.08)',
+                            filter: 'blur(80px)',
+                            borderRadius: '100%',
+                            zIndex: 0,
+                        }}
+                    />
 
-          <Badge variant="filled" color="violet" size="lg">
-            Lorcana Recommendation Engine
-          </Badge>
+                    <Badge variant="filled" color="violet" size="lg">
+                        Lorcana Recommendation Engine
+                    </Badge>
 
-          <Title
-            order={1}
-            size="h1"
-            style={(theme) => ({
-              fontWeight: 900,
-              fontSize: "3rem",
-              lineHeight: 1.15,
-              background: `linear-gradient(135deg, ${theme.colors.violet[2]} 0%, ${theme.colors.pink[2]} 100%)`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              zIndex: 1,
-            })}
-          >
-            GlimmerForge
-          </Title>
+                    <Title
+                        order={1}
+                        size="h1"
+                        style={(theme) => ({
+                            fontWeight: 900,
+                            fontSize: '3rem',
+                            lineHeight: 1.15,
+                            background: `linear-gradient(135deg, ${theme.colors.violet[2]} 0%, ${theme.colors.pink[2]} 100%)`,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            zIndex: 1,
+                        })}
+                    >
+                        GlimmerForge
+                    </Title>
 
-          <Text size="md" c="gray.4" maw={600} mx="auto" style={{ zIndex: 1, lineHeight: 1.6 }}>
-            Stop guessing which decks you can build. Manage your physical collection card-by-card, and let GlimmerForge calculate ownership scores across meta decks instantly.
-          </Text>
+                    <Text
+                        size="md"
+                        c="gray.4"
+                        maw={600}
+                        mx="auto"
+                        style={{ zIndex: 1, lineHeight: 1.6 }}
+                    >
+                        Stop guessing which decks you can build. Manage your
+                        physical collection card-by-card, and let GlimmerForge
+                        calculate ownership scores across meta decks instantly.
+                    </Text>
 
-          <Group gap="md" mt="md" style={{ zIndex: 1 }}>
-            <Button
-              component={Link}
-              to="/collection"
-              size="md"
-              variant="gradient"
-              gradient={{ from: "violet.6", to: "indigo.6" }}
-              rightSection={<IconArrowRight size={16} />}
-            >
-              Manage My Collection
-            </Button>
-            <Button
-              component={Link}
-              to="/decks"
-              size="md"
-              variant="outline"
-              color="gray"
-            >
-              Browse Public Decks
-            </Button>
-          </Group>
-        </Stack>
+                    <Group gap="md" mt="md" style={{ zIndex: 1 }}>
+                        <Button
+                            component={Link}
+                            to="/collection"
+                            size="md"
+                            variant="gradient"
+                            gradient={{ from: 'violet.6', to: 'indigo.6' }}
+                            rightSection={<IconArrowRight size={16} />}
+                        >
+                            Manage My Collection
+                        </Button>
+                        <Button
+                            component={Link}
+                            to="/decks"
+                            size="md"
+                            variant="outline"
+                            color="gray"
+                        >
+                            Browse Public Decks
+                        </Button>
+                    </Group>
+                </Stack>
 
-        {/* Feature Cards Grid */}
-        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg" mt={80}>
-          {/* Feature 1 */}
-          <Card padding="lg" radius="md" withBorder bg="dark.8" style={(theme) => ({ borderColor: theme.colors.dark[7] })}>
-            <ThemeIcon size="lg" radius="md" variant="light" color="violet" mb="md">
-              <IconCards size={20} />
-            </ThemeIcon>
-            <Text fw={700} size="md" mb="xs" c="gray.2">
-              Catalog Collection
-            </Text>
-            <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
-              Log both your normal and foil versions of cards from your physical Lorcana booster packs. Everything saves automatically to your secure inventory.
-            </Text>
-          </Card>
+                {/* Feature Cards Grid */}
+                <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg" mt={80}>
+                    {/* Feature 1 */}
+                    <Card
+                        padding="lg"
+                        radius="md"
+                        withBorder
+                        bg="dark.8"
+                        style={(theme) => ({
+                            borderColor: theme.colors.dark[7],
+                        })}
+                    >
+                        <ThemeIcon
+                            size="lg"
+                            radius="md"
+                            variant="light"
+                            color="violet"
+                            mb="md"
+                        >
+                            <IconCards size={20} />
+                        </ThemeIcon>
+                        <Text fw={700} size="md" mb="xs" c="gray.2">
+                            Catalog Collection
+                        </Text>
+                        <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
+                            Log both your normal and foil versions of cards from
+                            your physical Lorcana booster packs. Everything
+                            saves automatically to your secure inventory.
+                        </Text>
+                    </Card>
 
-          {/* Feature 2 */}
-          <Card padding="lg" radius="md" withBorder bg="dark.8" style={(theme) => ({ borderColor: theme.colors.dark[7] })}>
-            <ThemeIcon size="lg" radius="md" variant="light" color="indigo" mb="md">
-              <IconDatabase size={20} />
-            </ThemeIcon>
-            <Text fw={700} size="md" mb="xs" c="gray.2">
-              Progress Matcher
-            </Text>
-            <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
-              Our matching loop sums card versions and maps your inventory quantities against competitive deck recipes, generating a completion percentage badge.
-            </Text>
-          </Card>
+                    {/* Feature 2 */}
+                    <Card
+                        padding="lg"
+                        radius="md"
+                        withBorder
+                        bg="dark.8"
+                        style={(theme) => ({
+                            borderColor: theme.colors.dark[7],
+                        })}
+                    >
+                        <ThemeIcon
+                            size="lg"
+                            radius="md"
+                            variant="light"
+                            color="indigo"
+                            mb="md"
+                        >
+                            <IconDatabase size={20} />
+                        </ThemeIcon>
+                        <Text fw={700} size="md" mb="xs" c="gray.2">
+                            Progress Matcher
+                        </Text>
+                        <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
+                            Our matching loop sums card versions and maps your
+                            inventory quantities against competitive deck
+                            recipes, generating a completion percentage badge.
+                        </Text>
+                    </Card>
 
-          {/* Feature 3 */}
-          <Card padding="lg" radius="md" withBorder bg="dark.8" style={(theme) => ({ borderColor: theme.colors.dark[7] })}>
-            <ThemeIcon size="lg" radius="md" variant="light" color="rose" mb="md">
-              <IconFilter size={20} />
-            </ThemeIcon>
-            <Text fw={700} size="md" mb="xs" c="gray.2">
-              Smart Sort Engine
-            </Text>
-            <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
-              Sort decks by &quot;Highest Progress First&quot; or &quot;Lowest Cost to Complete&quot; to see exactly what you can play or buy next with the lowest expense.
-            </Text>
-          </Card>
-        </SimpleGrid>
+                    {/* Feature 3 */}
+                    <Card
+                        padding="lg"
+                        radius="md"
+                        withBorder
+                        bg="dark.8"
+                        style={(theme) => ({
+                            borderColor: theme.colors.dark[7],
+                        })}
+                    >
+                        <ThemeIcon
+                            size="lg"
+                            radius="md"
+                            variant="light"
+                            color="rose"
+                            mb="md"
+                        >
+                            <IconFilter size={20} />
+                        </ThemeIcon>
+                        <Text fw={700} size="md" mb="xs" c="gray.2">
+                            Smart Sort Engine
+                        </Text>
+                        <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
+                            Sort decks by &quot;Highest Progress First&quot; or
+                            &quot;Lowest Cost to Complete&quot; to see exactly
+                            what you can play or buy next with the lowest
+                            expense.
+                        </Text>
+                    </Card>
+                </SimpleGrid>
 
-        {/* Demo Callout */}
-        {!user && (
-          <Card
-            padding="xl"
-            radius="md"
-            withBorder
-            mt={80}
-            mx="auto"
-            maw={700}
-            bg="violet.9"
-            style={(theme) => ({
-              borderColor: theme.colors.violet[8],
-              backgroundColor: "rgba(124, 58, 237, 0.03)",
-              textAlign: "center",
-            })}
-          >
-            <Group justify="center" gap="xs" mb="xs">
-              <ThemeIcon variant="transparent" color="violet.4">
-                <IconSparkles size={20} />
-              </ThemeIcon>
-              <Text fw={700} size="md" c="violet.3">
-                Ready to test it in Action?
-              </Text>
-            </Group>
-            <Text size="xs" c="gray.4" mb="lg" style={{ lineHeight: 1.5 }}>
-              No Appwrite cloud database credentials required to try out the logic. Click the Sign In button below to launch an anonymous mock-user session. We will seed a sample inventory so you can see match percentages immediately!
-            </Text>
-            <Button
-              onClick={triggerDemoLogin}
-              variant="gradient"
-              gradient={{ from: "violet.6", to: "indigo.6" }}
-              size="sm"
-              fw={700}
-            >
-              Sign In & Seed Mock Collection
-            </Button>
-          </Card>
-        )}
-      </Container>
-    </Box>
-  );
+                {/* Demo Callout */}
+                {!user && (
+                    <Card
+                        padding="xl"
+                        radius="md"
+                        withBorder
+                        mt={80}
+                        mx="auto"
+                        maw={700}
+                        bg="violet.9"
+                        style={(theme) => ({
+                            borderColor: theme.colors.violet[8],
+                            backgroundColor: 'rgba(124, 58, 237, 0.03)',
+                            textAlign: 'center',
+                        })}
+                    >
+                        <Group justify="center" gap="xs" mb="xs">
+                            <ThemeIcon variant="transparent" color="violet.4">
+                                <IconSparkles size={20} />
+                            </ThemeIcon>
+                            <Text fw={700} size="md" c="violet.3">
+                                Ready to test it in Action?
+                            </Text>
+                        </Group>
+                        <Text
+                            size="xs"
+                            c="gray.4"
+                            mb="lg"
+                            style={{ lineHeight: 1.5 }}
+                        >
+                            No Appwrite cloud database credentials required to
+                            try out the logic. Click the Sign In button below to
+                            launch an anonymous mock-user session. We will seed
+                            a sample inventory so you can see match percentages
+                            immediately!
+                        </Text>
+                        <Button
+                            onClick={triggerDemoLogin}
+                            variant="gradient"
+                            gradient={{ from: 'violet.6', to: 'indigo.6' }}
+                            size="sm"
+                            fw={700}
+                        >
+                            Sign In & Seed Mock Collection
+                        </Button>
+                    </Card>
+                )}
+            </Container>
+        </Box>
+    );
 }

@@ -1,8 +1,9 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-sans:
+        'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 html,
@@ -14,7 +15,10 @@ body {
 
 /* Custom visual card hover states using dynamic CSS variables */
 .lorcana-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease !important;
 }
 
 .lorcana-card:hover {
@@ -87,14 +91,16 @@ body {
 
 /* Always-on animated shimmer sweeping diagonally */
 .shiny-shimmer-layer {
-    background: linear-gradient(125deg,
-            transparent 0%,
-            transparent 35%,
-            rgba(255, 255, 255, 0.06) 45%,
-            rgba(255, 255, 255, 0.18) 50%,
-            rgba(255, 255, 255, 0.06) 55%,
-            transparent 65%,
-            transparent 100%);
+    background: linear-gradient(
+        125deg,
+        transparent 0%,
+        transparent 35%,
+        rgba(255, 255, 255, 0.06) 45%,
+        rgba(255, 255, 255, 0.18) 50%,
+        rgba(255, 255, 255, 0.06) 55%,
+        transparent 65%,
+        transparent 100%
+    );
     background-size: 250% 250%;
     animation: shiny-sweep 3.5s ease-in-out infinite;
     mix-blend-mode: screen;
@@ -119,13 +125,19 @@ body {
 
 /* Rarity-specific sparkle border glow */
 .shiny-enchanted-glow {
-    box-shadow: 0 0 10px 2px rgba(180, 120, 255, 0.4), 0 0 20px 4px rgba(100, 200, 255, 0.2) !important;
+    box-shadow:
+        0 0 10px 2px rgba(180, 120, 255, 0.4),
+        0 0 20px 4px rgba(100, 200, 255, 0.2) !important;
 }
 
 .shiny-epic-glow {
-    box-shadow: 0 0 10px 2px rgba(255, 165, 0, 0.45), 0 0 20px 4px rgba(255, 80, 0, 0.2) !important;
+    box-shadow:
+        0 0 10px 2px rgba(255, 165, 0, 0.45),
+        0 0 20px 4px rgba(255, 80, 0, 0.2) !important;
 }
 
 .shiny-iconic-glow {
-    box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.5), 0 0 20px 4px rgba(255, 180, 0, 0.25) !important;
+    box-shadow:
+        0 0 10px 2px rgba(255, 215, 0, 0.5),
+        0 0 20px 4px rgba(255, 180, 0, 0.25) !important;
 }
