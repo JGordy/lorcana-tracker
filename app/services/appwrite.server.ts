@@ -595,50 +595,112 @@ export const dbService = {
             : createAdminClient();
 
         try {
-            // Find existing cards for this deck
+            // 1. Fetch existing cards for this deck
             const existingDeckCards = await this.getCollection<DeckCardDoc>(
                 COLLECTIONS.DECK_CARDS,
                 [Query.equal('deck_id', deckId)],
                 request,
             );
 
-            // Delete existing deck card records
-            await Promise.all(
-                existingDeckCards.map((dc) =>
-                    databases.deleteDocument(
-                        appwriteConfig.databaseId,
-                        COLLECTIONS.DECK_CARDS,
-                        dc.$id,
-                    ),
-                ),
-            );
+            const existingMap = new Map<string, DeckCardDoc>();
+            for (const doc of existingDeckCards) {
+                existingMap.set(doc.card_id, doc);
+            }
 
-            // Create new deck card records using ID.unique() to respect Appwrite 36-char ID limit
-            const newDeckCards: DeckCardDoc[] = cards
-                .filter((c) => c.quantity > 0)
-                .map((c) => ({
-                    $id: ID.unique(),
-                    deck_id: deckId,
-                    card_id: c.cardId,
-                    quantity: Math.min(Math.max(c.quantity, 1), 4),
-                }));
+            const targetMap = new Map<string, number>();
+            for (const item of cards) {
+                if (item.quantity > 0) {
+                    targetMap.set(
+                        item.cardId,
+                        Math.min(Math.max(item.quantity, 1), 4),
+                    );
+                }
+            }
 
-            await Promise.all(
-                newDeckCards.map((dc) =>
-                    databases.createDocument(
-                        appwriteConfig.databaseId,
-                        COLLECTIONS.DECK_CARDS,
-                        dc.$id,
-                        {
-                            deck_id: dc.deck_id,
-                            card_id: dc.card_id,
-                            quantity: dc.quantity,
-                        },
-                    ),
-                ),
-            );
+            const tasks: Promise<any>[] = [];
+            const resultCards: DeckCardDoc[] = [];
 
-            return newDeckCards;
+            // A. Deletions: documents that exist in DB but not in the incoming cards
+            for (const [cardId, existingDoc] of existingMap.entries()) {
+                if (!targetMap.has(cardId)) {
+                    tasks.push(
+                        databases
+                            .deleteDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.DECK_CARDS,
+                                existingDoc.$id,
+                            )
+                            .catch(() => null), // Gracefully handle if already deleted concurrently
+                    );
+                }
+            }
+
+            // B. Updates and Insertions
+            for (const [cardId, targetQty] of targetMap.entries()) {
+                const existingDoc = existingMap.get(cardId);
+
+                if (existingDoc) {
+                    if (existingDoc.quantity !== targetQty) {
+                        // Only update if quantity actually changed
+                        tasks.push(
+                            databases
+                                .updateDocument(
+                                    appwriteConfig.databaseId,
+                                    COLLECTIONS.DECK_CARDS,
+                                    existingDoc.$id,
+                                    {
+                                        quantity: targetQty,
+                                    },
+                                )
+                                .catch((err) => {
+                                    // If doc was missing or deleted concurrently, recreate it
+                                    if (err?.code === 404) {
+                                        return databases.createDocument(
+                                            appwriteConfig.databaseId,
+                                            COLLECTIONS.DECK_CARDS,
+                                            ID.unique(),
+                                            {
+                                                deck_id: deckId,
+                                                card_id: cardId,
+                                                quantity: targetQty,
+                                            },
+                                        );
+                                    }
+                                    throw err;
+                                }),
+                        );
+                    }
+                    resultCards.push({
+                        ...existingDoc,
+                        quantity: targetQty,
+                    });
+                } else {
+                    // Create new document
+                    const newDocId = ID.unique();
+                    const newDoc: DeckCardDoc = {
+                        $id: newDocId,
+                        deck_id: deckId,
+                        card_id: cardId,
+                        quantity: targetQty,
+                    };
+                    tasks.push(
+                        databases.createDocument(
+                            appwriteConfig.databaseId,
+                            COLLECTIONS.DECK_CARDS,
+                            newDocId,
+                            {
+                                deck_id: deckId,
+                                card_id: cardId,
+                                quantity: targetQty,
+                            },
+                        ),
+                    );
+                    resultCards.push(newDoc);
+                }
+            }
+
+            await Promise.all(tasks);
+            return resultCards;
         } catch (error: any) {
             console.error('Failed to update deck cards in Appwrite:', error);
             throw error;
