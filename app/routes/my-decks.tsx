@@ -7,7 +7,7 @@ import {
     data,
     Link,
 } from 'react-router';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     Container,
     Title,
@@ -248,6 +248,22 @@ export default function MyDecks() {
     const fetcher = useFetcher();
     const navigate = useNavigate();
 
+    // Optimistic local decks state
+    const [localDecks, setLocalDecks] = useState<DeckWithProgress[]>(decks);
+
+    // Synchronize with server loader revalidations
+    useEffect(() => {
+        setLocalDecks(decks);
+    }, [decks]);
+
+    // Rollback on server error
+    useEffect(() => {
+        if (fetcher.data && (fetcher.data as { error?: string }).error) {
+            setLocalDecks(decks);
+        }
+    }, [fetcher.data, decks]);
+
+    // Search and expand states
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedDecks, setExpandedDecks] = useState<Record<string, boolean>>(
         {},
@@ -288,11 +304,7 @@ export default function MyDecks() {
 
     // Add Cards Modal state
     const [addCardsModalOpen, setAddCardsModalOpen] = useState(false);
-    const [activeDeckForAddCards, setActiveDeckForAddCards] = useState<{
-        deck: DeckWithProgress;
-        meta: DeckMetadata;
-        displayInks: string[];
-    } | null>(null);
+    const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
     const [cardSearchQuery, setCardSearchQuery] = useState('');
     const [cardInkFilter, setCardInkFilter] = useState<string>('all');
     const [onlyCoreFilter, setOnlyCoreFilter] = useState<boolean>(true);
@@ -316,8 +328,8 @@ export default function MyDecks() {
     const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
     // Calculate quick stats
-    const totalDecksCount = decks.length;
-    const readyToPlayCount = decks.filter(
+    const totalDecksCount = localDecks.length;
+    const readyToPlayCount = localDecks.filter(
         (d) =>
             d.progress.ownedCount >= d.progress.totalCount &&
             d.progress.totalCount > 0,
@@ -560,7 +572,88 @@ export default function MyDecks() {
         setEditingDeck(null);
     };
 
-    // Card Quantity Adjustments (1-4 Max in Lorcana)
+    // Helper for Optimistic Deck Card Updates
+    const applyDeckCardsOptimistic = useCallback(
+        (
+            deckId: string,
+            updatedCardEntries: Array<{
+                card: LorcanaCard;
+                requiredQty: number;
+                ownedQty?: number;
+            }>,
+        ) => {
+            setLocalDecks((prevDecks) =>
+                prevDecks.map((d) => {
+                    if (d.$id !== deckId) return d;
+
+                    const newDeckCards = updatedCardEntries.filter(
+                        (c) => c.requiredQty > 0,
+                    );
+
+                    let ownedCount = 0;
+                    let totalCount = 0;
+                    const missingCards: Array<{
+                        cardId: string;
+                        required: number;
+                        owned: number;
+                        missing: number;
+                    }> = [];
+
+                    const mappedCards = newDeckCards.map((entry) => {
+                        const existingInDeck = d.cards.find(
+                            (c) => c.card.id === entry.card.id,
+                        );
+                        const ownedQty =
+                            entry.ownedQty !== undefined
+                                ? entry.ownedQty
+                                : existingInDeck?.ownedQty || 0;
+                        const requiredQty = Math.min(
+                            Math.max(entry.requiredQty, 1),
+                            4,
+                        );
+
+                        totalCount += requiredQty;
+                        const matched = Math.min(requiredQty, ownedQty);
+                        ownedCount += matched;
+
+                        if (ownedQty < requiredQty) {
+                            missingCards.push({
+                                cardId: entry.card.id,
+                                required: requiredQty,
+                                owned: ownedQty,
+                                missing: requiredQty - ownedQty,
+                            });
+                        }
+
+                        return {
+                            card: entry.card,
+                            requiredQty,
+                            ownedQty,
+                        };
+                    });
+
+                    const percentage =
+                        totalCount === 0
+                            ? 0
+                            : Math.round((ownedCount / totalCount) * 100);
+
+                    return {
+                        ...d,
+                        cards: mappedCards,
+                        progress: {
+                            percentage,
+                            ownedCount,
+                            totalCount,
+                            missingCards,
+                        },
+                    };
+                }),
+            );
+        },
+        [],
+    );
+
+    // Card Quantity Adjustments (1-4 Max in Lorcana) with Instant Optimistic UI
     const handleAdjustQuantity = (
         deck: DeckWithProgress,
         cardId: string,
@@ -568,72 +661,65 @@ export default function MyDecks() {
     ) => {
         if (!user) return;
 
-        const currentCards = deck.cards.map((c) => ({
+        const existingIndex = deck.cards.findIndex((c) => c.card.id === cardId);
+        if (existingIndex === -1 && delta <= 0) return;
+
+        let nextDeckCards: Array<{
+            card: LorcanaCard;
+            requiredQty: number;
+            ownedQty?: number;
+        }>;
+
+        if (existingIndex !== -1) {
+            const currentQty = deck.cards[existingIndex].requiredQty;
+            const newQty = currentQty + delta;
+            if (newQty <= 0) {
+                const removedCard = deck.cards[existingIndex].card;
+                nextDeckCards = deck.cards.filter((c) => c.card.id !== cardId);
+
+                setUndoState({
+                    deckId: deck.$id,
+                    deckTitle: deck.title,
+                    card: removedCard,
+                    previousQuantity: currentQty,
+                    timestamp: Date.now(),
+                });
+            } else {
+                const clamped = Math.min(newQty, 4);
+                nextDeckCards = deck.cards.map((c) =>
+                    c.card.id === cardId ? { ...c, requiredQty: clamped } : c,
+                );
+            }
+        } else {
+            const cardRef = cards.find((c) => c.id === cardId);
+            if (!cardRef) return;
+            nextDeckCards = [
+                ...deck.cards,
+                { card: cardRef, requiredQty: Math.min(delta, 4), ownedQty: 0 },
+            ];
+        }
+
+        // 1. Optimistic instant local update
+        applyDeckCardsOptimistic(deck.$id, nextDeckCards);
+
+        // 2. Submit to server in background
+        const payload = nextDeckCards.map((c) => ({
             cardId: c.card.id,
             quantity: c.requiredQty,
-            cardRef: c.card,
         }));
 
-        const existingIndex = currentCards.findIndex(
-            (c) => c.cardId === cardId,
-        );
-        if (existingIndex === -1) return;
-
-        const currentQty = currentCards[existingIndex].quantity;
-        const newQty = currentQty + delta;
-
-        if (newQty <= 0) {
-            // Remove card with Undo capability
-            const removedCardRef = currentCards[existingIndex].cardRef;
-            const updatedCards = currentCards.filter(
-                (c) => c.cardId !== cardId,
-            );
-
-            setUndoState({
+        fetcher.submit(
+            {
+                intent: 'update-deck-cards',
                 deckId: deck.$id,
-                deckTitle: deck.title,
-                card: removedCardRef,
-                previousQuantity: currentQty,
-                timestamp: Date.now(),
-            });
-
-            submit(
-                {
-                    intent: 'update-deck-cards',
-                    deckId: deck.$id,
-                    userId: user.$id,
-                    cards: JSON.stringify(
-                        updatedCards.map((c) => ({
-                            cardId: c.cardId,
-                            quantity: c.quantity,
-                        })),
-                    ),
-                },
-                { method: 'post' },
-            );
-        } else {
-            // Adjust between 1 and 4
-            const clampedQty = Math.min(newQty, 4);
-            currentCards[existingIndex].quantity = clampedQty;
-
-            submit(
-                {
-                    intent: 'update-deck-cards',
-                    deckId: deck.$id,
-                    userId: user.$id,
-                    cards: JSON.stringify(
-                        currentCards.map((c) => ({
-                            cardId: c.cardId,
-                            quantity: c.quantity,
-                        })),
-                    ),
-                },
-                { method: 'post' },
-            );
-        }
+                userId: user.$id,
+                cards: JSON.stringify(payload),
+            },
+            { method: 'post' },
+        );
     };
 
-    // Remove Card from Deck Directly
+    // Remove Card from Deck Directly with Instant Optimistic UI
     const handleRemoveCard = (
         deck: DeckWithProgress,
         card: LorcanaCard,
@@ -641,12 +727,7 @@ export default function MyDecks() {
     ) => {
         if (!user) return;
 
-        const updatedCards = deck.cards
-            .filter((c) => c.card.id !== card.id)
-            .map((c) => ({
-                cardId: c.card.id,
-                quantity: c.requiredQty,
-            }));
+        const nextDeckCards = deck.cards.filter((c) => c.card.id !== card.id);
 
         setUndoState({
             deckId: deck.$id,
@@ -656,54 +737,81 @@ export default function MyDecks() {
             timestamp: Date.now(),
         });
 
-        submit(
+        // 1. Optimistic instant local update
+        applyDeckCardsOptimistic(deck.$id, nextDeckCards);
+
+        // 2. Submit to server in background
+        const payload = nextDeckCards.map((c) => ({
+            cardId: c.card.id,
+            quantity: c.requiredQty,
+        }));
+
+        fetcher.submit(
             {
                 intent: 'update-deck-cards',
                 deckId: deck.$id,
                 userId: user.$id,
-                cards: JSON.stringify(updatedCards),
+                cards: JSON.stringify(payload),
             },
             { method: 'post' },
         );
     };
 
-    // Handle Undo of Card Removal
+    // Handle Undo of Card Removal with Instant Optimistic UI
     const handleUndo = () => {
         if (!undoState || !user) return;
 
-        const targetDeck = decks.find((d) => d.$id === undoState.deckId);
+        const targetDeck = localDecks.find((d) => d.$id === undoState.deckId);
         if (!targetDeck) {
             setUndoState(null);
             return;
         }
 
-        const cardsPayload = targetDeck.cards.map((c) => ({
+        const existingCard = targetDeck.cards.find(
+            (c) => c.card.id === undoState.card.id,
+        );
+        let nextDeckCards: Array<{
+            card: LorcanaCard;
+            requiredQty: number;
+            ownedQty?: number;
+        }>;
+
+        if (existingCard) {
+            const clamped = Math.min(
+                existingCard.requiredQty + undoState.previousQuantity,
+                4,
+            );
+            nextDeckCards = targetDeck.cards.map((c) =>
+                c.card.id === undoState.card.id
+                    ? { ...c, requiredQty: clamped }
+                    : c,
+            );
+        } else {
+            nextDeckCards = [
+                ...targetDeck.cards,
+                {
+                    card: undoState.card,
+                    requiredQty: undoState.previousQuantity,
+                    ownedQty: 0,
+                },
+            ];
+        }
+
+        // 1. Optimistic instant local update
+        applyDeckCardsOptimistic(undoState.deckId, nextDeckCards);
+
+        // 2. Submit to server in background
+        const payload = nextDeckCards.map((c) => ({
             cardId: c.card.id,
             quantity: c.requiredQty,
         }));
 
-        const existingIdx = cardsPayload.findIndex(
-            (c) => c.cardId === undoState.card.id,
-        );
-
-        if (existingIdx !== -1) {
-            cardsPayload[existingIdx].quantity = Math.min(
-                cardsPayload[existingIdx].quantity + undoState.previousQuantity,
-                4,
-            );
-        } else {
-            cardsPayload.push({
-                cardId: undoState.card.id,
-                quantity: undoState.previousQuantity,
-            });
-        }
-
-        submit(
+        fetcher.submit(
             {
                 intent: 'update-deck-cards',
                 deckId: undoState.deckId,
                 userId: user.$id,
-                cards: JSON.stringify(cardsPayload),
+                cards: JSON.stringify(payload),
             },
             { method: 'post' },
         );
@@ -711,34 +819,52 @@ export default function MyDecks() {
         setUndoState(null);
     };
 
-    // Add Card from Add Cards Modal
+    // Add Card from Add Cards Modal with Instant Optimistic UI
     const handleAddCardToDeck = (card: LorcanaCard) => {
-        if (!activeDeckForAddCards || !user) return;
+        if (!activeDeckId || !user) return;
 
-        const currentCards = activeDeckForAddCards.deck.cards.map((c) => ({
+        const targetDeck = localDecks.find((d) => d.$id === activeDeckId);
+        if (!targetDeck) return;
+
+        const existingCard = targetDeck.cards.find(
+            (c) => c.card.id === card.id,
+        );
+        const currentQty = existingCard ? existingCard.requiredQty : 0;
+        if (currentQty >= 4) return;
+
+        const nextQty = currentQty + 1;
+        let nextDeckCards: Array<{
+            card: LorcanaCard;
+            requiredQty: number;
+            ownedQty?: number;
+        }>;
+
+        if (existingCard) {
+            nextDeckCards = targetDeck.cards.map((c) =>
+                c.card.id === card.id ? { ...c, requiredQty: nextQty } : c,
+            );
+        } else {
+            nextDeckCards = [
+                ...targetDeck.cards,
+                { card, requiredQty: 1, ownedQty: 0 },
+            ];
+        }
+
+        // 1. Optimistic instant local update
+        applyDeckCardsOptimistic(activeDeckId, nextDeckCards);
+
+        // 2. Submit to server in background
+        const payload = nextDeckCards.map((c) => ({
             cardId: c.card.id,
             quantity: c.requiredQty,
         }));
 
-        const existingIdx = currentCards.findIndex((c) => c.cardId === card.id);
-        if (existingIdx !== -1) {
-            if (currentCards[existingIdx].quantity >= 4) {
-                return;
-            }
-            currentCards[existingIdx].quantity += 1;
-        } else {
-            currentCards.push({
-                cardId: card.id,
-                quantity: 1,
-            });
-        }
-
-        submit(
+        fetcher.submit(
             {
                 intent: 'update-deck-cards',
-                deckId: activeDeckForAddCards.deck.$id,
+                deckId: activeDeckId,
                 userId: user.$id,
-                cards: JSON.stringify(currentCards),
+                cards: JSON.stringify(payload),
             },
             { method: 'post' },
         );
@@ -748,7 +874,9 @@ export default function MyDecks() {
     const handleDeleteDeck = () => {
         if (!deckToDelete || !user) return;
 
-        submit(
+        setLocalDecks((prev) => prev.filter((d) => d.$id !== deckToDelete.$id));
+
+        fetcher.submit(
             {
                 intent: 'delete-deck',
                 deckId: deckToDelete.$id,
@@ -773,12 +901,68 @@ export default function MyDecks() {
         });
     };
 
-    // Quick Add to collection
+    // Quick Add to collection with Instant Optimistic UI
     const handleQuickAdd = (cardId: string, currentOwned: number) => {
         if (!user) {
             alert('Please sign in to update your inventory.');
             return;
         }
+
+        // Optimistically increment owned count across all local decks referencing this card
+        setLocalDecks((prevDecks) =>
+            prevDecks.map((d) => {
+                const hasCard = d.cards.some((c) => c.card.id === cardId);
+                if (!hasCard) return d;
+
+                let ownedCount = 0;
+                let totalCount = 0;
+                const missingCards: Array<{
+                    cardId: string;
+                    required: number;
+                    owned: number;
+                    missing: number;
+                }> = [];
+
+                const mappedCards = d.cards.map((c) => {
+                    const ownedQty =
+                        c.card.id === cardId ? currentOwned + 1 : c.ownedQty;
+                    totalCount += c.requiredQty;
+                    const matched = Math.min(c.requiredQty, ownedQty);
+                    ownedCount += matched;
+
+                    if (ownedQty < c.requiredQty) {
+                        missingCards.push({
+                            cardId: c.card.id,
+                            required: c.requiredQty,
+                            owned: ownedQty,
+                            missing: c.requiredQty - ownedQty,
+                        });
+                    }
+
+                    return {
+                        ...c,
+                        ownedQty,
+                    };
+                });
+
+                const percentage =
+                    totalCount === 0
+                        ? 0
+                        : Math.round((ownedCount / totalCount) * 100);
+
+                return {
+                    ...d,
+                    cards: mappedCards,
+                    progress: {
+                        percentage,
+                        ownedCount,
+                        totalCount,
+                        missingCards,
+                    },
+                };
+            }),
+        );
+
         fetcher.submit(
             {
                 intent: 'quick-add',
@@ -790,6 +974,64 @@ export default function MyDecks() {
             { method: 'post' },
         );
     };
+
+    // Process decks and extract metadata from live localDecks
+    const processedDecks = useMemo(() => {
+        return localDecks
+            .filter((deck) => {
+                const meta = parseDeckMetadata(deck.description);
+                const desc = meta.description.toLowerCase();
+                const title = deck.title.toLowerCase();
+                const q = searchQuery.toLowerCase();
+                return title.includes(q) || desc.includes(q);
+            })
+            .map((deck) => {
+                const meta = parseDeckMetadata(deck.description);
+
+                // Calculate active inks: combine chosen deck inks and any inks in added cards
+                const cardInks = Array.from(
+                    new Set(
+                        deck.cards.flatMap((dc) =>
+                            dc.card.ink_color
+                                ? dc.card.ink_color.split('/')
+                                : [],
+                        ),
+                    ),
+                ).map((i) => i.toLowerCase().trim());
+
+                const combinedInks = Array.from(
+                    new Set([...(meta.inks || []), ...cardInks]),
+                ).filter(Boolean);
+
+                const displayInks = combinedInks.length > 0 ? combinedInks : [];
+
+                const isCoreLegal =
+                    meta.format === 'core' &&
+                    (deck.cards.length === 0 ||
+                        deck.cards.every((dc) =>
+                            dc.card.formats?.includes('core'),
+                        ));
+
+                const totalCards = deck.cards.reduce(
+                    (sum, c) => sum + c.requiredQty,
+                    0,
+                );
+
+                return {
+                    ...deck,
+                    meta,
+                    displayInks,
+                    isCoreLegal,
+                    totalCardsCount: totalCards,
+                };
+            });
+    }, [localDecks, searchQuery]);
+
+    // Active deck for the Add Cards modal (derived dynamically from live processedDecks)
+    const activeDeckForAddCards = useMemo(() => {
+        if (!activeDeckId) return null;
+        return processedDecks.find((d) => d.$id === activeDeckId) || null;
+    }, [activeDeckId, processedDecks]);
 
     // Filter available cards in "Add Cards" Modal
     const filteredCatalogCards = useMemo(() => {
@@ -843,58 +1085,6 @@ export default function MyDecks() {
         onlyCoreFilter,
         activeDeckForAddCards,
     ]);
-
-    // Process decks and extract metadata
-    const processedDecks = useMemo(() => {
-        return decks
-            .filter((deck) => {
-                const meta = parseDeckMetadata(deck.description);
-                const desc = meta.description.toLowerCase();
-                const title = deck.title.toLowerCase();
-                const q = searchQuery.toLowerCase();
-                return title.includes(q) || desc.includes(q);
-            })
-            .map((deck) => {
-                const meta = parseDeckMetadata(deck.description);
-
-                // Calculate active inks: combine chosen deck inks and any inks in added cards
-                const cardInks = Array.from(
-                    new Set(
-                        deck.cards.flatMap((dc) =>
-                            dc.card.ink_color
-                                ? dc.card.ink_color.split('/')
-                                : [],
-                        ),
-                    ),
-                ).map((i) => i.toLowerCase().trim());
-
-                const combinedInks = Array.from(
-                    new Set([...(meta.inks || []), ...cardInks]),
-                ).filter(Boolean);
-
-                const displayInks = combinedInks.length > 0 ? combinedInks : [];
-
-                const isCoreLegal =
-                    meta.format === 'core' &&
-                    (deck.cards.length === 0 ||
-                        deck.cards.every((dc) =>
-                            dc.card.formats?.includes('core'),
-                        ));
-
-                const totalCards = deck.cards.reduce(
-                    (sum, c) => sum + c.requiredQty,
-                    0,
-                );
-
-                return {
-                    ...deck,
-                    meta,
-                    displayInks,
-                    isCoreLegal,
-                    totalCardsCount: totalCards,
-                };
-            });
-    }, [decks, searchQuery]);
 
     // Helper component for format selector
     const renderFormatSelector = (
@@ -1759,13 +1949,8 @@ export default function MyDecks() {
                                                         <IconPlus size={14} />
                                                     }
                                                     onClick={() => {
-                                                        setActiveDeckForAddCards(
-                                                            {
-                                                                deck,
-                                                                meta: deck.meta,
-                                                                displayInks:
-                                                                    deck.displayInks,
-                                                            },
+                                                        setActiveDeckId(
+                                                            deck.$id,
                                                         );
                                                         setCardSearchQuery('');
                                                         setCardInkFilter(
@@ -2543,7 +2728,10 @@ export default function MyDecks() {
             {/* Modal: Add Cards to Deck (with Smart Auto-Filtering & Large Grid Artwork) */}
             <Modal
                 opened={addCardsModalOpen}
-                onClose={() => setAddCardsModalOpen(false)}
+                onClose={() => {
+                    setAddCardsModalOpen(false);
+                    setActiveDeckId(null);
+                }}
                 title={
                     <Group gap="xs">
                         <IconCards size={22} color="#a855f7" />
@@ -2903,7 +3091,10 @@ export default function MyDecks() {
                         <Button
                             variant="gradient"
                             gradient={{ from: 'violet.6', to: 'indigo.6' }}
-                            onClick={() => setAddCardsModalOpen(false)}
+                            onClick={() => {
+                                setAddCardsModalOpen(false);
+                                setActiveDeckId(null);
+                            }}
                         >
                             Done
                         </Button>
