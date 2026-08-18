@@ -1,4 +1,4 @@
-import { Query } from 'node-appwrite';
+import { Query, ID } from 'node-appwrite';
 import { appwriteConfig } from '../utils/appwrite/config';
 import {
     createSessionClient,
@@ -416,6 +416,111 @@ export const dbService = {
         });
     },
 
+    async getUserDecksWithProgress(
+        userId: string,
+        sort: 'progress' | 'missing_cost' | 'name' = 'progress',
+        request?: Request,
+    ): Promise<DeckWithProgress[]> {
+        if (!userId) return [];
+
+        const [cards, userCollection, userDecks, allDeckCards] =
+            await Promise.all([
+                this.getCollection<Card>(COLLECTIONS.CARDS, [], request),
+                this.getCollection<UserCollectionItemDoc>(
+                    COLLECTIONS.USER_COLLECTIONS,
+                    [Query.equal('user_id', userId)],
+                    request,
+                ),
+                this.getCollection<Deck>(
+                    COLLECTIONS.DECKS,
+                    [Query.equal('creator_id', userId)],
+                    request,
+                ),
+                this.getCollection<DeckCardDoc>(
+                    COLLECTIONS.DECK_CARDS,
+                    [],
+                    request,
+                ),
+            ]);
+
+        const ownedMap = new Map<string, number>();
+        for (const item of userCollection) {
+            ownedMap.set(
+                item.card_id,
+                (ownedMap.get(item.card_id) || 0) + item.quantity,
+            );
+        }
+
+        const cardsMap = new Map<string, Card>();
+        for (const card of cards) {
+            cardsMap.set(card.id, card);
+        }
+
+        const resolvedDecks: DeckWithProgress[] = [];
+
+        for (const deck of userDecks) {
+            const deckJunctions = allDeckCards.filter(
+                (dc) => dc.deck_id === deck.$id || deck.id === dc.deck_id,
+            );
+            const progress = calculateDeckProgress(
+                userCollection,
+                deckJunctions,
+            );
+            const cardsInDeck = deckJunctions.map((dc) => {
+                const cardDetails = cardsMap.get(dc.card_id) || {
+                    $id: dc.card_id,
+                    id: dc.card_id,
+                    name: 'Unknown Card',
+                    set: 'Unknown',
+                    number: 0,
+                    ink_color: 'Neutral',
+                    cost: 0,
+                    inkwell: true,
+                    strength: null,
+                    willpower: null,
+                    lore: 0,
+                    type: [],
+                    classifications: [],
+                    rarity: 'Common',
+                    image_url: '',
+                    formats: ['core', 'infinity'],
+                };
+                return {
+                    card: cardDetails,
+                    requiredQty: dc.quantity,
+                    ownedQty: ownedMap.get(dc.card_id) || 0,
+                };
+            });
+
+            resolvedDecks.push({
+                ...deck,
+                progress,
+                cards: cardsInDeck,
+                is_trending: false,
+            });
+        }
+
+        return resolvedDecks.sort((a, b) => {
+            if (sort === 'progress') {
+                if (b.progress.percentage !== a.progress.percentage) {
+                    return b.progress.percentage - a.progress.percentage;
+                }
+                return b.progress.totalCount - a.progress.totalCount;
+            }
+
+            if (sort === 'missing_cost') {
+                const missingA = a.progress.totalCount - a.progress.ownedCount;
+                const missingB = b.progress.totalCount - b.progress.ownedCount;
+                if (missingA !== missingB) {
+                    return missingA - missingB;
+                }
+                return b.progress.percentage - a.progress.percentage;
+            }
+
+            return a.title.localeCompare(b.title);
+        });
+    },
+
     async createDeck(
         userId: string,
         title: string,
@@ -423,7 +528,7 @@ export const dbService = {
         cards: Array<{ cardId: string; quantity: number }>,
         request?: Request,
     ): Promise<{ deck: Deck; deckCards: DeckCardDoc[] }> {
-        const deckId = `deck-${Date.now()}`;
+        const deckId = ID.unique();
         const newDeck: Deck = {
             $id: deckId,
             id: deckId,
@@ -433,11 +538,11 @@ export const dbService = {
             is_public: true,
         };
 
-        const newDeckCards: DeckCardDoc[] = cards.map((c, index) => ({
-            $id: `dc-${deckId}-${index}`,
+        const newDeckCards: DeckCardDoc[] = cards.map((c) => ({
+            $id: ID.unique(),
             deck_id: deckId,
             card_id: c.cardId,
-            quantity: c.quantity,
+            quantity: Math.min(Math.max(c.quantity, 1), 4),
         }));
 
         const { databases } = request
@@ -475,6 +580,135 @@ export const dbService = {
             return { deck: newDeck, deckCards: newDeckCards };
         } catch (error: any) {
             console.error('Failed to create deck in Appwrite:', error);
+            throw error;
+        }
+    },
+
+    async updateDeckCards(
+        deckId: string,
+        userId: string,
+        cards: Array<{ cardId: string; quantity: number }>,
+        request?: Request,
+    ): Promise<DeckCardDoc[]> {
+        const { databases } = request
+            ? createSessionClient(request)
+            : createAdminClient();
+
+        try {
+            // Find existing cards for this deck
+            const existingDeckCards = await this.getCollection<DeckCardDoc>(
+                COLLECTIONS.DECK_CARDS,
+                [Query.equal('deck_id', deckId)],
+                request,
+            );
+
+            // Delete existing deck card records
+            await Promise.all(
+                existingDeckCards.map((dc) =>
+                    databases.deleteDocument(
+                        appwriteConfig.databaseId,
+                        COLLECTIONS.DECK_CARDS,
+                        dc.$id,
+                    ),
+                ),
+            );
+
+            // Create new deck card records using ID.unique() to respect Appwrite 36-char ID limit
+            const newDeckCards: DeckCardDoc[] = cards
+                .filter((c) => c.quantity > 0)
+                .map((c) => ({
+                    $id: ID.unique(),
+                    deck_id: deckId,
+                    card_id: c.cardId,
+                    quantity: Math.min(Math.max(c.quantity, 1), 4),
+                }));
+
+            await Promise.all(
+                newDeckCards.map((dc) =>
+                    databases.createDocument(
+                        appwriteConfig.databaseId,
+                        COLLECTIONS.DECK_CARDS,
+                        dc.$id,
+                        {
+                            deck_id: dc.deck_id,
+                            card_id: dc.card_id,
+                            quantity: dc.quantity,
+                        },
+                    ),
+                ),
+            );
+
+            return newDeckCards;
+        } catch (error: any) {
+            console.error('Failed to update deck cards in Appwrite:', error);
+            throw error;
+        }
+    },
+
+    async updateDeckDetails(
+        deckId: string,
+        userId: string,
+        title: string,
+        description: string,
+        request?: Request,
+    ): Promise<Deck> {
+        const { databases } = request
+            ? createSessionClient(request)
+            : createAdminClient();
+
+        try {
+            return (await databases.updateDocument(
+                appwriteConfig.databaseId,
+                COLLECTIONS.DECKS,
+                deckId,
+                {
+                    title,
+                    description,
+                },
+            )) as unknown as Deck;
+        } catch (error: any) {
+            console.error('Failed to update deck in Appwrite:', error);
+            throw error;
+        }
+    },
+
+    async deleteDeck(
+        deckId: string,
+        userId: string,
+        request?: Request,
+    ): Promise<boolean> {
+        const { databases } = request
+            ? createSessionClient(request)
+            : createAdminClient();
+
+        try {
+            const existingDeckCards = await this.getCollection<DeckCardDoc>(
+                COLLECTIONS.DECK_CARDS,
+                [Query.equal('deck_id', deckId)],
+                request,
+            );
+
+            await Promise.all(
+                existingDeckCards.map((dc) =>
+                    databases
+                        .deleteDocument(
+                            appwriteConfig.databaseId,
+                            COLLECTIONS.DECK_CARDS,
+                            dc.$id,
+                        )
+                        .catch(() => null),
+                ),
+            );
+
+            await databases.deleteDocument(
+                appwriteConfig.databaseId,
+                COLLECTIONS.DECKS,
+                deckId,
+            );
+
+            return true;
+        } catch (error: any) {
+            console.error('Failed to delete deck in Appwrite:', error);
             throw error;
         }
     },

@@ -116,4 +116,88 @@ describe('dbService (Server-Side)', () => {
             expect(result.quantity).toBe(2);
         });
     });
+
+    describe('Deck Management Services', () => {
+        it('should create deck and deck card junctions enforcing 1-4 quantity bounds', async () => {
+            mockDatabases.createDocument.mockResolvedValue({});
+
+            const result = await dbService.createDeck(
+                'user-1',
+                'Ruby/Steel Rush',
+                'Aggro deck',
+                [
+                    { cardId: 'card-1', quantity: 5 }, // should clamp to 4
+                    { cardId: 'card-2', quantity: 0 }, // should clamp to 1
+                ],
+            );
+
+            expect(result.deck.title).toBe('Ruby/Steel Rush');
+            expect(result.deckCards[0].quantity).toBe(4);
+            expect(result.deckCards[1].quantity).toBe(1);
+            expect(mockDatabases.createDocument).toHaveBeenCalled();
+        });
+
+        it('should update deck details successfully', async () => {
+            mockDatabases.updateDocument.mockResolvedValueOnce({
+                $id: 'deck-1',
+                title: 'New Deck Title',
+                description: 'Updated notes',
+            });
+
+            const result = await dbService.updateDeckDetails(
+                'deck-1',
+                'user-1',
+                'New Deck Title',
+                'Updated notes',
+            );
+
+            expect(result.title).toBe('New Deck Title');
+            expect(mockDatabases.updateDocument).toHaveBeenCalledWith(
+                'test_db',
+                'decks',
+                'deck-1',
+                { title: 'New Deck Title', description: 'Updated notes' },
+            );
+        });
+
+        it('should delete deck and its deck cards', async () => {
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [{ $id: 'dc-1', deck_id: 'deck-1' }],
+                total: 1,
+            });
+            mockDatabases.deleteDocument.mockResolvedValue({});
+
+            const result = await dbService.deleteDeck('deck-1', 'user-1');
+
+            expect(result).toBe(true);
+            expect(mockDatabases.deleteDocument).toHaveBeenCalledWith(
+                'test_db',
+                'decks',
+                'deck-1',
+            );
+        });
+
+        it('should update deck cards by removing old cards and inserting new ones', async () => {
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [{ $id: 'dc-old-1', deck_id: 'deck-1' }],
+                total: 1,
+            });
+            mockDatabases.deleteDocument.mockResolvedValue({});
+            mockDatabases.createDocument.mockResolvedValue({});
+
+            const result = await dbService.updateDeckCards('deck-1', 'user-1', [
+                { cardId: 'card-new', quantity: 3 },
+            ]);
+
+            expect(result).toHaveLength(1);
+            expect(result[0].quantity).toBe(3);
+            expect(mockDatabases.deleteDocument).toHaveBeenCalled();
+            expect(mockDatabases.createDocument).toHaveBeenCalled();
+        });
+
+        it('should return empty array for getUserDecksWithProgress if userId is empty', async () => {
+            const result = await dbService.getUserDecksWithProgress('');
+            expect(result).toEqual([]);
+        });
+    });
 });
