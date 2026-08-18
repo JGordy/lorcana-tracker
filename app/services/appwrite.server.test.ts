@@ -65,6 +65,18 @@ describe('dbService (Server-Side)', () => {
 
     describe('updateInventory', () => {
         it('should delete document if quantity is 0 or less', async () => {
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [
+                    {
+                        $id: 'inv-1',
+                        user_id: 'user-1',
+                        card_id: 'mickey-card',
+                        quantity: 1,
+                        is_foil: false,
+                    },
+                ],
+                total: 1,
+            });
             mockDatabases.deleteDocument.mockResolvedValueOnce({});
 
             const result = await dbService.updateInventory(
@@ -73,13 +85,29 @@ describe('dbService (Server-Side)', () => {
                 0,
                 false,
             );
-            expect(mockDatabases.deleteDocument).toHaveBeenCalled();
+            expect(mockDatabases.deleteDocument).toHaveBeenCalledWith(
+                'test_db',
+                'user_collections',
+                'inv-1',
+            );
             expect(result.quantity).toBe(0);
         });
 
-        it('should update document if quantity is greater than 0', async () => {
+        it('should update document if quantity is greater than 0 and document exists', async () => {
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [
+                    {
+                        $id: 'inv-1',
+                        user_id: 'user-1',
+                        card_id: 'mickey-card',
+                        quantity: 1,
+                        is_foil: false,
+                    },
+                ],
+                total: 1,
+            });
             mockDatabases.updateDocument.mockResolvedValueOnce({
-                $id: 'user-1_mickey-card_normal',
+                $id: 'inv-1',
                 user_id: 'user-1',
                 card_id: 'mickey-card',
                 quantity: 3,
@@ -92,14 +120,22 @@ describe('dbService (Server-Side)', () => {
                 3,
                 false,
             );
-            expect(mockDatabases.updateDocument).toHaveBeenCalled();
+            expect(mockDatabases.updateDocument).toHaveBeenCalledWith(
+                'test_db',
+                'user_collections',
+                'inv-1',
+                { quantity: 3 },
+            );
             expect(result.quantity).toBe(3);
         });
 
         it('should create document if not found on update', async () => {
-            mockDatabases.updateDocument.mockRejectedValueOnce({ code: 404 });
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [],
+                total: 0,
+            });
             mockDatabases.createDocument.mockResolvedValueOnce({
-                $id: 'user-1_mickey-card_normal',
+                $id: 'new-inv-doc',
                 user_id: 'user-1',
                 card_id: 'mickey-card',
                 quantity: 2,

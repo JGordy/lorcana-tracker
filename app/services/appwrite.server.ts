@@ -155,25 +155,40 @@ export const dbService = {
         isFoil: boolean,
         request?: Request,
     ): Promise<UserCollectionItemDoc> {
-        const docId = `${userId}_${cardId.replace(/[^a-zA-Z0-9]/g, '-')}_${isFoil ? 'foil' : 'normal'}`;
-
         const { databases } = request
             ? createSessionClient(request)
             : createAdminClient();
 
         try {
+            // Find existing user collection document by user_id, card_id, and is_foil
+            const existingDocs =
+                await this.getCollection<UserCollectionItemDoc>(
+                    COLLECTIONS.USER_COLLECTIONS,
+                    [
+                        Query.equal('user_id', userId),
+                        Query.equal('card_id', cardId),
+                        Query.equal('is_foil', isFoil),
+                    ],
+                    request,
+                );
+
+            const existingDoc =
+                existingDocs.length > 0 ? existingDocs[0] : null;
+
             if (quantity <= 0) {
-                try {
-                    await databases.deleteDocument(
-                        appwriteConfig.databaseId,
-                        COLLECTIONS.USER_COLLECTIONS,
-                        docId,
-                    );
-                } catch (e: any) {
-                    if (e.code !== 404) throw e;
+                if (existingDoc) {
+                    try {
+                        await databases.deleteDocument(
+                            appwriteConfig.databaseId,
+                            COLLECTIONS.USER_COLLECTIONS,
+                            existingDoc.$id,
+                        );
+                    } catch (e: any) {
+                        if (e.code !== 404) throw e;
+                    }
                 }
                 return {
-                    $id: docId,
+                    $id: existingDoc ? existingDoc.$id : ID.unique(),
                     user_id: userId,
                     card_id: cardId,
                     quantity: 0,
@@ -181,18 +196,19 @@ export const dbService = {
                 };
             }
 
-            return (await databases.updateDocument(
-                appwriteConfig.databaseId,
-                COLLECTIONS.USER_COLLECTIONS,
-                docId,
-                { quantity },
-            )) as unknown as UserCollectionItemDoc;
-        } catch (error: any) {
-            if (error.code === 404) {
+            if (existingDoc) {
+                return (await databases.updateDocument(
+                    appwriteConfig.databaseId,
+                    COLLECTIONS.USER_COLLECTIONS,
+                    existingDoc.$id,
+                    { quantity },
+                )) as unknown as UserCollectionItemDoc;
+            } else {
+                const newDocId = ID.unique();
                 return (await databases.createDocument(
                     appwriteConfig.databaseId,
                     COLLECTIONS.USER_COLLECTIONS,
-                    docId,
+                    newDocId,
                     {
                         user_id: userId,
                         card_id: cardId,
@@ -201,6 +217,8 @@ export const dbService = {
                     },
                 )) as unknown as UserCollectionItemDoc;
             }
+        } catch (error: any) {
+            console.error('Failed to update inventory in Appwrite:', error);
             throw error;
         }
     },
