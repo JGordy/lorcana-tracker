@@ -27,6 +27,7 @@ describe('Navbar Component', () => {
         renderNavbar(null);
         expect(screen.getByText('GlimmerForge')).toBeInTheDocument();
         expect(screen.getByText('Deck Directory')).toBeInTheDocument();
+        expect(screen.getAllByText('My Decks').length).toBeGreaterThan(0);
         expect(screen.getByText('My Collection')).toBeInTheDocument();
     });
 

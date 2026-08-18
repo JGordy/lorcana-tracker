@@ -16,6 +16,7 @@ import {
     IconDatabase,
     IconUser,
     IconLogin,
+    IconFolder,
 } from '@tabler/icons-react';
 import { AuthModal } from './AuthModal';
 
@@ -137,6 +138,25 @@ export function Navbar({ user }: NavbarProps) {
                             </Button>
                             <Button
                                 component={Link}
+                                to="/my-decks"
+                                variant={
+                                    location.pathname === '/my-decks'
+                                        ? 'light'
+                                        : 'subtle'
+                                }
+                                color={
+                                    location.pathname === '/my-decks'
+                                        ? 'violet'
+                                        : 'gray'
+                                }
+                                size="sm"
+                                radius="md"
+                                leftSection={<IconFolder size={17} />}
+                            >
+                                My Decks
+                            </Button>
+                            <Button
+                                component={Link}
                                 to="/collection"
                                 variant={
                                     location.pathname === '/collection'
@@ -177,6 +197,24 @@ export function Navbar({ user }: NavbarProps) {
                                     px="xs"
                                 >
                                     Decks
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    to="/my-decks"
+                                    variant={
+                                        location.pathname === '/my-decks'
+                                            ? 'light'
+                                            : 'subtle'
+                                    }
+                                    color={
+                                        location.pathname === '/my-decks'
+                                            ? 'violet'
+                                            : 'gray'
+                                    }
+                                    size="xs"
+                                    px="xs"
+                                >
+                                    My Decks
                                 </Button>
                                 <Button
                                     component={Link}

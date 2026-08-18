@@ -9,3 +9,6 @@
 
 # local env files
 .env*.local
+
+# MCP secrets
+.agents/**/mcp_config.json
