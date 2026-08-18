@@ -1030,7 +1030,13 @@ export default function MyDecks() {
     // Active deck for the Add Cards modal (derived dynamically from live processedDecks)
     const activeDeckForAddCards = useMemo(() => {
         if (!activeDeckId) return null;
-        return processedDecks.find((d) => d.$id === activeDeckId) || null;
+        const target = processedDecks.find((d) => d.$id === activeDeckId);
+        if (!target) return null;
+        return {
+            deck: target,
+            meta: target.meta,
+            displayInks: target.displayInks,
+        };
     }, [activeDeckId, processedDecks]);
 
     // Filter available cards in "Add Cards" Modal
