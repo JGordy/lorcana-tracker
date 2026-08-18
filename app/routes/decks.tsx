@@ -39,6 +39,7 @@ import {
     IconCards,
     IconInfinity,
     IconUpload,
+    IconFolderPlus,
 } from '@tabler/icons-react';
 import { authService, dbService } from '../services/appwrite.server';
 import {
@@ -132,6 +133,28 @@ export async function action({ request }: Route.ActionArgs) {
             request,
         );
         return { success: true, result };
+    }
+
+    if (intent === 'clone-deck') {
+        const userId = formData.get('userId') as string;
+        const title = formData.get('title') as string;
+        const description =
+            (formData.get('description') as string) ||
+            'Cloned from Deck Directory';
+        const cardsJson = formData.get('cards') as string;
+        const cardsList = JSON.parse(cardsJson) as Array<{
+            cardId: string;
+            quantity: number;
+        }>;
+
+        const result = await dbService.createDeck(
+            userId,
+            title,
+            description,
+            cardsList,
+            request,
+        );
+        return { success: true, cloned: true, result };
     }
 
     return { success: false };
@@ -375,6 +398,33 @@ export default function Decks() {
     const coreDecks = processedDecks.filter((deck) => deck.isCoreLegal);
     const infinityDecks = processedDecks;
 
+    const cloneFetcher = useFetcher();
+
+    const handleCloneDeck = (deckToClone: (typeof processedDecks)[0]) => {
+        if (!user) {
+            alert(
+                'Please sign in or use demo login to save decks to your personal library.',
+            );
+            return;
+        }
+
+        const payload = deckToClone.cards.map((c) => ({
+            cardId: c.card.id,
+            quantity: c.requiredQty,
+        }));
+
+        cloneFetcher.submit(
+            {
+                intent: 'clone-deck',
+                userId: user.$id,
+                title: `${deckToClone.title} (Copy)`,
+                description: `Cloned from ${deckToClone.title}. ${deckToClone.description || ''}`,
+                cards: JSON.stringify(payload),
+            },
+            { method: 'post' },
+        );
+    };
+
     const renderDeckList = (decksToRender: typeof processedDecks) => {
         if (decksToRender.length === 0) {
             return (
@@ -416,12 +466,14 @@ export default function Decks() {
                         <Card
                             key={deck.$id}
                             padding="lg"
-                            radius="md"
+                            radius="lg"
                             withBorder
-                            bg="dark.8"
-                            style={(theme) => ({
-                                borderColor: theme.colors.dark[7],
-                            })}
+                            style={{
+                                background:
+                                    'linear-gradient(135deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%)',
+                                borderColor: 'rgba(168, 85, 247, 0.2)',
+                                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+                            }}
                         >
                             <Stack gap="md">
                                 {/* Header line info */}
@@ -432,7 +484,7 @@ export default function Decks() {
                                                 {deck.title}
                                             </Text>
                                             {/* Ink color icons */}
-                                            <Group gap={4} mr="xs">
+                                            <Group gap={6} mr="xs">
                                                 {Array.from(
                                                     new Set(
                                                         deck.cards.flatMap(
@@ -451,11 +503,16 @@ export default function Decks() {
                                                         src={`/inks/${inkName.toLowerCase().trim()}.svg`}
                                                         alt={inkName}
                                                         style={{
-                                                            width: 18,
-                                                            height: 18,
+                                                            width: 24,
+                                                            height: 24,
                                                             display: 'block',
                                                         }}
-                                                        title={inkName}
+                                                        title={
+                                                            inkName
+                                                                .charAt(0)
+                                                                .toUpperCase() +
+                                                            inkName.slice(1)
+                                                        }
                                                     />
                                                 ))}
                                             </Group>
@@ -610,25 +667,46 @@ export default function Decks() {
                                         )}
                                     </Text>
 
-                                    <Button
-                                        variant="subtle"
-                                        color="violet"
-                                        size="xs"
-                                        onClick={() =>
-                                            toggleDeckExpand(deck.$id)
-                                        }
-                                        rightSection={
-                                            isExpanded ? (
-                                                <IconChevronUp size={14} />
-                                            ) : (
-                                                <IconChevronDown size={14} />
-                                            )
-                                        }
-                                    >
-                                        {isExpanded
-                                            ? 'Hide Details'
-                                            : 'View Card List'}
-                                    </Button>
+                                    <Group gap="xs">
+                                        <Button
+                                            variant="light"
+                                            color="violet"
+                                            size="xs"
+                                            leftSection={
+                                                <IconFolderPlus size={14} />
+                                            }
+                                            loading={
+                                                cloneFetcher.state ===
+                                                'submitting'
+                                            }
+                                            onClick={() =>
+                                                handleCloneDeck(deck)
+                                            }
+                                        >
+                                            Save to My Decks
+                                        </Button>
+                                        <Button
+                                            variant="subtle"
+                                            color="violet"
+                                            size="xs"
+                                            onClick={() =>
+                                                toggleDeckExpand(deck.$id)
+                                            }
+                                            rightSection={
+                                                isExpanded ? (
+                                                    <IconChevronUp size={14} />
+                                                ) : (
+                                                    <IconChevronDown
+                                                        size={14}
+                                                    />
+                                                )
+                                            }
+                                        >
+                                            {isExpanded
+                                                ? 'Hide Details'
+                                                : 'View Card List'}
+                                        </Button>
+                                    </Group>
                                 </Group>
 
                                 {/* Collapsible card table details */}
