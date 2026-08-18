@@ -1047,20 +1047,73 @@ export default function MyDecks() {
         };
     }, [activeDeckId, processedDecks]);
 
-    // Filter available cards in "Add Cards" Modal
+    // Filter available cards in "Add Cards" Modal (Searching by Name, Subtypes / Classifications, Types)
     const filteredCatalogCards = useMemo(() => {
+        const rawQuery = cardSearchQuery.trim().toLowerCase();
+        const searchTerms = rawQuery
+            ? rawQuery.split(/\s+/).filter(Boolean)
+            : [];
+
         return cards
             .filter((c) => {
-                const matchesSearch =
-                    !cardSearchQuery.trim() ||
-                    c.name
-                        .toLowerCase()
-                        .includes(cardSearchQuery.toLowerCase());
+                let matchesSearch = true;
 
-                // Format filter
-                if (onlyCoreFilter && !c.formats?.includes('core')) {
-                    return false;
+                if (searchTerms.length > 0) {
+                    const name = c.name.toLowerCase();
+                    const classifications = (c.classifications || []).map(
+                        (cl) => cl.toLowerCase(),
+                    );
+                    const types = (c.type || []).map((t) => t.toLowerCase());
+                    const ink = (c.ink_color || '').toLowerCase();
+                    const set = (c.set || '').toLowerCase();
+
+                    matchesSearch = searchTerms.every((term) => {
+                        // Direct string matching on name, ink, or set
+                        if (
+                            name.includes(term) ||
+                            ink.includes(term) ||
+                            set.includes(term)
+                        ) {
+                            return true;
+                        }
+
+                        // Direct matching on types and classifications (e.g. "princess", "floodborn")
+                        if (
+                            types.some(
+                                (t) => t.includes(term) || term.includes(t),
+                            ) ||
+                            classifications.some(
+                                (cl) => cl.includes(term) || term.includes(cl),
+                            )
+                        ) {
+                            return true;
+                        }
+
+                        // Plural/singular normalization variations (e.g. "princesses" -> "princess", "toys" -> "toy", "heroes" -> "hero")
+                        const variations = [term];
+                        if (term.endsWith('ies')) {
+                            variations.push(term.slice(0, -3) + 'y');
+                        } else if (term.endsWith('es')) {
+                            variations.push(term.slice(0, -2));
+                            variations.push(term.slice(0, -1));
+                        } else if (term.endsWith('s')) {
+                            variations.push(term.slice(0, -1));
+                        }
+
+                        return variations.some(
+                            (v) =>
+                                name.includes(v) ||
+                                types.some(
+                                    (t) => t.includes(v) || v.includes(t),
+                                ) ||
+                                classifications.some(
+                                    (cl) => cl.includes(v) || v.includes(cl),
+                                ),
+                        );
+                    });
                 }
+
+                if (!matchesSearch) return false;
 
                 // Ink filter
                 if (cardInkFilter === 'all') {
@@ -2769,7 +2822,7 @@ export default function MyDecks() {
                     <Group gap="xs" grow wrap="wrap">
                         <TextInput
                             data-autofocus
-                            placeholder="Search cards by name (e.g. Woody, Elsa, Hades)..."
+                            placeholder="Search by name, subtype (e.g. Princess, Toy, Floodborn), or card type..."
                             leftSection={<IconSearch size={16} />}
                             value={cardSearchQuery}
                             onChange={(e) =>
