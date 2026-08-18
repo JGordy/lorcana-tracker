@@ -1122,7 +1122,19 @@ export default function MyDecks() {
 
                 // Ink filter
                 if (cardInkFilter === 'all') {
-                    return matchesSearch;
+                    return true;
+                }
+
+                const cardInks = c.ink_color
+                    ? c.ink_color
+                          .toLowerCase()
+                          .split('/')
+                          .map((ci) => ci.trim())
+                          .filter(Boolean)
+                    : [];
+
+                if (cardInks.length === 0) {
+                    return false;
                 }
 
                 if (cardInkFilter === 'deck-inks') {
@@ -1130,24 +1142,31 @@ export default function MyDecks() {
                         !activeDeckForAddCards ||
                         activeDeckForAddCards.displayInks.length === 0
                     ) {
-                        return matchesSearch;
+                        return true;
                     }
-                    const cardInks = c.ink_color
-                        ? c.ink_color.toLowerCase().split('/')
-                        : [];
-                    const matchesAnyDeckInk = cardInks.some((ci) =>
-                        activeDeckForAddCards.displayInks.includes(ci.trim()),
+                    // Strict deck construction rule: EVERY ink color on the card must be legal for the deck
+                    return cardInks.every((ci) =>
+                        activeDeckForAddCards.displayInks.includes(ci),
                     );
-                    return matchesSearch && matchesAnyDeckInk;
                 }
 
-                const cardInks = c.ink_color
-                    ? c.ink_color.toLowerCase().split('/')
-                    : [];
-                const matchesSpecificInk = cardInks.some(
-                    (ci) => ci.trim() === cardInkFilter.toLowerCase(),
-                );
-                return matchesSearch && matchesSpecificInk;
+                // If user selected a specific individual ink from dropdown
+                if (
+                    activeDeckForAddCards &&
+                    activeDeckForAddCards.displayInks.length > 0 &&
+                    activeDeckForAddCards.displayInks.includes(
+                        cardInkFilter.toLowerCase(),
+                    )
+                ) {
+                    return (
+                        cardInks.includes(cardInkFilter.toLowerCase()) &&
+                        cardInks.every((ci) =>
+                            activeDeckForAddCards.displayInks.includes(ci),
+                        )
+                    );
+                }
+
+                return cardInks.includes(cardInkFilter.toLowerCase());
             })
             .slice(0, 60);
     }, [
