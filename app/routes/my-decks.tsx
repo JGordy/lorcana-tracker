@@ -1115,6 +1115,11 @@ export default function MyDecks() {
 
                 if (!matchesSearch) return false;
 
+                // Format filter
+                if (onlyCoreFilter && !c.formats?.includes('core')) {
+                    return false;
+                }
+
                 // Ink filter
                 if (cardInkFilter === 'all') {
                     return matchesSearch;
