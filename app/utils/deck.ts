@@ -92,9 +92,9 @@ export function getCardSlug(name: string): string {
 }
 
 export interface DeckMetadata {
-    format?: string;
-    inks?: string[];
-    description?: string;
+    format: 'core' | 'infinity';
+    inks: string[];
+    description: string;
     coverCardId?: string;
 }
 
@@ -142,7 +142,7 @@ export function parseDeckMetadata(desc: string | undefined): DeckMetadata {
                 'coverCardId' in parsed)
         ) {
             return {
-                format: parsed.format || 'core',
+                format: parsed.format === 'infinity' ? 'infinity' : 'core',
                 inks: Array.isArray(parsed.inks) ? parsed.inks : [],
                 description: parsed.description || '',
                 coverCardId: parsed.coverCardId,

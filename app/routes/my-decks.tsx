@@ -2786,6 +2786,8 @@ export default function MyDecks() {
                                                 }) => {
                                                     const isMissing =
                                                         ownedQty < requiredQty;
+                                                    const missingCount =
+                                                        requiredQty - ownedQty;
 
                                                     return (
                                                         <Table.Tr
