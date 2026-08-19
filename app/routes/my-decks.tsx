@@ -4,6 +4,7 @@ import {
     useSubmit,
     useFetcher,
     useNavigate,
+    useSearchParams,
     data,
     Link,
 } from 'react-router';
@@ -79,6 +80,7 @@ import {
     INK_HEX_MAP,
     getFeaturedDeckCard,
     getKeyDeckCards,
+    buildCardsLookup,
 } from '../utils/deck';
 export {
     type DeckMetadata,
@@ -88,6 +90,7 @@ export {
     INK_HEX_MAP,
     getFeaturedDeckCard,
     getKeyDeckCards,
+    buildCardsLookup,
 };
 
 export function serializeDeckMetadata(
@@ -259,8 +262,12 @@ export default function MyDecks() {
         }
     }, [fetcher.data, decks]);
 
-    // Search and filter states
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Search and filter states initialized from URL
+    const [searchQuery, setSearchQuery] = useState(
+        () => searchParams.get('q') || '',
+    );
 
     // Import Deck Modal state
     const [importModalOpen, setImportModalOpen] = useState(false);
@@ -296,11 +303,57 @@ export default function MyDecks() {
     const [editDesc, setEditDesc] = useState('');
     const [editCoverCardId, setEditCoverCardId] = useState<string>('auto');
 
-    // View & Manage Deck Modal state
-    const [viewDeckModalOpen, setViewDeckModalOpen] = useState(false);
-    const [viewDeckId, setViewDeckId] = useState<string | null>(null);
+    // View & Manage Deck Modal state (supports deep linking via ?deck=<deckId>)
+    const [viewDeckId, setViewDeckId] = useState<string | null>(
+        () => searchParams.get('deck') || null,
+    );
+    const [viewDeckModalOpen, setViewDeckModalOpen] = useState(() =>
+        Boolean(searchParams.get('deck')),
+    );
     const [deckModalSearch, setDeckModalSearch] = useState('');
     const [deckModalInkFilter, setDeckModalInkFilter] = useState('all');
+
+    const handleOpenDeckModal = (deckId: string) => {
+        setViewDeckId(deckId);
+        setDeckModalSearch('');
+        setDeckModalInkFilter('all');
+        setViewDeckModalOpen(true);
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.set('deck', deckId);
+                return next;
+            },
+            { replace: true },
+        );
+    };
+
+    const handleCloseDeckModal = () => {
+        setViewDeckModalOpen(false);
+        setViewDeckId(null);
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete('deck');
+                return next;
+            },
+            { replace: true },
+        );
+    };
+
+    // Synchronize search query with URL
+    const handleSearchQueryChange = (q: string) => {
+        setSearchQuery(q);
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                if (q.trim()) next.set('q', q.trim());
+                else next.delete('q');
+                return next;
+            },
+            { replace: true },
+        );
+    };
 
     // Add Cards Modal state
     const [addCardsModalOpen, setAddCardsModalOpen] = useState(false);
@@ -969,6 +1022,8 @@ export default function MyDecks() {
         );
     };
 
+    const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
+
     // Process decks and extract metadata from live localDecks
     const processedDecks = useMemo(() => {
         return localDecks
@@ -982,10 +1037,29 @@ export default function MyDecks() {
             .map((deck) => {
                 const meta = parseDeckMetadata(deck.description);
 
+                // Resolve any cards that fell back to Unknown Card
+                const resolvedCards = deck.cards.map((dc) => {
+                    if (
+                        dc.card &&
+                        dc.card.name !== 'Unknown Card' &&
+                        dc.card.image_url
+                    ) {
+                        return dc;
+                    }
+                    const resolved =
+                        cardsLookup.get(dc.card.id) ||
+                        cardsLookup.get(dc.card.$id) ||
+                        dc.card;
+                    return {
+                        ...dc,
+                        card: resolved,
+                    };
+                });
+
                 // Calculate active inks: combine chosen deck inks and any inks in added cards
                 const cardInks = Array.from(
                     new Set(
-                        deck.cards.flatMap((dc) =>
+                        resolvedCards.flatMap((dc) =>
                             dc.card.ink_color
                                 ? dc.card.ink_color.split('/')
                                 : [],
@@ -993,33 +1067,45 @@ export default function MyDecks() {
                     ),
                 ).map((i) => i.toLowerCase().trim());
 
+                const VALID_LORCANA_INKS = new Set([
+                    'amber',
+                    'amethyst',
+                    'emerald',
+                    'ruby',
+                    'sapphire',
+                    'steel',
+                ]);
+
                 const combinedInks = Array.from(
                     new Set([...(meta.inks || []), ...cardInks]),
-                ).filter(Boolean);
+                )
+                    .map((i) => i.toLowerCase().trim())
+                    .filter((i) => VALID_LORCANA_INKS.has(i));
 
                 const displayInks = combinedInks.length > 0 ? combinedInks : [];
 
                 const isCoreLegal =
                     meta.format === 'core' &&
-                    (deck.cards.length === 0 ||
-                        deck.cards.every((dc) =>
+                    (resolvedCards.length === 0 ||
+                        resolvedCards.every((dc) =>
                             dc.card.formats?.includes('core'),
                         ));
 
-                const totalCards = deck.cards.reduce(
+                const totalCards = resolvedCards.reduce(
                     (sum, c) => sum + c.requiredQty,
                     0,
                 );
 
                 return {
                     ...deck,
+                    cards: resolvedCards,
                     meta,
                     displayInks,
                     isCoreLegal,
                     totalCardsCount: totalCards,
                 };
             });
-    }, [localDecks, searchQuery]);
+    }, [localDecks, searchQuery, cardsLookup]);
 
     // Active deck for the Add Cards modal (derived dynamically from live processedDecks)
     const activeDeckForAddCards = useMemo(() => {
@@ -1690,7 +1776,9 @@ export default function MyDecks() {
                                         size="xs"
                                         variant="subtle"
                                         color="gray"
-                                        onClick={() => setSearchQuery('')}
+                                        onClick={() =>
+                                            handleSearchQueryChange('')
+                                        }
                                         title="Clear search"
                                     >
                                         <IconX size={14} />
@@ -1699,7 +1787,7 @@ export default function MyDecks() {
                             }
                             value={searchQuery}
                             onChange={(e) =>
-                                setSearchQuery(e.currentTarget.value)
+                                handleSearchQueryChange(e.currentTarget.value)
                             }
                             style={{ flex: 1, minWidth: 260 }}
                             styles={{
@@ -2245,12 +2333,9 @@ export default function MyDecks() {
                                                     <IconCards size={14} />
                                                 }
                                                 onClick={() => {
-                                                    setViewDeckId(deck.$id);
-                                                    setDeckModalSearch('');
-                                                    setDeckModalInkFilter(
-                                                        'all',
+                                                    handleOpenDeckModal(
+                                                        deck.$id,
                                                     );
-                                                    setViewDeckModalOpen(true);
                                                 }}
                                             >
                                                 View & Edit Deck
@@ -2398,56 +2483,113 @@ export default function MyDecks() {
             {/* Modal: View & Edit Deck List */}
             <Modal
                 opened={viewDeckModalOpen}
-                onClose={() => {
-                    setViewDeckModalOpen(false);
-                    setViewDeckId(null);
-                }}
+                onClose={handleCloseDeckModal}
                 title={
                     activeDeckForView ? (
-                        <Group gap="xs">
-                            <IconCards size={22} color="#a855f7" />
+                        <Group gap="sm" align="center">
+                            <Box
+                                style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: '10px',
+                                    background:
+                                        'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
+                                    border: '1px solid rgba(168, 85, 247, 0.35)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                <IconCards size={20} color="#c084fc" />
+                            </Box>
                             <Box>
                                 <Group gap="xs" align="center">
-                                    <Text fw={800} size="md">
+                                    <Text
+                                        fw={900}
+                                        size="md"
+                                        style={{
+                                            fontFamily:
+                                                "'Cinzel Decorative', serif",
+                                            letterSpacing: '0.5px',
+                                            background:
+                                                'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                        }}
+                                    >
                                         {activeDeckForView.title}
                                     </Text>
-                                    <Group gap={4}>
+                                    <Group gap={4} ml={2}>
                                         {activeDeckForView.displayInks.map(
                                             (inkName) => (
-                                                <img
+                                                <Box
                                                     key={inkName}
-                                                    src={`/inks/${inkName.toLowerCase().trim()}.svg`}
-                                                    alt={inkName}
                                                     style={{
-                                                        width: 18,
-                                                        height: 18,
-                                                        display: 'block',
+                                                        padding: 3,
+                                                        borderRadius: '50%',
+                                                        background:
+                                                            'rgba(255, 255, 255, 0.08)',
+                                                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent:
+                                                            'center',
                                                     }}
-                                                    title={inkName}
-                                                />
+                                                >
+                                                    <img
+                                                        src={`/inks/${inkName.toLowerCase().trim()}.svg`}
+                                                        alt={inkName}
+                                                        style={{
+                                                            width: 15,
+                                                            height: 15,
+                                                            display: 'block',
+                                                        }}
+                                                        title={inkName}
+                                                    />
+                                                </Box>
                                             ),
                                         )}
                                     </Group>
                                     <Badge
                                         size="xs"
-                                        variant="filled"
-                                        color={
+                                        variant="gradient"
+                                        gradient={
                                             activeDeckForView.isCoreLegal
-                                                ? 'teal.8'
-                                                : 'orange.8'
+                                                ? {
+                                                      from: 'teal.7',
+                                                      to: 'emerald.8',
+                                                      deg: 90,
+                                                  }
+                                                : {
+                                                      from: 'orange.7',
+                                                      to: 'amber.8',
+                                                      deg: 90,
+                                                  }
                                         }
+                                        radius="sm"
+                                        style={{
+                                            fontWeight: 700,
+                                            letterSpacing: '0.3px',
+                                        }}
                                     >
                                         {activeDeckForView.isCoreLegal
-                                            ? 'Core Legal'
-                                            : 'Infinity'}
+                                            ? 'CORE LEGAL'
+                                            : 'INFINITY'}
                                     </Badge>
                                     <Badge
                                         size="xs"
-                                        variant="outline"
+                                        variant="light"
                                         color="violet"
+                                        radius="sm"
+                                        style={{
+                                            border: '1px solid rgba(168, 85, 247, 0.3)',
+                                            background:
+                                                'rgba(168, 85, 247, 0.12)',
+                                            fontWeight: 700,
+                                        }}
                                     >
                                         {activeDeckForView.totalCardsCount}/60
-                                        Cards
+                                        CARDS
                                     </Badge>
                                 </Group>
                             </Box>
@@ -2456,76 +2598,97 @@ export default function MyDecks() {
                         'Deck Details'
                     )
                 }
-                size="1100px"
+                size="1150px"
                 centered
                 radius="lg"
+                styles={{
+                    content: {
+                        background:
+                            'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
+                        border: '1px solid rgba(168, 85, 247, 0.25)',
+                        boxShadow:
+                            '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.12)',
+                    },
+                    header: {
+                        background: 'rgba(15, 11, 32, 0.95)',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                        padding: '16px 22px',
+                    },
+                    body: {
+                        padding: '20px 22px',
+                    },
+                }}
             >
                 {activeDeckForView && (
                     <Stack gap="md">
                         {/* Summary & Progress Bar */}
-                        <Card padding="sm" radius="md" bg="dark.8" withBorder>
-                            <Group justify="space-between" align="center">
-                                <Box style={{ flex: 1 }}>
-                                    <Group
-                                        justify="space-between"
-                                        align="center"
-                                        mb={4}
-                                    >
-                                        <Text size="xs" fw={700} c="gray.3">
-                                            Collection Completion:
-                                        </Text>
-                                        <Badge
-                                            size="sm"
-                                            variant="light"
-                                            color={
-                                                activeDeckForView.progress
-                                                    .percentage >= 80
-                                                    ? 'teal'
-                                                    : activeDeckForView.progress
-                                                            .percentage >= 50
-                                                      ? 'yellow'
-                                                      : 'red'
-                                            }
-                                        >
-                                            {
-                                                activeDeckForView.progress
-                                                    .ownedCount
-                                            }
-                                            /
-                                            {
-                                                activeDeckForView.progress
-                                                    .totalCount
-                                            }{' '}
-                                            Owned (
-                                            {
-                                                activeDeckForView.progress
-                                                    .percentage
-                                            }
-                                            %)
-                                        </Badge>
-                                    </Group>
-                                    <Progress
-                                        value={
-                                            activeDeckForView.progress
-                                                .percentage
-                                        }
-                                        color={
-                                            activeDeckForView.progress
-                                                .percentage >= 80
-                                                ? 'teal'
-                                                : activeDeckForView.progress
-                                                        .percentage >= 50
-                                                  ? 'yellow'
-                                                  : 'red'
-                                        }
-                                        size="sm"
-                                        radius="xl"
-                                        striped
-                                    />
-                                </Box>
+                        <Card
+                            padding="md"
+                            radius="md"
+                            style={{
+                                background:
+                                    'linear-gradient(135deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                                border: '1px solid rgba(168, 85, 247, 0.2)',
+                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                            }}
+                        >
+                            <Group
+                                justify="space-between"
+                                align="center"
+                                mb={6}
+                            >
+                                <Text
+                                    size="xs"
+                                    fw={800}
+                                    c="gray.3"
+                                    style={{
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.5px',
+                                    }}
+                                >
+                                    Collection Completion:
+                                </Text>
+                                <Badge
+                                    size="md"
+                                    variant="light"
+                                    color={
+                                        activeDeckForView.progress.percentage >=
+                                        80
+                                            ? 'teal'
+                                            : activeDeckForView.progress
+                                                    .percentage >= 50
+                                              ? 'yellow'
+                                              : 'red'
+                                    }
+                                    radius="sm"
+                                    style={{ fontWeight: 800 }}
+                                >
+                                    {activeDeckForView.progress.ownedCount} /{' '}
+                                    {activeDeckForView.progress.totalCount}{' '}
+                                    Owned (
+                                    {activeDeckForView.progress.percentage}
+                                    %)
+                                </Badge>
                             </Group>
+                            <Progress
+                                value={activeDeckForView.progress.percentage}
+                                color={
+                                    activeDeckForView.progress.percentage >= 80
+                                        ? 'teal'
+                                        : activeDeckForView.progress
+                                                .percentage >= 50
+                                          ? 'yellow'
+                                          : 'red'
+                                }
+                                size="md"
+                                radius="xl"
+                                striped
+                                animated={
+                                    activeDeckForView.progress.percentage < 100
+                                }
+                            />
                             {activeDeckForView.meta.description && (
-                                <Text size="xs" c="dimmed" mt="xs">
+                                <Text size="xs" c="gray.4" mt="xs" lh={1.5}>
                                     {activeDeckForView.meta.description}
                                 </Text>
                             )}
@@ -2536,7 +2699,9 @@ export default function MyDecks() {
                             <Group gap="xs" style={{ flex: 1 }}>
                                 <TextInput
                                     placeholder="Search cards in this deck..."
-                                    leftSection={<IconSearch size={16} />}
+                                    leftSection={
+                                        <IconSearch size={16} color="#a855f7" />
+                                    }
                                     value={deckModalSearch}
                                     onChange={(e) =>
                                         setDeckModalSearch(
@@ -2544,7 +2709,16 @@ export default function MyDecks() {
                                         )
                                     }
                                     size="xs"
-                                    style={{ minWidth: 200, flex: 1 }}
+                                    styles={{
+                                        input: {
+                                            backgroundColor:
+                                                'rgba(15, 23, 42, 0.6)',
+                                            borderColor:
+                                                'rgba(255, 255, 255, 0.1)',
+                                            color: '#fff',
+                                        },
+                                    }}
+                                    style={{ minWidth: 220, flex: 1 }}
                                 />
                                 {activeDeckForView.displayInks.length > 0 && (
                                     <Select
@@ -2566,7 +2740,16 @@ export default function MyDecks() {
                                                 }),
                                             ),
                                         ]}
-                                        style={{ width: 130 }}
+                                        styles={{
+                                            input: {
+                                                backgroundColor:
+                                                    'rgba(15, 23, 42, 0.6)',
+                                                borderColor:
+                                                    'rgba(255, 255, 255, 0.1)',
+                                                color: '#fff',
+                                            },
+                                        }}
+                                        style={{ width: 140 }}
                                     />
                                 )}
                             </Group>
@@ -2575,10 +2758,12 @@ export default function MyDecks() {
                                 <Button
                                     variant="gradient"
                                     gradient={{
-                                        from: 'violet.6',
+                                        from: 'violet.7',
                                         to: 'indigo.6',
+                                        deg: 90,
                                     }}
                                     size="xs"
+                                    radius="md"
                                     leftSection={<IconPlus size={14} />}
                                     onClick={() => {
                                         setActiveDeckId(activeDeckForView.$id);
@@ -2595,13 +2780,19 @@ export default function MyDecks() {
                                         );
                                         setAddCardsModalOpen(true);
                                     }}
+                                    style={{
+                                        boxShadow:
+                                            '0 4px 14px rgba(139, 92, 246, 0.35)',
+                                        fontWeight: 700,
+                                    }}
                                 >
                                     Add Cards from Catalog
                                 </Button>
                                 <Button
-                                    variant="subtle"
+                                    variant="light"
                                     color="gray"
                                     size="xs"
+                                    radius="md"
                                     leftSection={<IconEdit size={14} />}
                                     onClick={() => {
                                         setEditingDeck(activeDeckForView);
@@ -2625,10 +2816,18 @@ export default function MyDecks() {
                                     Edit Info
                                 </Button>
                                 <Button
-                                    variant="subtle"
-                                    color="gray"
+                                    variant="light"
+                                    color="violet"
                                     size="xs"
-                                    leftSection={<IconCopy size={14} />}
+                                    radius="md"
+                                    leftSection={
+                                        copyFeedback ===
+                                        activeDeckForView.$id ? (
+                                            <IconCheck size={14} />
+                                        ) : (
+                                            <IconCopy size={14} />
+                                        )
+                                    }
                                     onClick={() =>
                                         handleExportDeck(activeDeckForView)
                                     }
@@ -2646,7 +2845,7 @@ export default function MyDecks() {
                             style={{
                                 background: 'rgba(10, 15, 29, 0.55)',
                                 borderRadius: 10,
-                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                border: '1px solid rgba(255, 255, 255, 0.06)',
                             }}
                         >
                             {activeDeckForView.cards.length === 0 ? (
@@ -2667,6 +2866,7 @@ export default function MyDecks() {
                                             to: 'indigo.6',
                                         }}
                                         size="xs"
+                                        radius="md"
                                         leftSection={<IconPlus size={14} />}
                                         onClick={() => {
                                             setActiveDeckId(
@@ -2699,16 +2899,23 @@ export default function MyDecks() {
                             ) : (
                                 <ScrollArea.Autosize mah={480}>
                                     <Table
-                                        striped
                                         highlightOnHover
                                         style={{ minWidth: 700 }}
                                     >
                                         <Table.Thead>
-                                            <Table.Tr>
+                                            <Table.Tr
+                                                style={{
+                                                    borderBottom:
+                                                        '1px solid rgba(255, 255, 255, 0.08)',
+                                                }}
+                                            >
                                                 <Table.Th
                                                     style={{
                                                         color: '#94a3b8',
                                                         fontSize: 11,
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Card
@@ -2717,6 +2924,9 @@ export default function MyDecks() {
                                                     style={{
                                                         color: '#94a3b8',
                                                         fontSize: 11,
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Ink Color
@@ -2726,6 +2936,9 @@ export default function MyDecks() {
                                                         color: '#94a3b8',
                                                         fontSize: 11,
                                                         textAlign: 'center',
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Cost
@@ -2735,6 +2948,9 @@ export default function MyDecks() {
                                                         color: '#94a3b8',
                                                         fontSize: 11,
                                                         textAlign: 'center',
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Rarity
@@ -2744,6 +2960,9 @@ export default function MyDecks() {
                                                         color: '#94a3b8',
                                                         fontSize: 11,
                                                         textAlign: 'center',
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Deck Qty (1–4)
@@ -2753,6 +2972,9 @@ export default function MyDecks() {
                                                         color: '#94a3b8',
                                                         fontSize: 11,
                                                         textAlign: 'center',
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Owned
@@ -2762,6 +2984,9 @@ export default function MyDecks() {
                                                         color: '#94a3b8',
                                                         fontSize: 11,
                                                         textAlign: 'center',
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Status
@@ -2771,6 +2996,9 @@ export default function MyDecks() {
                                                         color: '#94a3b8',
                                                         fontSize: 11,
                                                         textAlign: 'right',
+                                                        textTransform:
+                                                            'uppercase',
+                                                        letterSpacing: '0.5px',
                                                     }}
                                                 >
                                                     Actions
@@ -2795,8 +3023,12 @@ export default function MyDecks() {
                                                             style={{
                                                                 background:
                                                                     isMissing
-                                                                        ? 'rgba(239, 68, 68, 0.04)'
-                                                                        : undefined,
+                                                                        ? 'rgba(239, 68, 68, 0.05)'
+                                                                        : 'rgba(255, 255, 255, 0.015)',
+                                                                borderBottom:
+                                                                    '1px solid rgba(255, 255, 255, 0.03)',
+                                                                transition:
+                                                                    'background 0.15s ease',
                                                             }}
                                                         >
                                                             {/* Card Thumbnail & Name */}
@@ -2814,29 +3046,31 @@ export default function MyDecks() {
                                                                                 card.name
                                                                             }
                                                                             style={{
-                                                                                width: 32,
-                                                                                height: 44,
+                                                                                width: 34,
+                                                                                height: 46,
                                                                                 objectFit:
                                                                                     'cover',
-                                                                                borderRadius: 4,
+                                                                                borderRadius: 5,
                                                                                 boxShadow:
-                                                                                    '0 2px 6px rgba(0,0,0,0.5)',
+                                                                                    '0 3px 8px rgba(0,0,0,0.6)',
+                                                                                border: '1px solid rgba(255, 255, 255, 0.1)',
                                                                             }}
                                                                         />
                                                                     ) : (
                                                                         <Box
                                                                             style={{
-                                                                                width: 32,
-                                                                                height: 44,
+                                                                                width: 34,
+                                                                                height: 46,
                                                                                 backgroundColor:
                                                                                     'rgba(255,255,255,0.05)',
-                                                                                borderRadius: 4,
+                                                                                borderRadius: 5,
                                                                                 display:
                                                                                     'flex',
                                                                                 alignItems:
                                                                                     'center',
                                                                                 justifyContent:
                                                                                     'center',
+                                                                                border: '1px solid rgba(255, 255, 255, 0.1)',
                                                                             }}
                                                                         >
                                                                             <IconCards
@@ -2855,7 +3089,7 @@ export default function MyDecks() {
                                                                             fw={
                                                                                 700
                                                                             }
-                                                                            c="gray.2"
+                                                                            c="gray.1"
                                                                             lineClamp={
                                                                                 1
                                                                             }
@@ -2883,7 +3117,7 @@ export default function MyDecks() {
                                                             {/* Ink Color */}
                                                             <Table.Td>
                                                                 <Group
-                                                                    gap={4}
+                                                                    gap={6}
                                                                     wrap="nowrap"
                                                                 >
                                                                     <img
@@ -2918,6 +3152,11 @@ export default function MyDecks() {
                                                                     size="xs"
                                                                     variant="light"
                                                                     color="indigo"
+                                                                    radius="sm"
+                                                                    style={{
+                                                                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                                        fontWeight: 700,
+                                                                    }}
                                                                 >
                                                                     {card.cost}⬡
                                                                 </Badge>
@@ -2940,6 +3179,11 @@ export default function MyDecks() {
                                                                         ] ||
                                                                         'gray'
                                                                     }
+                                                                    radius="sm"
+                                                                    style={{
+                                                                        border: `1px solid ${RARITY_COLOR[card.rarity] || 'rgba(255,255,255,0.1)'}40`,
+                                                                        fontWeight: 700,
+                                                                    }}
                                                                 >
                                                                     {
                                                                         card.rarity
@@ -2962,6 +3206,7 @@ export default function MyDecks() {
                                                                         size="xs"
                                                                         variant="light"
                                                                         color="violet"
+                                                                        radius="sm"
                                                                         onClick={() =>
                                                                             handleAdjustQuantity(
                                                                                 activeDeckForView,
@@ -2984,6 +3229,7 @@ export default function MyDecks() {
                                                                             minWidth: 20,
                                                                             textAlign:
                                                                                 'center',
+                                                                            color: '#f8fafc',
                                                                         }}
                                                                     >
                                                                         {
@@ -2994,6 +3240,7 @@ export default function MyDecks() {
                                                                         size="xs"
                                                                         variant="light"
                                                                         color="violet"
+                                                                        radius="sm"
                                                                         disabled={
                                                                             requiredQty >=
                                                                             4
@@ -3050,6 +3297,10 @@ export default function MyDecks() {
                                                                         size="xs"
                                                                         color="red"
                                                                         variant="light"
+                                                                        radius="sm"
+                                                                        style={{
+                                                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                                                        }}
                                                                     >
                                                                         Missing{' '}
                                                                         {
@@ -3061,6 +3312,10 @@ export default function MyDecks() {
                                                                         size="xs"
                                                                         color="teal"
                                                                         variant="light"
+                                                                        radius="sm"
+                                                                        style={{
+                                                                            border: '1px solid rgba(20, 184, 166, 0.3)',
+                                                                        }}
                                                                     >
                                                                         ✓ Owned
                                                                     </Badge>
@@ -3083,6 +3338,7 @@ export default function MyDecks() {
                                                                             size="compact-xs"
                                                                             variant="light"
                                                                             color="violet"
+                                                                            radius="sm"
                                                                             leftSection={
                                                                                 <IconPlus
                                                                                     size={
@@ -3106,6 +3362,7 @@ export default function MyDecks() {
                                                                         size="xs"
                                                                         variant="subtle"
                                                                         color="red"
+                                                                        radius="sm"
                                                                         onClick={() =>
                                                                             handleRemoveCard(
                                                                                 activeDeckForView,
@@ -3137,7 +3394,7 @@ export default function MyDecks() {
                         <Group justify="space-between" align="center" mt="xs">
                             <Text size="xs" c="dimmed">
                                 Total Cards:{' '}
-                                <strong>
+                                <strong style={{ color: '#f8fafc' }}>
                                     {activeDeckForView.totalCardsCount}/60
                                 </strong>{' '}
                                 • {activeDeckForView.cards.length} Unique Cards
@@ -3145,9 +3402,12 @@ export default function MyDecks() {
                             <Button
                                 variant="gradient"
                                 gradient={{ from: 'violet.6', to: 'indigo.6' }}
-                                onClick={() => {
-                                    setViewDeckModalOpen(false);
-                                    setViewDeckId(null);
+                                radius="md"
+                                onClick={handleCloseDeckModal}
+                                style={{
+                                    boxShadow:
+                                        '0 4px 14px rgba(139, 92, 246, 0.3)',
+                                    fontWeight: 700,
                                 }}
                             >
                                 Done
