@@ -164,28 +164,26 @@ body {
 }
 
 .deck-card .deck-cover-section {
-    isolation: isolate;
+    overflow: hidden;
+    /* Force GPU subpixel clipping to prevent border and seam flicker */
+    -webkit-mask-image: -webkit-radial-gradient(white, black);
+    mask-image: radial-gradient(white, black);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     transform: translateZ(0);
-    /* Clip precisely to prevent subpixel bleeding */
-    clip-path: inset(0 round 0);
 }
 
 .deck-card .deck-cover-img {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
-    transform-origin: center top;
-    transform: translate3d(0, 0, 0) scale(1.002);
+    transform-origin: center center;
+    transform: translateZ(0) scale(1);
     will-change: transform;
-    transition:
-        transform 0.4s cubic-bezier(0.2, 0, 0.2, 1),
-        filter 0.3s ease !important;
+    transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1) !important;
 }
 
 .deck-card:hover .deck-cover-img {
-    transform: translate3d(0, 0, 0) scale(1.06) !important;
-    filter: brightness(1.05) !important;
+    transform: translateZ(0) scale(1.06) !important;
 }
 
 .deck-key-card {

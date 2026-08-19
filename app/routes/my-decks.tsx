@@ -1908,8 +1908,7 @@ export default function MyDecks() {
                                         style={{
                                             position: 'relative',
                                             height: 175,
-                                            backgroundColor:
-                                                'rgba(10, 15, 29, 0.8)',
+                                            backgroundColor: 'transparent',
                                             overflow: 'hidden',
                                         }}
                                     >
@@ -1920,7 +1919,7 @@ export default function MyDecks() {
                                                 className="deck-cover-img"
                                                 style={{
                                                     width: '100%',
-                                                    height: 'calc(100% + 2px)',
+                                                    height: '100%',
                                                     objectFit: 'cover',
                                                     objectPosition:
                                                         'center top',
@@ -1955,10 +1954,9 @@ export default function MyDecks() {
                                             style={{
                                                 position: 'absolute',
                                                 inset: 0,
-                                                bottom: -1,
                                                 pointerEvents: 'none',
                                                 background:
-                                                    'linear-gradient(180deg, rgba(10, 15, 29, 0.4) 0%, rgba(10, 15, 29, 0.05) 35%, rgba(15, 23, 42, 0.95) 90%, rgba(15, 23, 42, 1) 100%)',
+                                                    'linear-gradient(180deg, rgba(10, 15, 29, 0.25) 0%, rgba(10, 15, 29, 0) 35%, rgba(15, 23, 42, 0.8) 85%, rgba(15, 23, 42, 0.98) 100%)',
                                             }}
                                         />
 
