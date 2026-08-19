@@ -129,6 +129,96 @@ describe('dbService (Server-Side)', () => {
             expect(result.quantity).toBe(3);
         });
 
+        it('should delete all duplicate documents if quantity is 0 or less', async () => {
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [
+                    {
+                        $id: 'inv-1',
+                        user_id: 'user-1',
+                        card_id: 'mickey-card',
+                        quantity: 1,
+                        is_foil: false,
+                    },
+                    {
+                        $id: 'inv-2',
+                        user_id: 'user-1',
+                        card_id: 'mickey-card',
+                        quantity: 1,
+                        is_foil: false,
+                    },
+                ],
+                total: 2,
+            });
+            mockDatabases.deleteDocument.mockResolvedValue({});
+
+            const result = await dbService.updateInventory(
+                'user-1',
+                'mickey-card',
+                0,
+                false,
+            );
+            expect(mockDatabases.deleteDocument).toHaveBeenCalledWith(
+                'test_db',
+                'user_collections',
+                'inv-1',
+            );
+            expect(mockDatabases.deleteDocument).toHaveBeenCalledWith(
+                'test_db',
+                'user_collections',
+                'inv-2',
+            );
+            expect(result.quantity).toBe(0);
+        });
+
+        it('should update the primary document and delete duplicate documents when quantity is greater than 0', async () => {
+            mockDatabases.listDocuments.mockResolvedValueOnce({
+                documents: [
+                    {
+                        $id: 'inv-1',
+                        user_id: 'user-1',
+                        card_id: 'mickey-card',
+                        quantity: 1,
+                        is_foil: false,
+                    },
+                    {
+                        $id: 'inv-2',
+                        user_id: 'user-1',
+                        card_id: 'mickey-card',
+                        quantity: 1,
+                        is_foil: false,
+                    },
+                ],
+                total: 2,
+            });
+            mockDatabases.updateDocument.mockResolvedValueOnce({
+                $id: 'inv-1',
+                user_id: 'user-1',
+                card_id: 'mickey-card',
+                quantity: 3,
+                is_foil: false,
+            });
+            mockDatabases.deleteDocument.mockResolvedValue({});
+
+            const result = await dbService.updateInventory(
+                'user-1',
+                'mickey-card',
+                3,
+                false,
+            );
+            expect(mockDatabases.updateDocument).toHaveBeenCalledWith(
+                'test_db',
+                'user_collections',
+                'inv-1',
+                { quantity: 3 },
+            );
+            expect(mockDatabases.deleteDocument).toHaveBeenCalledWith(
+                'test_db',
+                'user_collections',
+                'inv-2',
+            );
+            expect(result.quantity).toBe(3);
+        });
+
         it('should create document if not found on update', async () => {
             mockDatabases.listDocuments.mockResolvedValueOnce({
                 documents: [],

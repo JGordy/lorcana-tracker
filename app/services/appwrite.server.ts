@@ -4,7 +4,11 @@ import {
     createSessionClient,
     createAdminClient,
 } from '../utils/appwrite/server';
-import { calculateDeckProgress, type DeckCard } from '../utils/deck';
+import {
+    calculateDeckProgress,
+    buildCardsLookup,
+    type DeckCard,
+} from '../utils/deck';
 import {
     type Card,
     type UserCollectionItemDoc,
@@ -141,11 +145,96 @@ export const dbService = {
         userId: string,
         request?: Request,
     ): Promise<UserCollectionItemDoc[]> {
-        return this.getCollection<UserCollectionItemDoc>(
+        const rawDocs = await this.getCollection<UserCollectionItemDoc>(
             COLLECTIONS.USER_COLLECTIONS,
             [Query.equal('user_id', userId)],
             request,
         );
+
+        const cards = await getCardsCatalog();
+        const cardsLookup = buildCardsLookup(cards);
+
+        let databases: any = null;
+        try {
+            databases = request
+                ? createSessionClient(request).databases
+                : appwriteConfig.apiKey
+                  ? createAdminClient().databases
+                  : null;
+        } catch {
+            databases = null;
+        }
+
+        // Consolidate legacy card IDs to canonical card IDs & write-back standardize in Appwrite
+        const consolidatedMap = new Map<string, UserCollectionItemDoc>();
+        const writeBackTasks: Array<Promise<any>> = [];
+
+        for (const doc of rawDocs) {
+            const resolvedCard = cardsLookup.get(doc.card_id);
+            const canonicalId = resolvedCard ? resolvedCard.id : doc.card_id;
+            const key = `${canonicalId}_${doc.is_foil ? 'foil' : 'normal'}`;
+
+            if (consolidatedMap.has(key)) {
+                const existing = consolidatedMap.get(key)!;
+                const chosenQty =
+                    doc.card_id === canonicalId
+                        ? doc.quantity
+                        : existing.card_id === canonicalId
+                          ? existing.quantity
+                          : Math.max(existing.quantity, doc.quantity);
+                consolidatedMap.set(key, {
+                    ...existing,
+                    card_id: canonicalId,
+                    quantity: chosenQty,
+                });
+
+                if (databases) {
+                    writeBackTasks.push(
+                        databases
+                            .updateDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.USER_COLLECTIONS,
+                                existing.$id,
+                                { card_id: canonicalId, quantity: chosenQty },
+                            )
+                            .catch(() => null),
+                    );
+                    writeBackTasks.push(
+                        databases
+                            .deleteDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.USER_COLLECTIONS,
+                                doc.$id,
+                            )
+                            .catch(() => null),
+                    );
+                }
+            } else {
+                consolidatedMap.set(key, {
+                    ...doc,
+                    card_id: canonicalId,
+                });
+
+                if (doc.card_id !== canonicalId && databases) {
+                    writeBackTasks.push(
+                        databases
+                            .updateDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.USER_COLLECTIONS,
+                                doc.$id,
+                                { card_id: canonicalId },
+                            )
+                            .catch(() => null),
+                    );
+                }
+            }
+        }
+
+        if (writeBackTasks.length > 0) {
+            Promise.all(writeBackTasks).catch(() => null);
+        }
+
+        return Array.from(consolidatedMap.values());
     },
 
     async updateInventory(
@@ -155,53 +244,99 @@ export const dbService = {
         isFoil: boolean,
         request?: Request,
     ): Promise<UserCollectionItemDoc> {
-        const { databases } = request
-            ? createSessionClient(request)
-            : createAdminClient();
+        let databases = request
+            ? createSessionClient(request).databases
+            : createAdminClient().databases;
+
+        // If admin client is available, prefer admin client for robust mutation permissions
+        if (appwriteConfig.apiKey) {
+            databases = createAdminClient().databases;
+        }
 
         try {
-            // Find existing user collection document by user_id, card_id, and is_foil
-            const existingDocs =
-                await this.getCollection<UserCollectionItemDoc>(
-                    COLLECTIONS.USER_COLLECTIONS,
-                    [
-                        Query.equal('user_id', userId),
-                        Query.equal('card_id', cardId),
-                        Query.equal('is_foil', isFoil),
-                    ],
-                    request,
-                );
+            const cards = await getCardsCatalog();
+            const cardsLookup = buildCardsLookup(cards);
+            const resolvedCard = cardsLookup.get(cardId);
+            const canonicalCardId = resolvedCard ? resolvedCard.id : cardId;
 
-            const existingDoc =
-                existingDocs.length > 0 ? existingDocs[0] : null;
+            // Find all existing user collection documents by user_id and is_foil
+            const allUserDocs = await this.getCollection<UserCollectionItemDoc>(
+                COLLECTIONS.USER_COLLECTIONS,
+                [
+                    Query.equal('user_id', userId),
+                    Query.equal('is_foil', isFoil),
+                ],
+                request,
+            );
+
+            const matchingDocs = allUserDocs.filter((doc) => {
+                if (doc.card_id === canonicalCardId || doc.card_id === cardId)
+                    return true;
+                const docResolved = cardsLookup.get(doc.card_id);
+                return docResolved && docResolved.id === canonicalCardId;
+            });
 
             if (quantity <= 0) {
-                if (existingDoc) {
-                    try {
-                        await databases.deleteDocument(
-                            appwriteConfig.databaseId,
-                            COLLECTIONS.USER_COLLECTIONS,
-                            existingDoc.$id,
-                        );
-                    } catch (e: any) {
-                        if (e.code !== 404) throw e;
-                    }
+                if (matchingDocs.length > 0) {
+                    await Promise.all(
+                        matchingDocs.map((doc) =>
+                            databases
+                                .deleteDocument(
+                                    appwriteConfig.databaseId,
+                                    COLLECTIONS.USER_COLLECTIONS,
+                                    doc.$id,
+                                )
+                                .catch((e: any) => {
+                                    if (e.code !== 404) throw e;
+                                }),
+                        ),
+                    );
                 }
                 return {
-                    $id: existingDoc ? existingDoc.$id : ID.unique(),
+                    $id: matchingDocs[0]?.$id || ID.unique(),
                     user_id: userId,
-                    card_id: cardId,
+                    card_id: canonicalCardId,
                     quantity: 0,
                     is_foil: isFoil,
                 };
             }
 
-            if (existingDoc) {
+            if (matchingDocs.length > 0) {
+                const canonicalDoc = matchingDocs.find(
+                    (d) => d.card_id === canonicalCardId,
+                );
+                const primaryDoc = canonicalDoc || matchingDocs[0];
+                const duplicates = matchingDocs.filter(
+                    (d) => d.$id !== primaryDoc.$id,
+                );
+
+                // Clean up any extraneous duplicate documents in parallel
+                if (duplicates.length > 0) {
+                    await Promise.all(
+                        duplicates.map((doc) =>
+                            databases
+                                .deleteDocument(
+                                    appwriteConfig.databaseId,
+                                    COLLECTIONS.USER_COLLECTIONS,
+                                    doc.$id,
+                                )
+                                .catch((e: any) => {
+                                    if (e.code !== 404) throw e;
+                                }),
+                        ),
+                    );
+                }
+
+                const updatePayload: Record<string, any> = { quantity };
+                if (primaryDoc.card_id !== canonicalCardId) {
+                    updatePayload.card_id = canonicalCardId;
+                }
+
                 return (await databases.updateDocument(
                     appwriteConfig.databaseId,
                     COLLECTIONS.USER_COLLECTIONS,
-                    existingDoc.$id,
-                    { quantity },
+                    primaryDoc.$id,
+                    updatePayload,
                 )) as unknown as UserCollectionItemDoc;
             } else {
                 const newDocId = ID.unique();
@@ -211,7 +346,7 @@ export const dbService = {
                     newDocId,
                     {
                         user_id: userId,
-                        card_id: cardId,
+                        card_id: canonicalCardId,
                         quantity,
                         is_foil: isFoil,
                     },
@@ -231,11 +366,7 @@ export const dbService = {
         const [cards, userCollection] = await Promise.all([
             this.getCollection<Card>(COLLECTIONS.CARDS, [], request),
             userId
-                ? this.getCollection<UserCollectionItemDoc>(
-                      COLLECTIONS.USER_COLLECTIONS,
-                      [Query.equal('user_id', userId)],
-                      request,
-                  )
+                ? this.getUserInventory(userId, request)
                 : Promise.resolve([]),
         ]);
 
@@ -320,6 +451,7 @@ export const dbService = {
                 const progress = calculateDeckProgress(
                     userCollection,
                     deckJunctions,
+                    cards,
                 );
 
                 resolvedDecks.push({
@@ -354,11 +486,7 @@ export const dbService = {
                     request,
                 ),
             ]);
-
-            const cardsMap = new Map<string, Card>();
-            for (const card of cards) {
-                cardsMap.set(card.id, card);
-            }
+            const cardsLookup = buildCardsLookup(cards);
 
             for (const deck of decks) {
                 if (
@@ -375,9 +503,10 @@ export const dbService = {
                 const progress = calculateDeckProgress(
                     userCollection,
                     deckJunctions,
+                    cards,
                 );
                 const cardsInDeck = deckJunctions.map((dc) => {
-                    const cardDetails = cardsMap.get(dc.card_id) || {
+                    const cardDetails = cardsLookup.get(dc.card_id) || {
                         $id: dc.card_id,
                         id: dc.card_id,
                         name: 'Unknown Card',
@@ -395,10 +524,16 @@ export const dbService = {
                         image_url: '',
                         formats: ['core', 'infinity'],
                     };
+                    const canonicalId = cardDetails.id;
+                    const ownedQty =
+                        ownedMap.get(canonicalId) ||
+                        ownedMap.get(dc.card_id) ||
+                        0;
+
                     return {
                         card: cardDetails,
                         requiredQty: dc.quantity,
-                        ownedQty: ownedMap.get(dc.card_id) || 0,
+                        ownedQty,
                     };
                 });
 
@@ -409,29 +544,31 @@ export const dbService = {
                     is_trending: false,
                 });
             }
-        } catch (e) {
-            console.warn('Failed to load user decks from database:', e);
+        } catch (error) {
+            console.error(
+                'Failed to load Appwrite public decks with progress:',
+                error,
+            );
         }
 
-        return resolvedDecks.sort((a, b) => {
-            if (sort === 'progress') {
-                if (b.progress.percentage !== a.progress.percentage) {
-                    return b.progress.percentage - a.progress.percentage;
-                }
-                return b.progress.totalCount - a.progress.totalCount;
-            }
+        // Apply requested sorting
+        if (sort === 'progress') {
+            resolvedDecks.sort(
+                (a, b) => b.progress.percentage - a.progress.percentage,
+            );
+        } else if (sort === 'name') {
+            resolvedDecks.sort((a, b) => a.title.localeCompare(b.title));
+        }
 
-            if (sort === 'missing_cost') {
-                const missingA = a.progress.totalCount - a.progress.ownedCount;
-                const missingB = b.progress.totalCount - b.progress.ownedCount;
-                if (missingA !== missingB) {
-                    return missingA - missingB;
-                }
-                return b.progress.percentage - a.progress.percentage;
-            }
+        return resolvedDecks;
+    },
 
-            return a.title.localeCompare(b.title);
-        });
+    async getPublicDecksWithProgress(
+        userId: string | null,
+        sort: 'progress' | 'missing_cost' | 'name' = 'progress',
+        request?: Request,
+    ): Promise<DeckWithProgress[]> {
+        return this.getDecksWithProgress(userId, sort, request);
     },
 
     async getUserDecksWithProgress(
@@ -444,11 +581,7 @@ export const dbService = {
         const [cards, userCollection, userDecks, allDeckCards] =
             await Promise.all([
                 this.getCollection<Card>(COLLECTIONS.CARDS, [], request),
-                this.getCollection<UserCollectionItemDoc>(
-                    COLLECTIONS.USER_COLLECTIONS,
-                    [Query.equal('user_id', userId)],
-                    request,
-                ),
+                this.getUserInventory(userId, request),
                 this.getCollection<Deck>(
                     COLLECTIONS.DECKS,
                     [Query.equal('creator_id', userId)],
@@ -461,6 +594,81 @@ export const dbService = {
                 ),
             ]);
 
+        const cardsLookup = buildCardsLookup(cards);
+
+        let databases: any = null;
+        try {
+            databases = request
+                ? createSessionClient(request).databases
+                : appwriteConfig.apiKey
+                  ? createAdminClient().databases
+                  : null;
+        } catch {
+            databases = null;
+        }
+
+        const deckCardsTasks: Array<Promise<any>> = [];
+        const deckCardMap = new Map<string, DeckCardDoc>();
+        const sanitizedDeckCards: DeckCardDoc[] = [];
+
+        for (const dc of allDeckCards) {
+            const cardDetails = cardsLookup.get(dc.card_id);
+            const canonicalId = cardDetails ? cardDetails.id : dc.card_id;
+            const key = `${dc.deck_id}_${canonicalId}`;
+
+            if (deckCardMap.has(key)) {
+                const existing = deckCardMap.get(key)!;
+                const mergedQty = Math.min(
+                    4,
+                    Math.max(existing.quantity, dc.quantity),
+                );
+                existing.quantity = mergedQty;
+
+                if (databases) {
+                    deckCardsTasks.push(
+                        databases
+                            .updateDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.DECK_CARDS,
+                                existing.$id,
+                                { card_id: canonicalId, quantity: mergedQty },
+                            )
+                            .catch(() => null),
+                    );
+                    deckCardsTasks.push(
+                        databases
+                            .deleteDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.DECK_CARDS,
+                                dc.$id,
+                            )
+                            .catch(() => null),
+                    );
+                }
+            } else {
+                const updatedDoc = { ...dc, card_id: canonicalId };
+                deckCardMap.set(key, updatedDoc);
+                sanitizedDeckCards.push(updatedDoc);
+
+                if (dc.card_id !== canonicalId && databases) {
+                    deckCardsTasks.push(
+                        databases
+                            .updateDocument(
+                                appwriteConfig.databaseId,
+                                COLLECTIONS.DECK_CARDS,
+                                dc.$id,
+                                { card_id: canonicalId },
+                            )
+                            .catch(() => null),
+                    );
+                }
+            }
+        }
+
+        if (deckCardsTasks.length > 0) {
+            Promise.all(deckCardsTasks).catch(() => null);
+        }
+
         const ownedMap = new Map<string, number>();
         for (const item of userCollection) {
             ownedMap.set(
@@ -469,23 +677,19 @@ export const dbService = {
             );
         }
 
-        const cardsMap = new Map<string, Card>();
-        for (const card of cards) {
-            cardsMap.set(card.id, card);
-        }
-
         const resolvedDecks: DeckWithProgress[] = [];
 
         for (const deck of userDecks) {
-            const deckJunctions = allDeckCards.filter(
+            const deckJunctions = sanitizedDeckCards.filter(
                 (dc) => dc.deck_id === deck.$id || deck.id === dc.deck_id,
             );
             const progress = calculateDeckProgress(
                 userCollection,
                 deckJunctions,
+                cards,
             );
             const cardsInDeck = deckJunctions.map((dc) => {
-                const cardDetails = cardsMap.get(dc.card_id) || {
+                const cardDetails = cardsLookup.get(dc.card_id) || {
                     $id: dc.card_id,
                     id: dc.card_id,
                     name: 'Unknown Card',
@@ -503,10 +707,14 @@ export const dbService = {
                     image_url: '',
                     formats: ['core', 'infinity'],
                 };
+                const canonicalId = cardDetails.id;
+                const ownedQty =
+                    ownedMap.get(canonicalId) || ownedMap.get(dc.card_id) || 0;
+
                 return {
                     card: cardDetails,
                     requiredQty: dc.quantity,
-                    ownedQty: ownedMap.get(dc.card_id) || 0,
+                    ownedQty,
                 };
             });
 
