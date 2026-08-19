@@ -90,3 +90,130 @@ export function getCardSlug(name: string): string {
         .trim()
         .replace(/[\s-]+/g, '-'); // collapse spaces and dashes to a single dash
 }
+
+export interface DeckMetadata {
+    format?: string;
+    inks?: string[];
+    description?: string;
+    coverCardId?: string;
+}
+
+export const RARITY_RANK: Record<string, number> = {
+    Enchanted: 7,
+    Iconic: 6,
+    Epic: 5,
+    Legendary: 4,
+    'Super Rare': 3,
+    Rare: 2,
+    Uncommon: 1,
+    Common: 0,
+};
+
+export const RARITY_COLOR: Record<string, string> = {
+    Enchanted: '#e879f9',
+    Iconic: '#fbbf24',
+    Epic: '#c084fc',
+    Legendary: '#f59e0b',
+    'Super Rare': '#38bdf8',
+    Rare: '#4ade80',
+    Uncommon: '#94a3b8',
+    Common: '#64748b',
+};
+
+export const INK_HEX_MAP: Record<string, string> = {
+    amber: '#F5B041',
+    amethyst: '#AF7AC5',
+    emerald: '#2ECC71',
+    ruby: '#EC7063',
+    sapphire: '#5DADE2',
+    steel: '#A6ACAF',
+};
+
+export function parseDeckMetadata(desc: string | undefined): DeckMetadata {
+    if (!desc) return { format: 'core', inks: [], description: '' };
+    try {
+        const parsed = JSON.parse(desc);
+        if (
+            parsed &&
+            typeof parsed === 'object' &&
+            ('format' in parsed ||
+                'inks' in parsed ||
+                'description' in parsed ||
+                'coverCardId' in parsed)
+        ) {
+            return {
+                format: parsed.format || 'core',
+                inks: Array.isArray(parsed.inks) ? parsed.inks : [],
+                description: parsed.description || '',
+                coverCardId: parsed.coverCardId,
+            };
+        }
+    } catch {
+        // Not a JSON payload, treat whole string as plain text description
+    }
+    return { format: 'core', inks: [], description: desc };
+}
+
+export function getFeaturedDeckCard<
+    T extends {
+        id: string;
+        $id?: string;
+        rarity?: string;
+        cost?: number;
+        image_url?: string;
+        name?: string;
+    },
+>(
+    deckCards: Array<{ card: T; requiredQty?: number }>,
+    coverCardId?: string,
+): T | null {
+    if (!deckCards || deckCards.length === 0) return null;
+    if (coverCardId && coverCardId !== 'auto') {
+        const found = deckCards.find(
+            (dc) => dc.card.id === coverCardId || dc.card.$id === coverCardId,
+        );
+        if (found) return found.card;
+    }
+    // Highest rarity first, then highest cost
+    const sorted = [...deckCards].sort((a, b) => {
+        const rankA = RARITY_RANK[a.card.rarity || 'Common'] ?? -1;
+        const rankB = RARITY_RANK[b.card.rarity || 'Common'] ?? -1;
+        if (rankB !== rankA) return rankB - rankA;
+        return (b.card.cost || 0) - (a.card.cost || 0);
+    });
+    return sorted[0]?.card || null;
+}
+
+export function getKeyDeckCards<
+    T extends {
+        id: string;
+        $id?: string;
+        rarity?: string;
+        cost?: number;
+        image_url?: string;
+        name?: string;
+        ink_color?: string;
+    },
+>(deckCards: Array<{ card: T; requiredQty?: number }>, limit = 4): T[] {
+    if (!deckCards || deckCards.length === 0) return [];
+    // Sort by highest rarity first, then highest ink cost
+    const sorted = [...deckCards].sort((a, b) => {
+        const rankA = RARITY_RANK[a.card.rarity || 'Common'] ?? -1;
+        const rankB = RARITY_RANK[b.card.rarity || 'Common'] ?? -1;
+        if (rankB !== rankA) return rankB - rankA;
+        return (b.card.cost || 0) - (a.card.cost || 0);
+    });
+
+    const uniqueCards: T[] = [];
+    const seenIds = new Set<string>();
+
+    for (const dc of sorted) {
+        if (!seenIds.has(dc.card.id)) {
+            seenIds.add(dc.card.id);
+            uniqueCards.push(dc.card);
+            if (uniqueCards.length >= limit) break;
+        }
+    }
+
+    return uniqueCards;
+}
