@@ -59,29 +59,7 @@ export interface DeckWithProgress extends Deck {
     is_trending?: boolean;
 }
 
-export const COLLECTIONS = {
-    CARDS: 'cards',
-    USER_COLLECTIONS: 'user_collections',
-    DECKS: 'decks',
-    DECK_CARDS: 'deck_cards',
-};
-
-export const SET_INDEX_MAP: Record<number, string> = {
-    1: 'The First Chapter',
-    2: 'Rise of the Floodborn',
-    3: 'Into the Inklands',
-    4: "Ursula's Return",
-    5: 'Shimmering Skies',
-    6: 'Azurite Sea',
-    7: "Archazia's Island",
-    8: 'Reign of Jafar',
-    9: 'Fabled',
-    10: 'Whispers in the Well',
-    11: 'Winterspell',
-    12: 'Wilds Unknown',
-    13: 'Attack of the Vine!',
-    14: 'Format Coconut',
-};
+export { COLLECTIONS, SET_INDEX_MAP } from '../constants';
 
 export const SET_NAME_TO_INDEX: Record<string, number> = {
     'The First Chapter': 1,
