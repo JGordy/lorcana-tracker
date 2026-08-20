@@ -7,9 +7,11 @@ import {
     Badge,
     Progress,
     TextInput,
+    Select,
     Button,
     ScrollArea,
     Table,
+    ActionIcon,
 } from '@mantine/core';
 import {
     IconCards,
@@ -19,10 +21,15 @@ import {
     IconCheck,
     IconCopy,
     IconPlus,
+    IconX,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
-import { RARITY_COLOR } from '../../../utils/deck';
-import { getInkBadgeStyle, type ProcessedDeck } from '../utils/deckHelpers';
+import { RARITY_COLOR, parseDeckMetadata } from '../../../utils/deck';
+import {
+    getInkBadgeStyle,
+    VALID_LORCANA_INKS,
+    type ProcessedDeck,
+} from '../utils/deckHelpers';
 
 interface ViewDeckModalProps {
     opened: boolean;
@@ -30,6 +37,8 @@ interface ViewDeckModalProps {
     activeDeck: ProcessedDeck | null;
     searchQuery: string;
     setSearchQuery: (val: string) => void;
+    inkFilter: string;
+    onInkFilterChange: (val: string) => void;
     filteredCards: ProcessedDeck['cards'];
     cloneFetcher: ReturnType<typeof useFetcher>;
     copyFeedback: string | null;
@@ -45,6 +54,8 @@ export function ViewDeckModal({
     activeDeck,
     searchQuery,
     setSearchQuery,
+    inkFilter,
+    onInkFilterChange,
     filteredCards,
     cloneFetcher,
     copyFeedback,
@@ -54,6 +65,17 @@ export function ViewDeckModal({
     onQuickAdd,
 }: ViewDeckModalProps) {
     if (!activeDeck) return null;
+
+    const meta = parseDeckMetadata(activeDeck.description);
+    const displayDesc = activeDeck.displayDescription || meta.description;
+
+    // Build ink filter options from deck's known inks
+    const deckInkOptions = (activeDeck.displayInks || [])
+        .filter((i) => VALID_LORCANA_INKS.has(i))
+        .map((ink) => ({
+            value: ink,
+            label: ink.charAt(0).toUpperCase() + ink.slice(1),
+        }));
 
     return (
         <Modal
@@ -164,29 +186,91 @@ export function ViewDeckModal({
             centered
             radius="lg"
             styles={{
+                content: {
+                    background:
+                        'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
+                    border: '1px solid rgba(168, 85, 247, 0.25)',
+                    boxShadow:
+                        '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.12)',
+                },
+                header: {
+                    background: 'rgba(15, 11, 32, 0.95)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: '16px 22px',
+                },
                 title: {
                     flex: 1,
                     marginRight: 16,
                 },
+                body: {
+                    padding: '20px 22px',
+                },
             }}
         >
             <Stack gap="md">
-                {activeDeck.description && (
+                {displayDesc && displayDesc.trim() ? (
                     <Text size="xs" c="dimmed">
-                        {activeDeck.description}
+                        {displayDesc}
                     </Text>
-                )}
+                ) : null}
 
-                {/* Search & Actions Toolbar */}
+                {/* Search, Ink Filter & Actions Toolbar */}
                 <Group justify="space-between" wrap="wrap" gap="xs">
-                    <TextInput
-                        placeholder="Search cards in this deck..."
-                        leftSection={<IconSearch size={16} />}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.currentTarget.value)}
-                        size="xs"
-                        style={{ minWidth: 220, flex: 1 }}
-                    />
+                    <Group gap="xs" style={{ flex: 1 }}>
+                        <TextInput
+                            placeholder="Search cards in this deck..."
+                            leftSection={
+                                <IconSearch size={16} color="#a855f7" />
+                            }
+                            rightSection={
+                                searchQuery ? (
+                                    <ActionIcon
+                                        size="xs"
+                                        variant="subtle"
+                                        color="gray"
+                                        onClick={() => setSearchQuery('')}
+                                    >
+                                        <IconX size={13} />
+                                    </ActionIcon>
+                                ) : null
+                            }
+                            value={searchQuery}
+                            onChange={(e) =>
+                                setSearchQuery(e.currentTarget.value)
+                            }
+                            size="xs"
+                            style={{ minWidth: 220, flex: 1 }}
+                            styles={{
+                                input: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                                    borderColor: 'rgba(168, 85, 247, 0.2)',
+                                    color: '#f8fafc',
+                                },
+                            }}
+                        />
+                        {deckInkOptions.length > 0 && (
+                            <Select
+                                size="xs"
+                                value={inkFilter}
+                                onChange={(val) =>
+                                    onInkFilterChange(val || 'all')
+                                }
+                                data={[
+                                    { value: 'all', label: 'All Inks' },
+                                    ...deckInkOptions,
+                                ]}
+                                styles={{
+                                    input: {
+                                        backgroundColor:
+                                            'rgba(15, 23, 42, 0.6)',
+                                        borderColor: 'rgba(168, 85, 247, 0.2)',
+                                        color: '#f8fafc',
+                                    },
+                                }}
+                                style={{ width: 140 }}
+                            />
+                        )}
+                    </Group>
 
                     <Group gap="xs">
                         <Button

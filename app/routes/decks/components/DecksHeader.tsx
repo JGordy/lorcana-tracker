@@ -1,126 +1,146 @@
 import {
-    Card,
+    Paper,
+    Group,
+    Box,
     Title,
     Text,
-    Group,
-    TextInput,
     Button,
-    Select,
-    Box,
-    Stack,
+    SimpleGrid,
+    Card,
 } from '@mantine/core';
-import { IconSearch, IconUpload } from '@tabler/icons-react';
-import type { useNavigate } from 'react-router';
+import { IconCards, IconUpload, IconArrowRight } from '@tabler/icons-react';
+import { Link } from 'react-router';
 
-interface DecksHeaderProps {
-    searchQuery: string;
-    setSearchQuery: (query: string) => void;
-    sort: string;
-    navigate: ReturnType<typeof useNavigate>;
+export interface DecksHeaderProps {
+    totalDecksCount: number;
+    coreDecksCount: number;
+    infinityDecksCount: number;
     user?: { $id: string } | null;
     onOpenImportModal: () => void;
 }
 
 export function DecksHeader({
-    searchQuery,
-    setSearchQuery,
-    sort,
-    navigate,
+    totalDecksCount,
+    coreDecksCount,
+    infinityDecksCount,
     user,
     onOpenImportModal,
 }: DecksHeaderProps) {
     return (
-        <>
-            {/* Banner Hero */}
-            <Card
-                padding="xl"
-                radius="lg"
-                withBorder
-                mb="xl"
-                bg="dark.8"
-                style={(theme) => ({
-                    borderColor: theme.colors.dark[7],
-                    position: 'relative',
-                    overflow: 'hidden',
-                })}
+        <Paper
+            p={{ base: 'lg', md: 'xl' }}
+            radius="lg"
+            mb="xl"
+            style={{
+                background:
+                    'linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                border: '1px solid rgba(168, 85, 247, 0.15)',
+            }}
+        >
+            <Group
+                justify="space-between"
+                align="flex-start"
+                wrap="wrap"
+                gap="lg"
             >
-                {/* Accent blurs */}
-                <Box
-                    style={{
-                        position: 'absolute',
-                        top: '-50px',
-                        right: '-50px',
-                        width: '200px',
-                        height: '200px',
-                        backgroundColor: 'rgba(124, 58, 237, 0.05)',
-                        filter: 'blur(50px)',
-                        borderRadius: '100%',
-                    }}
-                />
-                <Stack gap="xs" style={{ position: 'relative', zIndex: 1 }}>
-                    <Title order={1} size="xl" fw={900}>
-                        Disney Lorcana Metagame Deck Matcher
-                    </Title>
-                    <Text
-                        size="sm"
-                        c="gray.4"
-                        maw={800}
-                        style={{ lineHeight: 1.6 }}
-                    >
+                <Box style={{ maxWidth: 640 }}>
+                    <Group gap="xs" mb="xs">
+                        <IconCards size={28} color="#a855f7" />
+                        <Title
+                            order={1}
+                            style={{
+                                fontFamily: "'Cinzel Decorative', serif",
+                                letterSpacing: '0.5px',
+                                fontSize: 28,
+                                background:
+                                    'linear-gradient(to right, #c084fc, #f472b6)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                            }}
+                        >
+                            Disney Lorcana Metagame Deck Matcher
+                        </Title>
+                    </Group>
+                    <Text size="sm" c="gray.4" lh={1.6}>
                         Upload or manage your card collection inventory. Our
-                        recommendation engine automatically scans meta
-                        decks, displays the percentage of cards you own, and
-                        calculates the exact missing card counts to optimize
-                        your next buy list.
+                        recommendation engine automatically scans meta decks,
+                        displays the percentage of cards you own, and calculates
+                        the exact missing card counts to optimize your next buy
+                        list.
                     </Text>
-                </Stack>
-            </Card>
+                </Box>
 
-            {/* Filter Controls Row */}
-            <Group justify="space-between" mb="lg" gap="md">
-                <Group
-                    gap="md"
-                    style={{ flex: 1, maxWidth: 600 }}
-                    align="end"
-                >
-                    <TextInput
-                        placeholder="Search meta decks..."
-                        leftSection={<IconSearch size={16} />}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        style={{ flex: 1 }}
-                    />
+                {/* Top Action CTAs */}
+                <Group gap="sm">
                     {user && (
                         <Button
-                            variant="light"
-                            color="violet"
+                            variant="gradient"
+                            gradient={{ from: 'violet.6', to: 'indigo.6' }}
+                            radius="md"
                             leftSection={<IconUpload size={16} />}
                             onClick={onOpenImportModal}
                         >
                             Import Deck
                         </Button>
                     )}
+                    <Button
+                        component={Link}
+                        to="/my-decks"
+                        variant="subtle"
+                        color="gray"
+                        radius="md"
+                        rightSection={<IconArrowRight size={16} />}
+                    >
+                        My Decks
+                    </Button>
                 </Group>
-
-                <Select
-                    label="Sort by:"
-                    value={sort}
-                    onChange={(val) => {
-                        if (val) {
-                            navigate(`/decks?sort=${val}`);
-                        }
-                    }}
-                    data={[
-                        { value: 'progress', label: 'Highest Match %' },
-                        {
-                            value: 'missing_cost',
-                            label: 'Lowest Missing Count',
-                        },
-                        { value: 'name', label: 'Alphabetical (A-Z)' },
-                    ]}
-                    style={{ width: 220 }}
-                />
             </Group>
-        </>
+
+            {/* Metric Quick Stats */}
+            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mt="xl">
+                <Card
+                    padding="md"
+                    radius="md"
+                    bg="rgba(15, 23, 42, 0.6)"
+                    withBorder
+                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                >
+                    <Text size="xs" c="gray.5" fw={600} tt="uppercase">
+                        Total Meta Decks
+                    </Text>
+                    <Text size="xl" fw={800} c="gray.1" mt={4}>
+                        {totalDecksCount}
+                    </Text>
+                </Card>
+                <Card
+                    padding="md"
+                    radius="md"
+                    bg="rgba(15, 23, 42, 0.6)"
+                    withBorder
+                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                >
+                    <Text size="xs" c="teal.4" fw={600} tt="uppercase">
+                        Core Constructed
+                    </Text>
+                    <Text size="xl" fw={800} c="teal.3" mt={4}>
+                        {coreDecksCount}
+                    </Text>
+                </Card>
+                <Card
+                    padding="md"
+                    radius="md"
+                    bg="rgba(15, 23, 42, 0.6)"
+                    withBorder
+                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                >
+                    <Text size="xs" c="violet.4" fw={600} tt="uppercase">
+                        Infinity Constructed
+                    </Text>
+                    <Text size="xl" fw={800} c="violet.3" mt={4}>
+                        {infinityDecksCount}
+                    </Text>
+                </Card>
+            </SimpleGrid>
+        </Paper>
     );
 }

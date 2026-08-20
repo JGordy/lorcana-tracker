@@ -5,8 +5,10 @@ import { Container } from '@mantine/core';
 import { useDeckImport } from './hooks/useDeckImport';
 import { useDeckActions } from './hooks/useDeckActions';
 import { filterDecks } from './utils/deckHelpers';
+import { buildCardsLookup } from '../../utils/deck';
 
 import { DecksHeader } from './components/DecksHeader';
+import { DecksToolbar } from './components/DecksToolbar';
 import { DeckGrid } from './components/DeckGrid';
 import { ImportDeckModal } from './components/ImportDeckModal';
 import { ViewDeckModal } from './components/ViewDeckModal';
@@ -27,6 +29,7 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
     const [viewDeckModalOpen, setViewDeckModalOpen] = useState(false);
     const [viewDeckId, setViewDeckId] = useState<string | null>(null);
     const [deckModalSearch, setDeckModalSearch] = useState('');
+    const [deckModalInkFilter, setDeckModalInkFilter] = useState('all');
 
     const {
         importModalOpen,
@@ -52,10 +55,20 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
             cloneFetcher,
         });
 
-    // Process and filter decks
+    // Lookups & Processed Decks
+    const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
+
     const processedDecks = useMemo(
-        () => filterDecks(decks, searchQuery),
-        [decks, searchQuery],
+        () => filterDecks(decks, searchQuery, cardsLookup),
+        [decks, searchQuery, cardsLookup],
+    );
+
+    const allCoreDecks = useMemo(
+        () =>
+            filterDecks(decks, '', cardsLookup).filter(
+                (deck) => deck.isCoreLegal,
+            ),
+        [decks, cardsLookup],
     );
 
     const coreDecks = useMemo(
@@ -71,9 +84,10 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
 
     const filteredDeckCardsForView = useMemo(() => {
         if (!activeDeckForView) return [];
+        let list = activeDeckForView.cards;
         const q = deckModalSearch.trim().toLowerCase();
-        return activeDeckForView.cards.filter((dc) => {
-            if (q) {
+        if (q) {
+            list = list.filter((dc) => {
                 const nameMatch = dc.card.name.toLowerCase().includes(q);
                 const classMatch = (dc.card.classifications || []).some((cl) =>
                     cl.toLowerCase().includes(q),
@@ -81,15 +95,23 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                 const typeMatch = (dc.card.type || []).some((t) =>
                     t.toLowerCase().includes(q),
                 );
-                if (!nameMatch && !classMatch && !typeMatch) return false;
-            }
-            return true;
-        });
-    }, [activeDeckForView, deckModalSearch]);
+                return nameMatch || classMatch || typeMatch;
+            });
+        }
+        if (deckModalInkFilter !== 'all') {
+            list = list.filter(
+                (dc) =>
+                    dc.card.ink_color?.toLowerCase().trim() ===
+                    deckModalInkFilter,
+            );
+        }
+        return list;
+    }, [activeDeckForView, deckModalSearch, deckModalInkFilter]);
 
     const handleOpenViewModal = (deckId: string) => {
         setViewDeckId(deckId);
         setDeckModalSearch('');
+        setDeckModalInkFilter('all');
         setViewDeckModalOpen(true);
     };
 
@@ -99,12 +121,21 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
     };
 
     return (
-        <Container size="lg" py="xl">
+        <Container size="xl" py="xl">
             <DecksHeader
+                totalDecksCount={decks.length}
+                coreDecksCount={allCoreDecks.length}
+                infinityDecksCount={decks.length}
+                user={user}
+                onOpenImportModal={() => setImportModalOpen(true)}
+            />
+
+            <DecksToolbar
                 searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
+                onSearchChange={setSearchQuery}
                 sort={sort}
                 navigate={navigate}
+                activeCount={processedDecks.length}
                 user={user}
                 onOpenImportModal={() => setImportModalOpen(true)}
             />
@@ -138,6 +169,8 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                 activeDeck={activeDeckForView}
                 searchQuery={deckModalSearch}
                 setSearchQuery={setDeckModalSearch}
+                inkFilter={deckModalInkFilter}
+                onInkFilterChange={setDeckModalInkFilter}
                 filteredCards={filteredDeckCardsForView}
                 cloneFetcher={cloneFetcher}
                 copyFeedback={copyFeedback}

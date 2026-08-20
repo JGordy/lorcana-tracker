@@ -1,4 +1,4 @@
-import { Tabs, SimpleGrid, Card, Text } from '@mantine/core';
+import { Tabs, SimpleGrid, Paper, Text } from '@mantine/core';
 import { IconCards, IconInfinity } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
 import type { ProcessedDeck } from '../utils/deckHelpers';
@@ -26,17 +26,21 @@ export function DeckGrid({
     const renderList = (decksToRender: ProcessedDeck[]) => {
         if (decksToRender.length === 0) {
             return (
-                <Card
-                    padding="xl"
+                <Paper
+                    p="xl"
                     radius="md"
                     withBorder
-                    bg="dark.8"
-                    style={{ textAlign: 'center', borderStyle: 'dashed' }}
+                    style={{
+                        textAlign: 'center',
+                        borderStyle: 'dashed',
+                        borderColor: 'rgba(168, 85, 247, 0.25)',
+                        background: 'rgba(15, 23, 42, 0.4)',
+                    }}
                 >
                     <Text c="gray.5" size="sm">
                         No decks found matching your filters in this format.
                     </Text>
-                </Card>
+                </Paper>
             );
         }
 
@@ -72,24 +76,30 @@ export function DeckGrid({
             variant="outline"
             mt="md"
             mb="xl"
+            styles={{
+                tab: {
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    borderColor: 'rgba(168, 85, 247, 0.2)',
+                    '&[data-active]': {
+                        borderColor: 'rgba(168, 85, 247, 0.6)',
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        color: '#c084fc',
+                    },
+                },
+                list: {
+                    borderBottom: '1px solid rgba(168, 85, 247, 0.2)',
+                    marginBottom: 16,
+                },
+            }}
         >
-            <Tabs.List
-                style={{
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.15)',
-                }}
-                mb="md"
-            >
-                <Tabs.Tab
-                    value="core"
-                    leftSection={<IconCards size={16} />}
-                    style={{ fontWeight: 600 }}
-                >
+            <Tabs.List>
+                <Tabs.Tab value="core" leftSection={<IconCards size={16} />}>
                     Core Constructed ({coreDecks.length})
                 </Tabs.Tab>
                 <Tabs.Tab
                     value="infinity"
                     leftSection={<IconInfinity size={16} />}
-                    style={{ fontWeight: 600 }}
                 >
                     Infinity Constructed ({infinityDecks.length})
                 </Tabs.Tab>

@@ -258,6 +258,7 @@ export function MyDecksAddCardsModal({
                                                         size="xs"
                                                         variant="light"
                                                         color="violet"
+                                                        aria-label={`Decrease ${card.name}`}
                                                         disabled={
                                                             currentQty <= 0
                                                         }
@@ -285,6 +286,7 @@ export function MyDecksAddCardsModal({
                                                         size="xs"
                                                         variant="light"
                                                         color="violet"
+                                                        aria-label={`Increase ${card.name}`}
                                                         disabled={
                                                             currentQty >= 4
                                                         }
