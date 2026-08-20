@@ -28,6 +28,6 @@ describe('MyDecks Route Integration', () => {
             </MantineProvider>,
         );
 
-        expect(screen.getByText('My Custom Decks')).toBeInTheDocument();
+        expect(screen.getByText('My Decks')).toBeInTheDocument();
     });
 });
