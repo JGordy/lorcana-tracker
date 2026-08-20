@@ -12,7 +12,6 @@ import {
 } from '@mantine/core';
 import {
     IconCards,
-    IconAlertTriangle,
     IconFolderPlus,
     IconBrandYoutube,
     IconCopy,
@@ -43,7 +42,7 @@ export function DeckCardItem({
     onCloneDeck,
     onExportDeck,
 }: DeckCardItemProps) {
-    const { percentage, ownedCount, totalCount, missingCards } = deck.progress;
+    const { percentage, ownedCount, totalCount } = deck.progress;
     const featuredCard = getFeaturedDeckCard(deck.cards);
     const keyCards = getKeyDeckCards(deck.cards, 4);
 
@@ -267,7 +266,9 @@ export function DeckCardItem({
                         <Group gap={6}>
                             {keyCards.map((kc) => {
                                 const primaryInk = (
-                                    kc.ink_color ? kc.ink_color.split('/')[0] : ''
+                                    kc.ink_color
+                                        ? kc.ink_color.split('/')[0]
+                                        : ''
                                 )
                                     .toLowerCase()
                                     .trim();
@@ -301,7 +302,8 @@ export function DeckCardItem({
                                                         width: '100%',
                                                         height: '100%',
                                                         objectFit: 'cover',
-                                                        objectPosition: 'center 20%',
+                                                        objectPosition:
+                                                            'center 20%',
                                                     }}
                                                 />
                                             ) : (
@@ -337,23 +339,6 @@ export function DeckCardItem({
                         radius="xl"
                         striped
                     />
-                    {missingCards.length > 0 && ownedCount < totalCount && (
-                        <Box mt={6}>
-                            <Text
-                                size="xs"
-                                c="rose.4"
-                                fw={500}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 4,
-                                }}
-                            >
-                                <IconAlertTriangle size={14} /> Missing{' '}
-                                {totalCount - ownedCount} cards
-                            </Text>
-                        </Box>
-                    )}
                 </Box>
             </Stack>
 

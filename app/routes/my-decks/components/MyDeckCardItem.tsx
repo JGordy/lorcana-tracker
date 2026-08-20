@@ -12,6 +12,7 @@ import {
 } from '@mantine/core';
 import {
     IconCards,
+    IconPlus,
     IconEdit,
     IconTrash,
     IconCopy,
@@ -31,6 +32,7 @@ interface MyDeckCardItemProps {
     onOpenEditModal: (deck: any) => void;
     onOpenDeleteModal: (deck: any) => void;
     onExportDeck: (deck: any) => void;
+    onOpenAddCardsModal?: (deck: any) => void;
 }
 
 export function MyDeckCardItem({
@@ -40,8 +42,9 @@ export function MyDeckCardItem({
     onOpenEditModal,
     onOpenDeleteModal,
     onExportDeck,
+    onOpenAddCardsModal,
 }: MyDeckCardItemProps) {
-    const { percentage, ownedCount, totalCount, missingCards } = deck.progress;
+    const { percentage, ownedCount, totalCount } = deck.progress;
     const featuredCard = getFeaturedDeckCard(deck.cards, deck.meta.coverCardId);
     const keyCards = getKeyDeckCards(deck.cards, 4);
 
@@ -260,10 +263,10 @@ export function MyDeckCardItem({
                                             style={{
                                                 position: 'relative',
                                                 width: 32,
-                                                height: 44,
-                                                borderRadius: 4,
+                                                height: 32,
+                                                borderRadius: '50%',
                                                 overflow: 'hidden',
-                                                border: `1px solid ${inkBorderColor}`,
+                                                border: `2px solid ${inkBorderColor}`,
                                                 boxShadow:
                                                     '0 2px 6px rgba(0,0,0,0.5)',
                                             }}
@@ -314,20 +317,11 @@ export function MyDeckCardItem({
                 <Box mt="auto" pt="xs">
                     <Group justify="space-between" align="center" mb={4}>
                         <Text size="xs" c="gray.4" fw={600}>
-                            Collection Match
+                            Collection Progress
                         </Text>
-                        <Group gap={6} align="center">
-                            <Text size="xs" fw={700} c="gray.2">
-                                {ownedCount}/{totalCount}
-                            </Text>
-                            <Badge
-                                size="xs"
-                                variant="light"
-                                color={progressColor}
-                            >
-                                {percentage}%
-                            </Badge>
-                        </Group>
+                        <Badge size="xs" variant="light" color={progressColor}>
+                            {ownedCount}/{totalCount} ({percentage}%)
+                        </Badge>
                     </Group>
                     <Progress
                         value={percentage}
@@ -336,20 +330,6 @@ export function MyDeckCardItem({
                         radius="xl"
                         striped
                     />
-                    {missingCards.length > 0 ? (
-                        <Text size="10px" c="red.4" fw={600} mt={4}>
-                            Need{' '}
-                            {missingCards.reduce(
-                                (s: number, m: any) => s + m.missing,
-                                0,
-                            )}{' '}
-                            Cards to Complete
-                        </Text>
-                    ) : (
-                        <Text size="10px" c="teal.4" fw={600} mt={4}>
-                            ✓ 100% Complete & Ready to Play
-                        </Text>
-                    )}
                 </Box>
             </Stack>
 
@@ -364,12 +344,27 @@ export function MyDeckCardItem({
                     size="xs"
                     variant="light"
                     color="violet"
+                    leftSection={<IconCards size={14} />}
                     onClick={() => onOpenViewModal(deck.$id)}
                 >
-                    View / Manage
+                    View & Edit Deck
                 </Button>
 
                 <Group gap={4}>
+                    <Tooltip label="Add Cards" withArrow>
+                        <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="gray"
+                            onClick={() =>
+                                onOpenAddCardsModal
+                                    ? onOpenAddCardsModal(deck)
+                                    : onOpenViewModal(deck.$id)
+                            }
+                        >
+                            <IconPlus size={16} />
+                        </ActionIcon>
+                    </Tooltip>
                     <Tooltip label="Edit Title / Cover Art" withArrow>
                         <ActionIcon
                             size="sm"

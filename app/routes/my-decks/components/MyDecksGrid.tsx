@@ -11,6 +11,7 @@ interface MyDecksGridProps {
     onOpenEditModal: (deck: any) => void;
     onOpenDeleteModal: (deck: any) => void;
     onExportDeck: (deck: any) => void;
+    onOpenAddCardsModal?: (deck: any) => void;
 }
 
 export function MyDecksGrid({
@@ -22,6 +23,7 @@ export function MyDecksGrid({
     onOpenEditModal,
     onOpenDeleteModal,
     onExportDeck,
+    onOpenAddCardsModal,
 }: MyDecksGridProps) {
     if (decks.length === 0) {
         return (
@@ -68,7 +70,7 @@ export function MyDecksGrid({
     }
 
     return (
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
             {decks.map((deck) => (
                 <MyDeckCardItem
                     key={deck.$id}
@@ -78,6 +80,7 @@ export function MyDecksGrid({
                     onOpenEditModal={onOpenEditModal}
                     onOpenDeleteModal={onOpenDeleteModal}
                     onExportDeck={onExportDeck}
+                    onOpenAddCardsModal={onOpenAddCardsModal}
                 />
             ))}
         </SimpleGrid>

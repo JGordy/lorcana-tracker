@@ -44,11 +44,9 @@ export function DeckGrid({
             <SimpleGrid
                 cols={{
                     base: 1,
-                    xs: 1,
                     sm: 2,
                     md: 3,
                     lg: 4,
-                    xl: 4,
                 }}
                 spacing="lg"
             >
@@ -98,7 +96,9 @@ export function DeckGrid({
             </Tabs.List>
 
             <Tabs.Panel value="core">{renderList(coreDecks)}</Tabs.Panel>
-            <Tabs.Panel value="infinity">{renderList(infinityDecks)}</Tabs.Panel>
+            <Tabs.Panel value="infinity">
+                {renderList(infinityDecks)}
+            </Tabs.Panel>
         </Tabs>
     );
 }

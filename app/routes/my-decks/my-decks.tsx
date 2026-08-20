@@ -248,6 +248,10 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setDeleteModalOpen(true);
                 }}
                 onExportDeck={handleExportDeck}
+                onOpenAddCardsModal={(deck) => {
+                    setActiveDeckId(deck.$id);
+                    setAddCardsModalOpen(true);
+                }}
             />
 
             {/* 1. Create Deck Modal */}
