@@ -4,6 +4,16 @@ import {
     type ProgressResult,
 } from '../utils/deck';
 
+// Lorcana Inks Configuration Constant
+export const ALL_INKS = [
+    { id: 'amber', name: 'Amber', hex: '#F5B041' },
+    { id: 'amethyst', name: 'Amethyst', hex: '#AF7AC5' },
+    { id: 'emerald', name: 'Emerald', hex: '#2ECC71' },
+    { id: 'ruby', name: 'Ruby', hex: '#EC7063' },
+    { id: 'sapphire', name: 'Sapphire', hex: '#5DADE2' },
+    { id: 'steel', name: 'Steel', hex: '#A6ACAF' },
+] as const;
+
 // ---------------------------------------------------------
 // TypeScript Schema Types
 // ---------------------------------------------------------

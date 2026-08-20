@@ -81,11 +81,7 @@ export function ViewDeckModal({
                                     ? 'Core Legal'
                                     : 'Infinity'}
                             </Badge>
-                            <Badge
-                                size="xs"
-                                variant="outline"
-                                color="violet"
-                            >
+                            <Badge size="xs" variant="outline" color="violet">
                                 {activeDeck.cards.reduce(
                                     (acc, c) => acc + c.requiredQty,
                                     0,
@@ -119,7 +115,8 @@ export function ViewDeckModal({
                                     color={
                                         activeDeck.progress.percentage >= 80
                                             ? 'teal'
-                                            : activeDeck.progress.percentage >= 50
+                                            : activeDeck.progress.percentage >=
+                                                50
                                               ? 'yellow'
                                               : 'red'
                                     }
@@ -225,14 +222,28 @@ export function ViewDeckModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea.Autosize mah={480}>
-                            <Table striped highlightOnHover style={{ minWidth: 700 }}>
+                        <ScrollArea h={380} type="auto">
+                            <Table
+                                striped
+                                highlightOnHover
+                                style={{ minWidth: 700 }}
+                            >
                                 <Table.Thead>
                                     <Table.Tr>
-                                        <Table.Th style={{ color: '#94a3b8', fontSize: 11 }}>
+                                        <Table.Th
+                                            style={{
+                                                color: '#94a3b8',
+                                                fontSize: 11,
+                                            }}
+                                        >
                                             Card
                                         </Table.Th>
-                                        <Table.Th style={{ color: '#94a3b8', fontSize: 11 }}>
+                                        <Table.Th
+                                            style={{
+                                                color: '#94a3b8',
+                                                fontSize: 11,
+                                            }}
+                                        >
                                             Ink Color
                                         </Table.Th>
                                         <Table.Th
@@ -295,8 +306,10 @@ export function ViewDeckModal({
                                 </Table.Thead>
                                 <Table.Tbody>
                                     {filteredCards.map((dc) => {
-                                        const isMissing = dc.ownedQty < dc.requiredQty;
-                                        const missingCount = dc.requiredQty - dc.ownedQty;
+                                        const isMissing =
+                                            dc.ownedQty < dc.requiredQty;
+                                        const missingCount =
+                                            dc.requiredQty - dc.ownedQty;
 
                                         return (
                                             <Table.Tr key={dc.card.id}>
@@ -304,12 +317,18 @@ export function ViewDeckModal({
                                                     <Group gap="sm">
                                                         {dc.card.image_url ? (
                                                             <img
-                                                                src={dc.card.image_url}
-                                                                alt={dc.card.name}
+                                                                src={
+                                                                    dc.card
+                                                                        .image_url
+                                                                }
+                                                                alt={
+                                                                    dc.card.name
+                                                                }
                                                                 style={{
                                                                     width: 32,
                                                                     height: 44,
-                                                                    objectFit: 'cover',
+                                                                    objectFit:
+                                                                        'cover',
                                                                     borderRadius: 4,
                                                                 }}
                                                             />
@@ -321,14 +340,19 @@ export function ViewDeckModal({
                                                                     borderRadius: 4,
                                                                     background:
                                                                         'rgba(255,255,255,0.05)',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
+                                                                    display:
+                                                                        'flex',
+                                                                    alignItems:
+                                                                        'center',
+                                                                    justifyContent:
+                                                                        'center',
                                                                 }}
                                                             >
                                                                 <IconCards
                                                                     size={16}
-                                                                    opacity={0.4}
+                                                                    opacity={
+                                                                        0.4
+                                                                    }
                                                                 />
                                                             </Box>
                                                         )}
@@ -345,7 +369,9 @@ export function ViewDeckModal({
                                                                     size="10px"
                                                                     c="dimmed"
                                                                 >
-                                                                    {dc.card.type.join(' • ')}
+                                                                    {dc.card.type.join(
+                                                                        ' • ',
+                                                                    )}
                                                                 </Text>
                                                             )}
                                                         </Box>
@@ -357,7 +383,8 @@ export function ViewDeckModal({
                                                         size="xs"
                                                         variant="outline"
                                                         style={getInkBadgeStyle(
-                                                            dc.card.ink_color || '',
+                                                            dc.card.ink_color ||
+                                                                '',
                                                         )}
                                                     >
                                                         {dc.card.ink_color}
@@ -373,13 +400,18 @@ export function ViewDeckModal({
                                                     {dc.card.cost}⬡
                                                 </Table.Td>
 
-                                                <Table.Td style={{ textAlign: 'center' }}>
+                                                <Table.Td
+                                                    style={{
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
                                                     <Badge
                                                         size="xs"
                                                         variant="light"
                                                         color={
-                                                            RARITY_COLOR[dc.card.rarity] ||
-                                                            'gray'
+                                                            RARITY_COLOR[
+                                                                dc.card.rarity
+                                                            ] || 'gray'
                                                         }
                                                     >
                                                         {dc.card.rarity}
@@ -407,7 +439,11 @@ export function ViewDeckModal({
                                                     {dc.ownedQty}
                                                 </Table.Td>
 
-                                                <Table.Td style={{ textAlign: 'center' }}>
+                                                <Table.Td
+                                                    style={{
+                                                        textAlign: 'center',
+                                                    }}
+                                                >
                                                     {isMissing ? (
                                                         <Badge
                                                             size="xs"
@@ -428,12 +464,20 @@ export function ViewDeckModal({
                                                 </Table.Td>
 
                                                 {user && (
-                                                    <Table.Td style={{ textAlign: 'right' }}>
+                                                    <Table.Td
+                                                        style={{
+                                                            textAlign: 'right',
+                                                        }}
+                                                    >
                                                         <Button
                                                             size="compact-xs"
                                                             variant="subtle"
                                                             color="violet"
-                                                            leftSection={<IconPlus size={12} />}
+                                                            leftSection={
+                                                                <IconPlus
+                                                                    size={12}
+                                                                />
+                                                            }
                                                             onClick={() =>
                                                                 onQuickAdd(
                                                                     dc.card.id,
@@ -451,7 +495,7 @@ export function ViewDeckModal({
                                     })}
                                 </Table.Tbody>
                             </Table>
-                        </ScrollArea.Autosize>
+                        </ScrollArea>
                     )}
                 </Box>
 
@@ -460,7 +504,11 @@ export function ViewDeckModal({
                     <Text size="xs" c="dimmed">
                         Total Cards:{' '}
                         <strong>
-                            {activeDeck.cards.reduce((acc, c) => acc + c.requiredQty, 0)}/60
+                            {activeDeck.cards.reduce(
+                                (acc, c) => acc + c.requiredQty,
+                                0,
+                            )}
+                            /60
                         </strong>{' '}
                         • {activeDeck.cards.length} Unique Cards
                     </Text>
