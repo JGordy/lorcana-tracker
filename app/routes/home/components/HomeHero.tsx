@@ -1,14 +1,11 @@
 import { Link } from 'react-router';
+import { Stack, Box, Badge, Title, Text, Group, Button } from '@mantine/core';
 import {
-    Stack,
-    Box,
-    Badge,
-    Title,
-    Text,
-    Group,
-    Button,
-} from '@mantine/core';
-import { IconArrowRight, IconCards, IconTrophy, IconChartBar } from '@tabler/icons-react';
+    IconArrowRight,
+    IconCards,
+    IconTrophy,
+    IconChartBar,
+} from '@tabler/icons-react';
 
 export function HomeHero() {
     return (
@@ -60,7 +57,9 @@ export function HomeHero() {
                 mx="auto"
                 style={{ zIndex: 1, lineHeight: 1.65 }}
             >
-                Stop guessing which decks you can build. Manage your physical collection card-by-card, and let GlimmerForge calculate ownership scores across meta decks instantly.
+                Stop guessing which decks you can build. Manage your physical
+                collection card-by-card, and let GlimmerForge calculate
+                ownership scores across meta decks instantly.
             </Text>
 
             {/* Feature Pills */}

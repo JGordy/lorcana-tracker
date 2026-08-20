@@ -21,7 +21,8 @@ export function HomeQuickStart() {
                     From Booster Pack to Tournament Ready
                 </Title>
                 <Text size="xs" c="gray.4" max-width={550} mx="auto" mt={6}>
-                    Get up and running in under three minutes with GlimmerForge&apos;s streamlined recommendation workflow.
+                    Get up and running in under three minutes with
+                    GlimmerForge&apos;s streamlined recommendation workflow.
                 </Text>
             </Box>
 
@@ -36,7 +37,12 @@ export function HomeQuickStart() {
                     }}
                 >
                     <Group justify="space-between" mb="xs">
-                        <ThemeIcon color="violet" variant="light" size="lg" radius="md">
+                        <ThemeIcon
+                            color="violet"
+                            variant="light"
+                            size="lg"
+                            radius="md"
+                        >
                             <IconPlus size={20} />
                         </ThemeIcon>
                         <Text size="xs" fw={900} c="violet.4">
@@ -47,7 +53,8 @@ export function HomeQuickStart() {
                         1. Add Physical Cards
                     </Text>
                     <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
-                        Search card names or set numbers to log normal and foil quantities into your collection tracker.
+                        Search card names or set numbers to log normal and foil
+                        quantities into your collection tracker.
                     </Text>
                 </Card>
 
@@ -61,7 +68,12 @@ export function HomeQuickStart() {
                     }}
                 >
                     <Group justify="space-between" mb="xs">
-                        <ThemeIcon color="indigo" variant="light" size="lg" radius="md">
+                        <ThemeIcon
+                            color="indigo"
+                            variant="light"
+                            size="lg"
+                            radius="md"
+                        >
                             <IconSparkles size={20} />
                         </ThemeIcon>
                         <Text size="xs" fw={900} c="indigo.4">
@@ -72,7 +84,8 @@ export function HomeQuickStart() {
                         2. Scan Meta Decks
                     </Text>
                     <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
-                        The recommendation engine automatically scans meta decks, showing your ownership percentage in real time.
+                        The recommendation engine automatically scans meta
+                        decks, showing your ownership percentage in real time.
                     </Text>
                 </Card>
 
@@ -86,7 +99,12 @@ export function HomeQuickStart() {
                     }}
                 >
                     <Group justify="space-between" mb="xs">
-                        <ThemeIcon color="teal" variant="light" size="lg" radius="md">
+                        <ThemeIcon
+                            color="teal"
+                            variant="light"
+                            size="lg"
+                            radius="md"
+                        >
                             <IconShoppingCart size={20} />
                         </ThemeIcon>
                         <Text size="xs" fw={900} c="teal.4">
@@ -97,7 +115,9 @@ export function HomeQuickStart() {
                         3. Export Buy Lists
                     </Text>
                     <Text size="xs" c="gray.5" style={{ lineHeight: 1.5 }}>
-                        See the exact missing cards needed to finish your next deck and copy formatted list exports for single card purchases.
+                        See the exact missing cards needed to finish your next
+                        deck and copy formatted list exports for single card
+                        purchases.
                     </Text>
                 </Card>
             </SimpleGrid>

@@ -12,7 +12,9 @@ describe('HomeDemoCallout', () => {
             </MantineProvider>,
         );
 
-        expect(screen.getByText('Ready to test it in action?')).toBeInTheDocument();
+        expect(
+            screen.getByText('Ready to test it in action?'),
+        ).toBeInTheDocument();
         const button = screen.getByText('Sign In & Seed Mock Collection');
         expect(button).toBeInTheDocument();
 

@@ -1,12 +1,5 @@
 import { Link } from 'react-router';
-import {
-    Paper,
-    Stack,
-    ThemeIcon,
-    Title,
-    Text,
-    Button,
-} from '@mantine/core';
+import { Paper, Stack, ThemeIcon, Title, Text, Button } from '@mantine/core';
 import { IconCircleCheck, IconAlertCircle } from '@tabler/icons-react';
 
 interface VerifyCardProps {

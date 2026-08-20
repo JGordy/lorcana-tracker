@@ -11,7 +11,9 @@ describe('HomeQuickStart', () => {
             </MantineProvider>,
         );
 
-        expect(screen.getByText('From Booster Pack to Tournament Ready')).toBeInTheDocument();
+        expect(
+            screen.getByText('From Booster Pack to Tournament Ready'),
+        ).toBeInTheDocument();
         expect(screen.getByText('1. Add Physical Cards')).toBeInTheDocument();
         expect(screen.getByText('2. Scan Meta Decks')).toBeInTheDocument();
         expect(screen.getByText('3. Export Buy Lists')).toBeInTheDocument();

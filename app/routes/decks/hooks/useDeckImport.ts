@@ -32,7 +32,9 @@ export function useDeckImport({ cards, submit, userId }: UseDeckImportOptions) {
     const [importTitle, setImportTitle] = useState('');
     const [importText, setImportText] = useState('');
     const [importError, setImportError] = useState<string | null>(null);
-    const [parsedResults, setParsedResults] = useState<ParsedResults | null>(null);
+    const [parsedResults, setParsedResults] = useState<ParsedResults | null>(
+        null,
+    );
 
     const handleValidateImport = () => {
         if (!importText.trim()) {

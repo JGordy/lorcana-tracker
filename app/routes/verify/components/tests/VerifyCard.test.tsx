@@ -9,13 +9,18 @@ describe('VerifyCard', () => {
         render(
             <MantineProvider>
                 <MemoryRouter>
-                    <VerifyCard success={true} message="Email verified successfully!" />
+                    <VerifyCard
+                        success={true}
+                        message="Email verified successfully!"
+                    />
                 </MemoryRouter>
             </MantineProvider>,
         );
 
         expect(screen.getByText('Email Verified!')).toBeInTheDocument();
-        expect(screen.getByText('Email verified successfully!')).toBeInTheDocument();
+        expect(
+            screen.getByText('Email verified successfully!'),
+        ).toBeInTheDocument();
         expect(screen.getByText('Go to My Collection')).toBeInTheDocument();
     });
 
@@ -23,12 +28,17 @@ describe('VerifyCard', () => {
         render(
             <MantineProvider>
                 <MemoryRouter>
-                    <VerifyCard success={false} message="Invalid verification token." />
+                    <VerifyCard
+                        success={false}
+                        message="Invalid verification token."
+                    />
                 </MemoryRouter>
             </MantineProvider>,
         );
 
         expect(screen.getByText('Verification Failed')).toBeInTheDocument();
-        expect(screen.getByText('Invalid verification token.')).toBeInTheDocument();
+        expect(
+            screen.getByText('Invalid verification token.'),
+        ).toBeInTheDocument();
     });
 });
