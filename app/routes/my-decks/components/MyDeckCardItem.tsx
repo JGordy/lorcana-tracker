@@ -360,6 +360,7 @@ export function MyDeckCardItem({
                             size="sm"
                             variant="subtle"
                             color="gray"
+                            aria-label="Add Cards"
                             onClick={() =>
                                 onOpenAddCardsModal
                                     ? onOpenAddCardsModal(deck)
@@ -374,6 +375,7 @@ export function MyDeckCardItem({
                             size="sm"
                             variant="subtle"
                             color="gray"
+                            aria-label="Edit Title / Cover Art"
                             onClick={() => onOpenEditModal(deck)}
                         >
                             <IconEdit size={16} />
@@ -384,6 +386,7 @@ export function MyDeckCardItem({
                             size="sm"
                             variant="subtle"
                             color="gray"
+                            aria-label="Export Decklist"
                             onClick={() => onExportDeck(deck)}
                         >
                             {copyFeedback === deck.$id ? (
@@ -398,6 +401,7 @@ export function MyDeckCardItem({
                             size="sm"
                             variant="subtle"
                             color="red"
+                            aria-label="Delete Deck"
                             onClick={() => onOpenDeleteModal(deck)}
                         >
                             <IconTrash size={16} />

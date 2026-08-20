@@ -1,0 +1,79 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { MantineProvider } from '@mantine/core';
+import { MyDecksToolbar } from '../MyDecksToolbar';
+
+const defaultProps = {
+    searchQuery: '',
+    onSearchChange: vi.fn(),
+    sort: 'progress',
+    navigate: vi.fn(),
+    activeCount: 5,
+};
+
+function renderToolbar(props = {}) {
+    return render(
+        <MantineProvider>
+            <MyDecksToolbar {...defaultProps} {...props} />
+        </MantineProvider>,
+    );
+}
+
+describe('MyDecksToolbar', () => {
+    it('renders the search input and sort select', () => {
+        renderToolbar();
+        expect(
+            screen.getByPlaceholderText(
+                'Search personal decks by name or notes...',
+            ),
+        ).toBeInTheDocument();
+        expect(screen.getByText('Highest Match %')).toBeInTheDocument();
+    });
+
+    it('displays the active deck count badge — plural', () => {
+        renderToolbar({ activeCount: 5 });
+        expect(screen.getByText('5 Decks')).toBeInTheDocument();
+    });
+
+    it('displays singular "Deck" label when activeCount is 1', () => {
+        renderToolbar({ activeCount: 1 });
+        expect(screen.getByText('1 Deck')).toBeInTheDocument();
+    });
+
+    it('calls onSearchChange when typing in the search input', () => {
+        const onSearchChange = vi.fn();
+        renderToolbar({ onSearchChange });
+        const input = screen.getByPlaceholderText(
+            'Search personal decks by name or notes...',
+        );
+        fireEvent.change(input, { target: { value: 'ruby' } });
+        expect(onSearchChange).toHaveBeenCalledWith('ruby');
+    });
+
+    it('shows a clear button when searchQuery is non-empty', () => {
+        renderToolbar({ searchQuery: 'amber' });
+        expect(screen.getByTitle('Clear search')).toBeInTheDocument();
+    });
+
+    it('calls onSearchChange with empty string when clear button is clicked', () => {
+        const onSearchChange = vi.fn();
+        renderToolbar({ searchQuery: 'amber', onSearchChange });
+        fireEvent.click(screen.getByTitle('Clear search'));
+        expect(onSearchChange).toHaveBeenCalledWith('');
+    });
+
+    it('does not show clear button when searchQuery is empty', () => {
+        renderToolbar({ searchQuery: '' });
+        expect(screen.queryByTitle('Clear search')).not.toBeInTheDocument();
+    });
+
+    it('navigates with sort param when sort value changes', () => {
+        const navigate = vi.fn();
+        renderToolbar({ navigate });
+        const combobox = screen.getByRole('combobox');
+        fireEvent.click(combobox);
+        const option = screen.getByText('Deck Name (A-Z)');
+        fireEvent.click(option);
+        expect(navigate).toHaveBeenCalledWith('/my-decks?sort=name');
+    });
+});
