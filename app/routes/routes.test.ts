@@ -18,12 +18,10 @@ vi.mock('../services/appwrite.server', () => ({
     dbService: {
         getCollection: vi.fn().mockResolvedValue([]),
         getUserDecksWithProgress: vi.fn().mockResolvedValue([]),
-        createDeck: vi
-            .fn()
-            .mockResolvedValue({
-                deck: { $id: 'deck-123', title: 'Test Deck' },
-                deckCards: [],
-            }),
+        createDeck: vi.fn().mockResolvedValue({
+            deck: { $id: 'deck-123', title: 'Test Deck' },
+            deckCards: [],
+        }),
         updateDeckCards: vi.fn().mockResolvedValue([]),
         updateDeckDetails: vi
             .fn()
@@ -41,7 +39,7 @@ vi.mock('../services/appwrite.server', () => ({
 }));
 
 import { loader as verifyLoader } from './verify';
-import { loader as homeLoader, action as homeAction } from './home';
+import { loader as homeLoader, action as homeAction } from './home/home';
 import { loader as logoutLoader, action as logoutAction } from './logout';
 import { loader as myDecksLoader, action as myDecksAction } from './my-decks';
 import { authService } from '../services/auth.server';
