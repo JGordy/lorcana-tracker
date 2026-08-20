@@ -34,13 +34,34 @@ export interface ProgressResult {
 export function calculateDeckProgress(
     userCollection: UserCollectionItem[],
     deckCards: DeckCard[],
+    cardsCatalog?: Array<{ id: string; $id?: string; name: string }>,
 ): ProgressResult {
-    // 1. Aggregate user collection quantities by card_id
+    const cardsLookup = cardsCatalog ? buildCardsLookup(cardsCatalog) : null;
+
+    // 1. Aggregate user collection quantities by card_id, canonical card_id, and base slug
     const ownedMap: Record<string, number> = {};
     for (const item of userCollection) {
         if (item.quantity > 0) {
             ownedMap[item.card_id] =
                 (ownedMap[item.card_id] || 0) + item.quantity;
+
+            if (cardsLookup) {
+                const resolvedCard = cardsLookup.get(item.card_id);
+                if (resolvedCard && resolvedCard.id !== item.card_id) {
+                    ownedMap[resolvedCard.id] =
+                        (ownedMap[resolvedCard.id] || 0) + item.quantity;
+                }
+            } else {
+                const baseSlug = getCardSlug(
+                    item.card_id
+                        .replace(/-(set|promo)-[a-z0-9]+-\d+$/i, '')
+                        .replace(/-\d+-\d+$/i, ''),
+                );
+                if (baseSlug && baseSlug !== item.card_id) {
+                    ownedMap[baseSlug] =
+                        (ownedMap[baseSlug] || 0) + item.quantity;
+                }
+            }
         }
     }
 
@@ -53,7 +74,22 @@ export function calculateDeckProgress(
         const requiredQty = req.quantity;
         totalCount += requiredQty;
 
-        const ownedQty = ownedMap[req.card_id] || 0;
+        let canonicalId = req.card_id;
+        if (cardsLookup) {
+            const resolved = cardsLookup.get(req.card_id);
+            if (resolved) canonicalId = resolved.id;
+        }
+
+        const reqSlug = getCardSlug(
+            req.card_id
+                .replace(/-(set|promo)-[a-z0-9]+-\d+$/i, '')
+                .replace(/-\d+-\d+$/i, ''),
+        );
+        const ownedQty =
+            ownedMap[canonicalId] ||
+            ownedMap[req.card_id] ||
+            (reqSlug ? ownedMap[reqSlug] : 0) ||
+            0;
         const matching = Math.min(requiredQty, ownedQty);
         ownedCount += matching;
 
@@ -91,6 +127,71 @@ export function getCardSlug(name: string): string {
         .replace(/[\s-]+/g, '-'); // collapse spaces and dashes to a single dash
 }
 
+export function buildCardsLookup<
+    T extends { id: string; $id?: string; name: string },
+>(cards: T[]) {
+    const map = new Map<string, T>();
+    for (const card of cards) {
+        map.set(card.id, card);
+        if (card.$id) map.set(card.$id, card);
+
+        const baseSlug = getCardSlug(card.name);
+        if (baseSlug && !map.has(baseSlug)) {
+            map.set(baseSlug, card);
+        }
+
+        const alphaNum = card.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (alphaNum && !map.has(alphaNum)) {
+            map.set(alphaNum, card);
+        }
+    }
+
+    return {
+        get(cardId: string): T | undefined {
+            if (!cardId) return undefined;
+            if (map.has(cardId)) return map.get(cardId);
+
+            const slug = getCardSlug(cardId);
+            if (map.has(slug)) return map.get(slug);
+
+            // Strip set/promo/number suffixes (e.g. -set-13-3, -12-15, -12-205, -p3-53, -15)
+            const strippedSlug = getCardSlug(
+                cardId
+                    .replace(/-(set|promo)-[a-z0-9]+-\d+$/i, '')
+                    .replace(/-\d+-\d+$/i, '')
+                    .replace(/-\d+$/i, ''),
+            );
+            if (strippedSlug && map.has(strippedSlug))
+                return map.get(strippedSlug);
+
+            // Try alphanumeric string (handles apostrophes and hyphens)
+            const alphaNum = cardId.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (alphaNum && map.has(alphaNum)) return map.get(alphaNum);
+
+            const strippedAlphaNum = strippedSlug
+                .toLowerCase()
+                .replace(/[^a-z0-9]/g, '');
+            if (strippedAlphaNum && map.has(strippedAlphaNum))
+                return map.get(strippedAlphaNum);
+
+            // Fuzzy substring matching
+            const targetClean = getCardSlug(cardId).replace(/-/g, ' ');
+            for (const card of cards) {
+                const cardNameClean = getCardSlug(card.name).replace(/-/g, ' ');
+                if (
+                    cardNameClean &&
+                    (targetClean.includes(cardNameClean) ||
+                        cardNameClean.includes(targetClean))
+                ) {
+                    return card;
+                }
+            }
+
+            return undefined;
+        },
+    };
+}
+
 export interface DeckMetadata {
     format: 'core' | 'infinity';
     inks: string[];
@@ -109,25 +210,7 @@ export const RARITY_RANK: Record<string, number> = {
     Common: 0,
 };
 
-export const RARITY_COLOR: Record<string, string> = {
-    Enchanted: '#e879f9',
-    Iconic: '#fbbf24',
-    Epic: '#c084fc',
-    Legendary: '#f59e0b',
-    'Super Rare': '#38bdf8',
-    Rare: '#4ade80',
-    Uncommon: '#94a3b8',
-    Common: '#64748b',
-};
-
-export const INK_HEX_MAP: Record<string, string> = {
-    amber: '#F5B041',
-    amethyst: '#AF7AC5',
-    emerald: '#2ECC71',
-    ruby: '#EC7063',
-    sapphire: '#5DADE2',
-    steel: '#A6ACAF',
-};
+export { RARITY_COLOR, INK_HEX_MAP } from '../constants';
 
 export function parseDeckMetadata(desc: string | undefined): DeckMetadata {
     if (!desc) return { format: 'core', inks: [], description: '' };

@@ -5,6 +5,7 @@ import {
     parseDeckMetadata,
     getFeaturedDeckCard,
     getKeyDeckCards,
+    buildCardsLookup,
     INK_HEX_MAP,
     RARITY_RANK,
     RARITY_COLOR,
@@ -357,5 +358,52 @@ describe('INK_HEX_MAP and RARITY constants', () => {
         );
         expect(RARITY_RANK['Super Rare']).toBeGreaterThan(RARITY_RANK['Rare']);
         expect(RARITY_RANK['Rare']).toBeGreaterThan(RARITY_RANK['Common']);
+    });
+});
+
+describe('buildCardsLookup', () => {
+    const mockCards = [
+        {
+            id: 'buzzs-arm',
+            name: "Buzz's Arm",
+        },
+        {
+            id: 'sid-phillips-toy-surgeon',
+            name: 'Sid Phillips - Toy Surgeon',
+        },
+        {
+            id: 'woody-waiting-for-a-friend',
+            name: 'Woody - Waiting for a Friend',
+        },
+        {
+            id: 'babyhead-leader-of-sids-toys',
+            name: "Babyhead - Leader of Sid's Toys",
+        },
+    ];
+
+    it('should resolve cards by exact ID', () => {
+        const lookup = buildCardsLookup(mockCards);
+        expect(lookup.get('sid-phillips-toy-surgeon')?.name).toBe(
+            'Sid Phillips - Toy Surgeon',
+        );
+    });
+
+    it('should resolve cards with set and number suffixes', () => {
+        const lookup = buildCardsLookup(mockCards);
+        expect(lookup.get('woody-waiting-for-a-friend-12-3')?.name).toBe(
+            'Woody - Waiting for a Friend',
+        );
+        expect(lookup.get('woody-waiting-for-a-friend-set-12-3')?.name).toBe(
+            'Woody - Waiting for a Friend',
+        );
+    });
+
+    it('should resolve cards with apostrophe differences (e.g. buzz-s-arm vs buzzs-arm)', () => {
+        const lookup = buildCardsLookup(mockCards);
+        expect(lookup.get('buzz-s-arm')?.name).toBe("Buzz's Arm");
+        expect(lookup.get('buzzs-arm')?.name).toBe("Buzz's Arm");
+        expect(lookup.get('babyhead-leader-of-sid-s-toys')?.name).toBe(
+            "Babyhead - Leader of Sid's Toys",
+        );
     });
 });

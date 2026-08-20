@@ -1,5 +1,5 @@
 import type { Route } from './+types/collection';
-import { useLoaderData, useFetcher } from 'react-router';
+import { useLoaderData, useFetcher, useSearchParams } from 'react-router';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import {
     Container,
@@ -15,6 +15,9 @@ import {
     SimpleGrid,
     Paper,
     Select,
+    SegmentedControl,
+    Button,
+    Tooltip,
 } from '@mantine/core';
 import {
     IconSearch,
@@ -22,6 +25,7 @@ import {
     IconMinus,
     IconSparkles,
     IconCards,
+    IconX,
 } from '@tabler/icons-react';
 import { authService, dbService } from '../services/appwrite.server';
 import {
@@ -29,6 +33,9 @@ import {
     type Card as LorcanaCard,
     type UserCollectionItemDoc,
 } from '../types/lorcana';
+import { buildCardsLookup } from '../utils/deck';
+import { getCardFranchise } from '../utils/franchise';
+import { KNOWN_SETS } from '../constants';
 import { Navbar } from '../components/Navbar';
 
 // ---------------------------------------------------------
@@ -62,7 +69,8 @@ export async function action({ request }: Route.ActionArgs) {
     const intent = formData.get('intent');
 
     if (intent === 'update-quantity') {
-        const userId = formData.get('userId') as string;
+        const sessionUser = await authService.getSessionUser(request);
+        const userId = sessionUser?.$id || (formData.get('userId') as string);
         const cardId = formData.get('cardId') as string;
         const quantity = parseInt(formData.get('quantity') as string, 10);
         const isFoil = formData.get('isFoil') === 'true';
@@ -215,441 +223,6 @@ function ShinyCardImage({ card }: { card: LorcanaCard }) {
     );
 }
 
-// Character-to-Franchise Mapping (derived from Lorcana card catalog)
-const CHARACTER_FRANCHISE_MAP: Record<string, string> = {
-    Elsa: 'Frozen',
-    Anna: 'Frozen',
-    Kristoff: 'Frozen',
-    Olaf: 'Frozen',
-    Sven: 'Frozen',
-    Hans: 'Frozen',
-    Marshmallow: 'Frozen',
-    Bruni: 'Frozen',
-    Gale: 'Frozen',
-    Nokk: 'Frozen',
-    Yelena: 'Frozen',
-    Honeymaren: 'Frozen',
-    Ryder: 'Frozen',
-    'Buzz Lightyear': 'Toy Story',
-    Woody: 'Toy Story',
-    Jessie: 'Toy Story',
-    Rex: 'Toy Story',
-    'Slinky Dog': 'Toy Story',
-    Bullseye: 'Toy Story',
-    Hamm: 'Toy Story',
-    'Squeeze Toy Aliens': 'Toy Story',
-    Aliens: 'Toy Story',
-    Zurg: 'Toy Story',
-    Al: 'Toy Story',
-    Lotso: 'Toy Story',
-    'Green Army Men': 'Toy Story',
-    Sarge: 'Toy Story',
-    'Carl Fredricksen': 'Up',
-    'Ellie Fredricksen': 'Up',
-    Russell: 'Up',
-    Dug: 'Up',
-    Kevin: 'Up',
-    Alpha: 'Up',
-    Beta: 'Up',
-    Gamma: 'Up',
-    'Mickey Mouse': 'Mickey Mouse & Friends',
-    'Minnie Mouse': 'Mickey Mouse & Friends',
-    'Donald Duck': 'Mickey Mouse & Friends',
-    'Daisy Duck': 'Mickey Mouse & Friends',
-    Goofy: 'Mickey Mouse & Friends',
-    Pluto: 'Mickey Mouse & Friends',
-    Pete: 'Mickey Mouse & Friends',
-    'Scrooge McDuck': 'Mickey Mouse & Friends',
-    Huey: 'Mickey Mouse & Friends',
-    Dewey: 'Mickey Mouse & Friends',
-    Louie: 'Mickey Mouse & Friends',
-    'Clarabelle Cow': 'Mickey Mouse & Friends',
-    'Horace Horsecollar': 'Mickey Mouse & Friends',
-    'Max Goof': 'Mickey Mouse & Friends',
-    'Ludwig Von Drake': 'Mickey Mouse & Friends',
-    'Gus Goose': 'Mickey Mouse & Friends',
-    "Pete's Bad Boys": 'Mickey Mouse & Friends',
-    Aladdin: 'Aladdin',
-    Jasmine: 'Aladdin',
-    Genie: 'Aladdin',
-    Jafar: 'Aladdin',
-    Abu: 'Aladdin',
-    Iago: 'Aladdin',
-    Sultan: 'Aladdin',
-    Rajah: 'Aladdin',
-    Razoul: 'Aladdin',
-    'Cave of Wonders': 'Aladdin',
-    Peddler: 'Aladdin',
-    Cassim: 'Aladdin',
-    "Sa'luk": 'Aladdin',
-    Cinderella: 'Cinderella',
-    'Prince Charming': 'Cinderella',
-    'Lady Tremaine': 'Cinderella',
-    Anastasia: 'Cinderella',
-    Drizella: 'Cinderella',
-    Gus: 'Cinderella',
-    Jaq: 'Cinderella',
-    'Fairy Godmother': 'Cinderella',
-    Perla: 'Cinderella',
-    Suzy: 'Cinderella',
-    Lucifer: 'Cinderella',
-    Bruno: 'Cinderella',
-    Major: 'Cinderella',
-    'The King': 'Cinderella',
-    'Grand Duke': 'Cinderella',
-    'Bruno Madrigal': 'Encanto',
-    'Mirabel Madrigal': 'Encanto',
-    'Isabela Madrigal': 'Encanto',
-    'Luisa Madrigal': 'Encanto',
-    'Pepa Madrigal': 'Encanto',
-    'Dolores Madrigal': 'Encanto',
-    'Camilo Madrigal': 'Encanto',
-    'Antonio Madrigal': 'Encanto',
-    'Abuela Alma': 'Encanto',
-    'Felix Madrigal': 'Encanto',
-    'Augustin Madrigal': 'Encanto',
-    'Julieta Madrigal': 'Encanto',
-    'The Family Madrigal': 'Encanto',
-    Mulan: 'Mulan',
-    Mushu: 'Mulan',
-    'Li Shang': 'Mulan',
-    'Grandmother Fa': 'Mulan',
-    'Shan Yu': 'Mulan',
-    'Cri-Kee': 'Mulan',
-    Khan: 'Mulan',
-    Yao: 'Mulan',
-    Ling: 'Mulan',
-    'Chien-Po': 'Mulan',
-    'Emperor of China': 'Mulan',
-    'General Li': 'Mulan',
-    Stitch: 'Lilo & Stitch',
-    Lilo: 'Lilo & Stitch',
-    'Jumba Jookiba': 'Lilo & Stitch',
-    'Agent Pleakley': 'Lilo & Stitch',
-    Gantu: 'Lilo & Stitch',
-    'Dr. Hämsterviel': 'Lilo & Stitch',
-    Nani: 'Lilo & Stitch',
-    'David Kawena': 'Lilo & Stitch',
-    'Cobra Bubbles': 'Lilo & Stitch',
-    'Grand Councilwoman': 'Lilo & Stitch',
-    'Captain Gantu': 'Lilo & Stitch',
-    Bucky: 'Lilo & Stitch',
-    Pongo: '101 Dalmatians',
-    Perdita: '101 Dalmatians',
-    'Cruella De Vil': '101 Dalmatians',
-    Lucky: '101 Dalmatians',
-    Patch: '101 Dalmatians',
-    Rolly: '101 Dalmatians',
-    Penny: '101 Dalmatians',
-    Freckles: '101 Dalmatians',
-    Pepper: '101 Dalmatians',
-    Jasper: '101 Dalmatians',
-    Horace: '101 Dalmatians',
-    Nanny: '101 Dalmatians',
-    'Anita Radcliffe': '101 Dalmatians',
-    'Roger Radcliffe': '101 Dalmatians',
-    'Pongo & Perdita': '101 Dalmatians',
-    Tramp: 'Lady and the Tramp',
-    Lady: 'Lady and the Tramp',
-    Trusty: 'Lady and the Tramp',
-    Jock: 'Lady and the Tramp',
-    Peg: 'Lady and the Tramp',
-    Tony: 'Lady and the Tramp',
-    Joe: 'Lady and the Tramp',
-    'Aunt Sarah': 'Lady and the Tramp',
-    'Si & Am': 'Lady and the Tramp',
-    Bull: 'Lady and the Tramp',
-    Boris: 'Lady and the Tramp',
-    Toughy: 'Lady and the Tramp',
-    Pedro: 'Lady and the Tramp',
-    Kuzco: "The Emperor's New Groove",
-    Yzma: "The Emperor's New Groove",
-    Kronk: "The Emperor's New Groove",
-    Pacha: "The Emperor's New Groove",
-    Chicha: "The Emperor's New Groove",
-    Tipo: "The Emperor's New Groove",
-    Chaca: "The Emperor's New Groove",
-    'Bucky the Squirrel': "The Emperor's New Groove",
-    Hades: 'Hercules',
-    Hercules: 'Hercules',
-    Megara: 'Hercules',
-    Philoctetes: 'Hercules',
-    Pegasus: 'Hercules',
-    Zeus: 'Hercules',
-    Pain: 'Hercules',
-    Panic: 'Hercules',
-    Cerberus: 'Hercules',
-    Hydra: 'Hercules',
-    Hermes: 'Hercules',
-    Hera: 'Hercules',
-    Nessus: 'Hercules',
-    Cyclops: 'Hercules',
-    Titans: 'Hercules',
-    Lythos: 'Hercules',
-    Hydros: 'Hercules',
-    Pyros: 'Hercules',
-    Stratos: 'Hercules',
-    Muse: 'Hercules',
-    Calliope: 'Hercules',
-    Melpomene: 'Hercules',
-    Terpsichore: 'Hercules',
-    Thalia: 'Hercules',
-    Clio: 'Hercules',
-    'Wendy Darling': 'Peter Pan',
-    'Peter Pan': 'Peter Pan',
-    'Tinker Bell': 'Peter Pan',
-    'Captain Hook': 'Peter Pan',
-    'Mr. Smee': 'Peter Pan',
-    'John Darling': 'Peter Pan',
-    'Michael Darling': 'Peter Pan',
-    'Lost Boys': 'Peter Pan',
-    Slightly: 'Peter Pan',
-    Cubby: 'Peter Pan',
-    Nibs: 'Peter Pan',
-    Twins: 'Peter Pan',
-    'Tiger Lily': 'Peter Pan',
-    'Great Big Little Panther': 'Peter Pan',
-    Crocodile: 'Peter Pan',
-    Nana: 'Peter Pan',
-    'George Darling': 'Peter Pan',
-    'Mary Darling': 'Peter Pan',
-    Rufus: 'The Rescuers',
-    Bernard: 'The Rescuers',
-    'Miss Bianca': 'The Rescuers',
-    'Madame Medusa': 'The Rescuers',
-    'Mr. Snoops': 'The Rescuers',
-    Orville: 'The Rescuers',
-    Evinrude: 'The Rescuers',
-    Luke: 'The Rescuers',
-    'Ellie Mae': 'The Rescuers',
-    'Brutus & Nero': 'The Rescuers',
-    Simba: 'The Lion King',
-    Nala: 'The Lion King',
-    Mufasa: 'The Lion King',
-    Scar: 'The Lion King',
-    Timon: 'The Lion King',
-    Pumbaa: 'The Lion King',
-    Rafiki: 'The Lion King',
-    Zazu: 'The Lion King',
-    Shenzi: 'The Lion King',
-    Banzai: 'The Lion King',
-    Ed: 'The Lion King',
-    Sarabi: 'The Lion King',
-    Sarafina: 'The Lion King',
-    Kovu: 'The Lion King',
-    Kiara: 'The Lion King',
-    Moana: 'Moana',
-    Maui: 'Moana',
-    Heihei: 'Moana',
-    Pua: 'Moana',
-    Tamatoa: 'Moana',
-    'Te Kā': 'Moana',
-    'Te Fiti': 'Moana',
-    'Gramma Tala': 'Moana',
-    'Chief Tui': 'Moana',
-    Sina: 'Moana',
-    Kakamora: 'Moana',
-    Mauri: 'Moana',
-    'Robin Hood': 'Robin Hood',
-    'Maid Marian': 'Robin Hood',
-    'Little John': 'Robin Hood',
-    'Prince John': 'Robin Hood',
-    'Sir Hiss': 'Robin Hood',
-    'Sheriff of Nottingham': 'Robin Hood',
-    'Friar Tuck': 'Robin Hood',
-    'Alan-a-Dale': 'Robin Hood',
-    'Lady Kluck': 'Robin Hood',
-    Trigger: 'Robin Hood',
-    Nutsy: 'Robin Hood',
-    Otto: 'Robin Hood',
-    'Mother Rabbit': 'Robin Hood',
-    Skippy: 'Robin Hood',
-    Sis: 'Robin Hood',
-    Tagalong: 'Robin Hood',
-    'Toby Turtle': 'Robin Hood',
-    Ariel: 'The Little Mermaid',
-    'Prince Eric': 'The Little Mermaid',
-    'King Triton': 'The Little Mermaid',
-    Ursula: 'The Little Mermaid',
-    Sebastian: 'The Little Mermaid',
-    Flounder: 'The Little Mermaid',
-    Scuttle: 'The Little Mermaid',
-    'Chef Louis': 'The Little Mermaid',
-    Flotsam: 'The Little Mermaid',
-    Jetsam: 'The Little Mermaid',
-    Grimsby: 'The Little Mermaid',
-    Carlotta: 'The Little Mermaid',
-    Max: 'The Little Mermaid',
-    'Harold the Seahorse': 'The Little Mermaid',
-    Belle: 'Beauty and the Beast',
-    Beast: 'Beauty and the Beast',
-    Gaston: 'Beauty and the Beast',
-    Lumiere: 'Beauty and the Beast',
-    Cogsworth: 'Beauty and the Beast',
-    'Mrs. Potts': 'Beauty and the Beast',
-    Chip: 'Beauty and the Beast',
-    Maurice: 'Beauty and the Beast',
-    Lefou: 'Beauty and the Beast',
-    "Monsieur D'Arque": 'Beauty and the Beast',
-    Billette: 'Beauty and the Beast',
-    'Madame de la Grande Bouche': 'Beauty and the Beast',
-    Plumette: 'Beauty and the Beast',
-    'Chef Bouche': 'Beauty and the Beast',
-    Phillipe: 'Beauty and the Beast',
-    Wardrobe: 'Beauty and the Beast',
-    Footstool: 'Beauty and the Beast',
-    'Snow White': 'Snow White and the Seven Dwarfs',
-    'The Queen': 'Snow White and the Seven Dwarfs',
-    Doc: 'Snow White and the Seven Dwarfs',
-    Grumpy: 'Snow White and the Seven Dwarfs',
-    Happy: 'Snow White and the Seven Dwarfs',
-    Sleepy: 'Snow White and the Seven Dwarfs',
-    Sneezy: 'Snow White and the Seven Dwarfs',
-    Bashful: 'Snow White and the Seven Dwarfs',
-    Dopey: 'Snow White and the Seven Dwarfs',
-    'The Prince': 'Snow White and the Seven Dwarfs',
-    Huntsman: 'Snow White and the Seven Dwarfs',
-    'Magic Mirror': 'Snow White and the Seven Dwarfs',
-    Baymax: 'Big Hero 6',
-    'Hiro Hamada': 'Big Hero 6',
-    'Go Go Tomago': 'Big Hero 6',
-    'Honey Lemon': 'Big Hero 6',
-    Wasabi: 'Big Hero 6',
-    Fred: 'Big Hero 6',
-    Yokai: 'Big Hero 6',
-    'Tadashi Hamada': 'Big Hero 6',
-    'Aunt Cass': 'Big Hero 6',
-    'Robert Callaghan': 'Big Hero 6',
-    'Abigail Callaghan': 'Big Hero 6',
-    Alitheia: 'Big Hero 6',
-    Yama: 'Big Hero 6',
-    Koda: 'Brother Bear',
-    Kenai: 'Brother Bear',
-    Denahi: 'Brother Bear',
-    Rutt: 'Brother Bear',
-    Tuke: 'Brother Bear',
-    Tanana: 'Brother Bear',
-    Tug: 'Brother Bear',
-    Sitka: 'Brother Bear',
-    Rapunzel: 'Tangled',
-    'Flynn Rider': 'Tangled',
-    'Mother Gothel': 'Tangled',
-    Pascal: 'Tangled',
-    Maximus: 'Tangled',
-    'Hook Hand': 'Tangled',
-    'Big Nose': 'Tangled',
-    'Stabbington Brothers': 'Tangled',
-    'Stabbington Brother': 'Tangled',
-    Shorty: 'Tangled',
-    Attila: 'Tangled',
-    Vlad: 'Tangled',
-    Ulrich: 'Tangled',
-    'Captain of the Guards': 'Tangled',
-    'King Frederic': 'Tangled',
-    'Queen Arianna': 'Tangled',
-    Alice: 'Alice in Wonderland',
-    'Mad Hatter': 'Alice in Wonderland',
-    'March Hare': 'Alice in Wonderland',
-    'Cheshire Cat': 'Alice in Wonderland',
-    'Queen of Hearts': 'Alice in Wonderland',
-    'King of Hearts': 'Alice in Wonderland',
-    'White Rabbit': 'Alice in Wonderland',
-    Caterpillar: 'Alice in Wonderland',
-    'Tweedledee & Tweedledum': 'Alice in Wonderland',
-    Tweedledee: 'Alice in Wonderland',
-    Tweedledum: 'Alice in Wonderland',
-    Dormouse: 'Alice in Wonderland',
-    'Bill the Lizard': 'Alice in Wonderland',
-    Doorknob: 'Alice in Wonderland',
-    Walrus: 'Alice in Wonderland',
-    Carpenter: 'Alice in Wonderland',
-    'Card Soldiers': 'Alice in Wonderland',
-    'Card Soldier': 'Alice in Wonderland',
-    Dodo: 'Alice in Wonderland',
-    Dinah: 'Alice in Wonderland',
-    'Wreck-It Ralph': 'Wreck-It Ralph',
-    'Vanellope von Schweetz': 'Wreck-It Ralph',
-    'Fix-It Felix, Jr.': 'Wreck-It Ralph',
-    'Sergeant Calhoun': 'Wreck-It Ralph',
-    Calhoun: 'Wreck-It Ralph',
-    'King Candy': 'Wreck-It Ralph',
-    'Sour Bill': 'Wreck-It Ralph',
-    'Taffyta Muttonfudge': 'Wreck-It Ralph',
-    Candlehead: 'Wreck-It Ralph',
-    'Rancis Fluggerbutter': 'Wreck-It Ralph',
-    'Jubileena Bing-Bing': 'Wreck-It Ralph',
-    'Snowanna Rainbeau': 'Wreck-It Ralph',
-    'Gloyd Orangeboar': 'Wreck-It Ralph',
-    'Swizzle Malarkey': 'Wreck-It Ralph',
-    'Adorabeezle Winterpop': 'Wreck-It Ralph',
-    Torus: 'Wreck-It Ralph',
-    'Cy-Bug': 'Wreck-It Ralph',
-    'Cy-Bugs': 'Wreck-It Ralph',
-    Gene: 'Wreck-It Ralph',
-    Mary: 'Wreck-It Ralph',
-    Don: 'Wreck-It Ralph',
-    Roy: 'Wreck-It Ralph',
-    Markowski: 'Wreck-It Ralph',
-    'General Hologram': 'Wreck-It Ralph',
-    "Peter Pan's Shadow": 'Peter Pan',
-    'Jiminy Cricket': 'Pinocchio',
-    Pinocchio: 'Pinocchio',
-    Geppetto: 'Pinocchio',
-    'Blue Fairy': 'Pinocchio',
-    'Honest John': 'Pinocchio',
-    Gideon: 'Pinocchio',
-    Stromboli: 'Pinocchio',
-    Monstro: 'Pinocchio',
-    Cleo: 'Pinocchio',
-    Figaro: 'Pinocchio',
-    Coachman: 'Pinocchio',
-    Arthur: 'The Sword in the Stone',
-    Merlin: 'The Sword in the Stone',
-    'Madam Mim': 'The Sword in the Stone',
-    Archimedes: 'The Sword in the Stone',
-    'Sir Ector': 'The Sword in the Stone',
-    'Sir Kay': 'The Sword in the Stone',
-    'Black Bart': 'The Sword in the Stone',
-    'Sugar Bowl': 'The Sword in the Stone',
-    Tiana: 'The Princess and the Frog',
-    'Prince Naveen': 'The Princess and the Frog',
-    'Dr. Facilier': 'The Princess and the Frog',
-    Ray: 'The Princess and the Frog',
-    Louis: 'The Princess and the Frog',
-    'Mama Odie': 'The Princess and the Frog',
-    'Charlotte La Bouff': 'The Princess and the Frog',
-    'Big Daddy La Bouff': 'The Princess and the Frog',
-    Lawrence: 'The Princess and the Frog',
-    Juju: 'The Princess and the Frog',
-};
-
-const getCardFranchise = (cardName: string) => {
-    const characterName = cardName.split(' - ')[0].trim();
-    if (CHARACTER_FRANCHISE_MAP[characterName])
-        return CHARACTER_FRANCHISE_MAP[characterName];
-    for (const key of Object.keys(CHARACTER_FRANCHISE_MAP)) {
-        if (characterName.includes(key)) return CHARACTER_FRANCHISE_MAP[key];
-    }
-    return 'Other';
-};
-
-// Reverse chronological release order of Lorcana sets (newest at the top)
-const KNOWN_SETS = [
-    'Attack of the Vine!',
-    'Wilds Unknown',
-    'Winterspell',
-    'Whispers in the Well',
-    'Fabled',
-    'Reign of Jafar',
-    "Archazia's Island",
-    'Azurite Sea',
-    'Shimmering Skies',
-    "Ursula's Return",
-    'Into the Inklands',
-    'Rise of the Floodborn',
-    'The First Chapter',
-];
-
 export default function Collection() {
     const {
         cards,
@@ -658,25 +231,14 @@ export default function Collection() {
     } = useLoaderData<typeof loader>();
     const fetcher = useFetcher();
 
-    // Client-side persistent state for inventory (bypasses browser 4KB cookie size limits)
-    const [userCollection, setUserCollection] = useState<
-        UserCollectionItemDoc[]
-    >([]);
+    // Client-side persistent state for inventory (initialized from serverCollection)
+    const [userCollection, setUserCollection] =
+        useState<UserCollectionItemDoc[]>(serverCollection);
 
-    // Synchronize with localStorage on client mount
+    // Synchronize with server loader data and update localStorage
     useEffect(() => {
+        setUserCollection(serverCollection);
         if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem('lorcana_user_inventory');
-            if (stored) {
-                try {
-                    setUserCollection(JSON.parse(stored));
-                    return;
-                } catch (e) {
-                    console.error('Failed to parse local storage inventory', e);
-                }
-            }
-            // Fallback to server data
-            setUserCollection(serverCollection);
             localStorage.setItem(
                 'lorcana_user_inventory',
                 JSON.stringify(serverCollection),
@@ -684,21 +246,93 @@ export default function Collection() {
         }
     }, [serverCollection]);
 
-    // Filter States
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedInks, setSelectedInks] = useState<string[]>([]);
-    const [selectedSet, setSelectedSet] = useState<string>('All');
-    const [selectedRarity, setSelectedRarity] = useState<string>('All');
-    const [selectedCost, setSelectedCost] = useState<string>('All');
-    const [selectedInkable, setSelectedInkable] = useState<string>('All');
-    const [selectedFormat, setSelectedFormat] = useState<string>('All');
-    const [selectedType, setSelectedType] = useState<string>('All');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Filter States initialized from URL search params
+    const [selectedOwnership, setSelectedOwnership] = useState<string>(
+        () => searchParams.get('ownership') || 'all',
+    );
+    const [searchQuery, setSearchQuery] = useState(
+        () => searchParams.get('q') || '',
+    );
+    const [selectedInks, setSelectedInks] = useState<string[]>(
+        () => searchParams.get('inks')?.split(',').filter(Boolean) || [],
+    );
+    const [selectedSet, setSelectedSet] = useState<string>(
+        () => searchParams.get('set') || 'All',
+    );
+    const [selectedRarity, setSelectedRarity] = useState<string>(
+        () => searchParams.get('rarity') || 'All',
+    );
+    const [selectedCost, setSelectedCost] = useState<string>(
+        () => searchParams.get('cost') || 'All',
+    );
+    const [selectedInkable, setSelectedInkable] = useState<string>(
+        () => searchParams.get('inkable') || 'All',
+    );
+    const [selectedFormat, setSelectedFormat] = useState<string>(
+        () => searchParams.get('format') || 'All',
+    );
+    const [selectedType, setSelectedType] = useState<string>(
+        () => searchParams.get('type') || 'All',
+    );
     const [selectedClassification, setSelectedClassification] =
-        useState<string>('All');
-    const [selectedFranchise, setSelectedFranchise] = useState<string>('All');
-    const [selectedAttack, setSelectedAttack] = useState<string>('All');
-    const [selectedDefense, setSelectedDefense] = useState<string>('All');
-    const [selectedLore, setSelectedLore] = useState<string>('All');
+        useState<string>(() => searchParams.get('class') || 'All');
+    const [selectedFranchise, setSelectedFranchise] = useState<string>(
+        () => searchParams.get('franchise') || 'All',
+    );
+    const [selectedAttack, setSelectedAttack] = useState<string>(
+        () => searchParams.get('attack') || 'All',
+    );
+    const [selectedDefense, setSelectedDefense] = useState<string>(
+        () => searchParams.get('defense') || 'All',
+    );
+    const [selectedLore, setSelectedLore] = useState<string>(
+        () => searchParams.get('lore') || 'All',
+    );
+
+    // Keep URL searchParams synchronized with live filter states
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (selectedOwnership !== 'all')
+            params.set('ownership', selectedOwnership);
+        if (searchQuery.trim()) params.set('q', searchQuery.trim());
+        if (selectedInks.length > 0) params.set('inks', selectedInks.join(','));
+        if (selectedSet !== 'All') params.set('set', selectedSet);
+        if (selectedRarity !== 'All') params.set('rarity', selectedRarity);
+        if (selectedCost !== 'All') params.set('cost', selectedCost);
+        if (selectedInkable !== 'All') params.set('inkable', selectedInkable);
+        if (selectedFormat !== 'All') params.set('format', selectedFormat);
+        if (selectedType !== 'All') params.set('type', selectedType);
+        if (selectedClassification !== 'All')
+            params.set('class', selectedClassification);
+        if (selectedFranchise !== 'All')
+            params.set('franchise', selectedFranchise);
+        if (selectedAttack !== 'All') params.set('attack', selectedAttack);
+        if (selectedDefense !== 'All') params.set('defense', selectedDefense);
+        if (selectedLore !== 'All') params.set('lore', selectedLore);
+
+        if (params.toString() !== searchParams.toString()) {
+            setSearchParams(params, { replace: true });
+        }
+    }, [
+        selectedOwnership,
+        searchQuery,
+        selectedInks,
+        selectedSet,
+        selectedRarity,
+        selectedCost,
+        selectedInkable,
+        selectedFormat,
+        selectedType,
+        selectedClassification,
+        selectedFranchise,
+        selectedAttack,
+        selectedDefense,
+        selectedLore,
+        searchParams,
+        setSearchParams,
+    ]);
 
     const allClassifications = useMemo(() => {
         return Array.from(
@@ -713,6 +347,7 @@ export default function Collection() {
     }, [cards]);
 
     const hasActiveFilters =
+        selectedOwnership !== 'all' ||
         searchQuery !== '' ||
         selectedInks.length > 0 ||
         selectedSet !== 'All' ||
@@ -728,6 +363,7 @@ export default function Collection() {
         selectedLore !== 'All';
 
     const handleResetFilters = () => {
+        setSelectedOwnership('all');
         setSearchQuery('');
         setSelectedInks([]);
         setSelectedSet('All');
@@ -751,6 +387,7 @@ export default function Collection() {
     useEffect(() => {
         setVisibleCount(48);
     }, [
+        selectedOwnership,
         searchQuery,
         selectedInks,
         selectedSet,
@@ -766,14 +403,20 @@ export default function Collection() {
         selectedLore,
     ]);
 
+    const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
+
     // Create a lookup of owned quantities by cardId & isFoil (memoized and supports Optimistic UI updates)
     const inventoryMap = useMemo(() => {
         const map = new Map<string, number>(); // key: `cardId_foil` or `cardId_normal`
         for (const item of userCollection) {
-            map.set(
-                `${item.card_id}_${item.is_foil ? 'foil' : 'normal'}`,
-                item.quantity,
-            );
+            const foilSuffix = item.is_foil ? 'foil' : 'normal';
+            const resolvedCard = cardsLookup.get(item.card_id);
+            const canonicalId = resolvedCard ? resolvedCard.id : item.card_id;
+
+            map.set(`${item.card_id}_${foilSuffix}`, item.quantity);
+            if (canonicalId !== item.card_id) {
+                map.set(`${canonicalId}_${foilSuffix}`, item.quantity);
+            }
         }
 
         // Apply optimistic updates from active submissions
@@ -787,11 +430,31 @@ export default function Collection() {
                 fetcher.formData.get('quantity') as string,
                 10,
             );
-            map.set(`${cardId}_${isFoil ? 'foil' : 'normal'}`, quantity);
+            const foilSuffix = isFoil ? 'foil' : 'normal';
+            const resolvedCard = cardsLookup.get(cardId);
+            const canonicalId = resolvedCard ? resolvedCard.id : cardId;
+
+            map.set(`${cardId}_${foilSuffix}`, quantity);
+            if (canonicalId !== cardId) {
+                map.set(`${canonicalId}_${foilSuffix}`, quantity);
+            }
         }
 
         return map;
-    }, [userCollection, fetcher.formData]);
+    }, [userCollection, fetcher.formData, cardsLookup]);
+
+    // Helper to get card quantity across ID variations
+    const getCardQuantity = (card: LorcanaCard, isFoil: boolean): number => {
+        const foilSuffix = isFoil ? 'foil' : 'normal';
+        const cardId = card.id || card.$id;
+        if (!cardId) return 0;
+
+        return (
+            inventoryMap.get(`${cardId}_${foilSuffix}`) ||
+            (card.$id ? inventoryMap.get(`${card.$id}_${foilSuffix}`) : 0) ||
+            0
+        );
+    };
 
     // Handle quantity adjustment
     const handleAdjustQuantity = (
@@ -809,25 +472,23 @@ export default function Collection() {
         const newQty = Math.max(0, currentQty + change);
 
         // Optimistically update React state & localStorage
-        const updatedCollection = [...userCollection];
-        const existingIdx = updatedCollection.findIndex(
-            (item) => item.card_id === cardId && item.is_foil === isFoil,
+        const updatedCollection = userCollection.filter(
+            (item) => !(item.card_id === cardId && item.is_foil === isFoil),
         );
-        if (existingIdx > -1) {
-            if (newQty <= 0) {
-                updatedCollection.splice(existingIdx, 1);
-            } else {
-                updatedCollection[existingIdx].quantity = newQty;
-            }
-        } else if (newQty > 0) {
+
+        if (newQty > 0) {
+            const existing = userCollection.find(
+                (item) => item.card_id === cardId && item.is_foil === isFoil,
+            );
             updatedCollection.push({
-                $id: `inv-${Date.now()}`,
+                $id: existing?.$id || `inv-${Date.now()}`,
                 user_id: user.$id,
                 card_id: cardId,
                 quantity: newQty,
                 is_foil: isFoil,
             });
         }
+
         setUserCollection(updatedCollection);
         if (typeof window !== 'undefined') {
             localStorage.setItem(
@@ -894,7 +555,10 @@ export default function Collection() {
 
             // 4. Rarity
             const matchesRarity =
-                selectedRarity === 'All' || card.rarity === selectedRarity;
+                selectedRarity === 'All' ||
+                card.rarity?.toLowerCase() === selectedRarity.toLowerCase() ||
+                (selectedRarity === 'Super Rare' &&
+                    card.rarity === 'Super_rare');
 
             // 5. Cost (Ink Cost)
             let matchesCost = true;
@@ -980,7 +644,26 @@ export default function Collection() {
                 }
             }
 
+            // 0. Ownership Status
+            let matchesOwnership = true;
+            if (selectedOwnership !== 'all') {
+                const qtyNormal = getCardQuantity(card, false);
+                const qtyFoil = getCardQuantity(card, true);
+                const totalQty = qtyNormal + qtyFoil;
+
+                if (selectedOwnership === 'owned') {
+                    matchesOwnership = totalQty > 0;
+                } else if (selectedOwnership === 'missing') {
+                    matchesOwnership = totalQty === 0;
+                } else if (selectedOwnership === 'foil') {
+                    matchesOwnership = qtyFoil > 0;
+                } else if (selectedOwnership === 'non_foil') {
+                    matchesOwnership = qtyNormal > 0;
+                }
+            }
+
             return (
+                matchesOwnership &&
                 matchesSearch &&
                 matchesInk &&
                 matchesSet &&
@@ -1011,6 +694,8 @@ export default function Collection() {
         selectedAttack,
         selectedDefense,
         selectedLore,
+        selectedOwnership,
+        getCardQuantity,
     ]);
 
     // Infinite Scroll intersection observer to append cards as the user scrolls
@@ -1113,102 +798,116 @@ export default function Collection() {
     }, [userCollection, fetcher.formData]);
 
     return (
-        <Box mih="100vh" bg="dark.9" c="gray.1">
+        <Box mih="100vh" bg="#0b0d14" c="gray.1">
             <Navbar user={user} />
 
-            <Container size="lg" py="xl">
+            <Container size="xl" py="xl">
                 {/* Banner Dashboard Header */}
-                <Card
-                    padding="lg"
-                    radius="md"
-                    withBorder
+                <Paper
+                    p={{ base: 'lg', md: 'xl' }}
+                    radius="lg"
                     mb="xl"
-                    bg="dark.8"
-                    style={(theme) => ({ borderColor: theme.colors.dark[7] })}
+                    style={{
+                        background:
+                            'linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                        border: '1px solid rgba(168, 85, 247, 0.15)',
+                    }}
                 >
-                    <Group justify="space-between" align="center">
-                        <Box>
-                            <Title order={2} size="lg" fw={800} mb={4}>
-                                Card Inventory Manager
-                            </Title>
-                            <Text size="xs" c="dimmed">
+                    <Group
+                        justify="space-between"
+                        align="flex-start"
+                        wrap="wrap"
+                        gap="lg"
+                    >
+                        <Box style={{ maxWidth: 640 }}>
+                            <Group gap="xs" mb="xs">
+                                <IconCards size={28} color="#a855f7" />
+                                <Title
+                                    order={1}
+                                    style={{
+                                        fontFamily:
+                                            "'Cinzel Decorative', serif",
+                                        letterSpacing: '0.5px',
+                                        fontSize: 28,
+                                        background:
+                                            'linear-gradient(to right, #c084fc, #f472b6)',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                    }}
+                                >
+                                    My Collection
+                                </Title>
+                            </Group>
+                            <Text size="sm" c="gray.4" lh={1.6}>
                                 Track your Lorcana cards (foil & non-foil
                                 counts) here. Changes save instantly and
                                 automatically update deck percentages.
                             </Text>
                         </Box>
-
-                        {/* Quick Stats Panel */}
-                        <Group gap="md">
-                            <Paper
-                                py={8}
-                                px="md"
-                                radius="sm"
-                                bg="dark.9"
-                                style={{
-                                    border: '1px solid rgba(255,255,255,0.05)',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                <Text
-                                    size="md"
-                                    fw={900}
-                                    variant="gradient"
-                                    gradient={{
-                                        from: 'violet.4',
-                                        to: 'indigo.4',
-                                    }}
-                                >
-                                    {totals.totalCardsOwned}
-                                </Text>
-                                <Text
-                                    size="9px"
-                                    fw={700}
-                                    c="dimmed"
-                                    style={{
-                                        textTransform: 'uppercase',
-                                        letterSpacing: 0.5,
-                                    }}
-                                >
-                                    Total Cards
-                                </Text>
-                            </Paper>
-                            <Paper
-                                py={8}
-                                px="md"
-                                radius="sm"
-                                bg="dark.9"
-                                style={{
-                                    border: '1px solid rgba(255,255,255,0.05)',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                <Text
-                                    size="md"
-                                    fw={900}
-                                    variant="gradient"
-                                    gradient={{
-                                        from: 'pink.4',
-                                        to: 'orange.4',
-                                    }}
-                                >
-                                    {totals.uniqueCardsCount}
-                                </Text>
-                                <Text
-                                    size="9px"
-                                    fw={700}
-                                    c="dimmed"
-                                    style={{
-                                        textTransform: 'uppercase',
-                                        letterSpacing: 0.5,
-                                    }}
-                                >
-                                    Unique Cards
-                                </Text>
-                            </Paper>
-                        </Group>
                     </Group>
-                </Card>
+
+                    {/* Metric Quick Stats */}
+                    <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mt="xl">
+                        <Card
+                            padding="md"
+                            radius="md"
+                            bg="rgba(15, 23, 42, 0.6)"
+                            withBorder
+                            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                        >
+                            <Text size="xs" c="gray.5" fw={600} tt="uppercase">
+                                Total Cards Owned
+                            </Text>
+                            <Text size="xl" fw={800} c="gray.1" mt={4}>
+                                {totals.totalCardsOwned}
+                            </Text>
+                        </Card>
+                        <Card
+                            padding="md"
+                            radius="md"
+                            bg="rgba(15, 23, 42, 0.6)"
+                            withBorder
+                            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                        >
+                            <Text size="xs" c="teal.4" fw={600} tt="uppercase">
+                                Unique Cards Owned
+                            </Text>
+                            <Text size="xl" fw={800} c="teal.3" mt={4}>
+                                {totals.uniqueCardsCount}
+                            </Text>
+                        </Card>
+                        <Card
+                            padding="md"
+                            radius="md"
+                            bg="rgba(15, 23, 42, 0.6)"
+                            withBorder
+                            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                        >
+                            <Text
+                                size="xs"
+                                c="violet.4"
+                                fw={600}
+                                tt="uppercase"
+                            >
+                                Catalog Completion
+                            </Text>
+                            <Text size="xl" fw={800} c="violet.3" mt={4}>
+                                {cards.length > 0
+                                    ? `${Math.round((totals.uniqueCardsCount / cards.length) * 100)}%`
+                                    : '0%'}
+                                <Text
+                                    component="span"
+                                    size="xs"
+                                    c="dimmed"
+                                    fw={500}
+                                    ml={6}
+                                >
+                                    ({totals.uniqueCardsCount} / {cards.length})
+                                </Text>
+                            </Text>
+                        </Card>
+                    </SimpleGrid>
+                </Paper>
 
                 {/* Workspace Layout */}
                 <Grid gap="md">
@@ -1216,15 +915,16 @@ export default function Collection() {
                     <Grid.Col span={{ base: 12, md: 3 }}>
                         <Stack gap="md" className="filters-sidebar">
                             {/* Advanced Filters Card */}
-                            <Card
-                                padding="md"
-                                radius="md"
+                            <Paper
+                                p="md"
+                                radius="lg"
                                 withBorder
-                                bg="dark.8"
                                 className="filters-sidebar-card"
-                                style={(theme) => ({
-                                    borderColor: theme.colors.dark[7],
-                                })}
+                                style={{
+                                    background: 'rgba(15, 23, 42, 0.6)',
+                                    borderColor: 'rgba(168, 85, 247, 0.15)',
+                                    backdropFilter: 'blur(12px)',
+                                }}
                             >
                                 <Group justify="space-between" mb="xs">
                                     <Text
@@ -1252,6 +952,51 @@ export default function Collection() {
                                 </Group>
 
                                 <Stack gap="sm" mt="xs">
+                                    {/* 0. Ownership Status */}
+                                    <Box>
+                                        <Text
+                                            size="11px"
+                                            fw={600}
+                                            c="gray.4"
+                                            mb={4}
+                                        >
+                                            Ownership
+                                        </Text>
+                                        <Select
+                                            placeholder="All Cards"
+                                            data={[
+                                                {
+                                                    value: 'all',
+                                                    label: 'All Cards (Catalog)',
+                                                },
+                                                {
+                                                    value: 'owned',
+                                                    label: 'Owned Cards (> 0)',
+                                                },
+                                                {
+                                                    value: 'missing',
+                                                    label: 'Missing / Unowned (0)',
+                                                },
+                                                {
+                                                    value: 'foil',
+                                                    label: 'Foil Cards Owned',
+                                                },
+                                                {
+                                                    value: 'non_foil',
+                                                    label: 'Normal Cards Owned',
+                                                },
+                                            ]}
+                                            value={selectedOwnership}
+                                            onChange={(val) =>
+                                                setSelectedOwnership(
+                                                    val || 'all',
+                                                )
+                                            }
+                                            allowDeselect={false}
+                                            size="xs"
+                                        />
+                                    </Box>
+
                                     {/* 1. Set */}
                                     <Box>
                                         <Text
@@ -1329,6 +1074,10 @@ export default function Collection() {
                                                 {
                                                     value: 'Iconic',
                                                     label: 'Iconic',
+                                                },
+                                                {
+                                                    value: 'Promo',
+                                                    label: 'Promo',
                                                 },
                                             ]}
                                             value={selectedRarity}
@@ -1660,97 +1409,190 @@ export default function Collection() {
                                         />
                                     </Box>
                                 </Stack>
-                            </Card>
+                            </Paper>
                         </Stack>
                     </Grid.Col>
 
                     {/* Right Panel: Cards Grid & Sticky Top Bar */}
                     <Grid.Col span={{ base: 12, md: 9 }}>
-                        {/* Sticky Header Row for Search and Inks */}
-                        <Card
-                            padding="xs"
+                        {/* Sticky Glassmorphic Filter & Toolbar */}
+                        <Paper
+                            p="xs"
                             px="md"
-                            radius="md"
+                            radius="lg"
                             withBorder
-                            bg="dark.8"
                             className="top-filter-bar"
                             mb="md"
-                            style={(theme) => ({
-                                borderColor: theme.colors.dark[7],
-                                backgroundColor: 'rgba(20, 20, 20, 0.85)',
-                                backdropFilter: 'blur(12px)',
-                            })}
+                            style={{
+                                position: 'sticky',
+                                top: 76,
+                                zIndex: 30,
+                                background:
+                                    'linear-gradient(135deg, rgba(24, 20, 52, 0.9) 0%, rgba(12, 16, 33, 0.94) 100%)',
+                                backdropFilter: 'blur(16px)',
+                                borderColor: 'rgba(168, 85, 247, 0.25)',
+                                boxShadow:
+                                    '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
+                            }}
                         >
                             <Group
                                 justify="space-between"
                                 align="center"
-                                gap="md"
+                                gap="sm"
+                                wrap="nowrap"
                             >
-                                {/* Search Input */}
-                                <Box
-                                    style={{
-                                        flex: 1,
-                                        minWidth: 200,
-                                        maxWidth: 350,
+                                {/* Compact Ownership SegmentedControl */}
+                                <SegmentedControl
+                                    value={
+                                        selectedOwnership === 'owned' ||
+                                        selectedOwnership === 'missing'
+                                            ? selectedOwnership
+                                            : selectedOwnership === 'all'
+                                              ? 'all'
+                                              : ''
+                                    }
+                                    onChange={(val) => {
+                                        if (val) setSelectedOwnership(val);
                                     }}
-                                >
-                                    <TextInput
-                                        placeholder="Search cards catalog..."
-                                        leftSection={<IconSearch size={14} />}
-                                        value={searchQuery}
-                                        onChange={(e) =>
-                                            setSearchQuery(e.target.value)
-                                        }
-                                        size="sm"
-                                    />
-                                </Box>
+                                    data={[
+                                        {
+                                            value: 'all',
+                                            label: 'All',
+                                        },
+                                        {
+                                            value: 'owned',
+                                            label: 'Owned',
+                                        },
+                                        {
+                                            value: 'missing',
+                                            label: 'Missing',
+                                        },
+                                    ]}
+                                    size="xs"
+                                    radius="md"
+                                    color="violet"
+                                    style={{ flexShrink: 0 }}
+                                    styles={{
+                                        root: {
+                                            backgroundColor:
+                                                'rgba(15, 23, 42, 0.7)',
+                                            border: '1px solid rgba(168, 85, 247, 0.2)',
+                                            padding: 3,
+                                        },
+                                        indicator: {
+                                            boxShadow:
+                                                '0 2px 8px rgba(168, 85, 247, 0.3)',
+                                        },
+                                        label: {
+                                            padding: '4px 12px',
+                                            fontSize: '12px',
+                                            fontWeight: 700,
+                                        },
+                                    }}
+                                />
 
-                                {/* Ink Color Selector */}
-                                <Group gap="sm" align="center">
-                                    <Group gap={6}>
-                                        {[
-                                            { name: 'Amber', color: '#F5B041' },
-                                            {
-                                                name: 'Amethyst',
-                                                color: '#AF7AC5',
-                                            },
-                                            {
-                                                name: 'Emerald',
-                                                color: '#2ECC71',
-                                            },
-                                            { name: 'Ruby', color: '#EC7063' },
-                                            {
-                                                name: 'Sapphire',
-                                                color: '#5DADE2',
-                                            },
-                                            { name: 'Steel', color: '#A6ACAF' },
-                                        ].map((ink) => {
-                                            const isSelected =
-                                                selectedInks.includes(ink.name);
-                                            const isDimmed =
-                                                selectedInks.length > 0 &&
-                                                !isSelected;
-                                            const handleInkClick = () => {
-                                                if (isSelected) {
-                                                    setSelectedInks((prev) =>
-                                                        prev.filter(
-                                                            (name) =>
-                                                                name !==
-                                                                ink.name,
-                                                        ),
-                                                    );
-                                                } else if (
-                                                    selectedInks.length < 3
-                                                ) {
-                                                    setSelectedInks((prev) => [
-                                                        ...prev,
-                                                        ink.name,
-                                                    ]);
+                                {/* Fluid Search Input with Clear Button */}
+                                <TextInput
+                                    placeholder="Search cards catalog..."
+                                    leftSection={
+                                        <IconSearch size={15} color="#c084fc" />
+                                    }
+                                    rightSection={
+                                        searchQuery ? (
+                                            <ActionIcon
+                                                size="xs"
+                                                variant="subtle"
+                                                color="gray"
+                                                onClick={() =>
+                                                    setSearchQuery('')
                                                 }
-                                            };
-                                            return (
+                                                title="Clear search"
+                                            >
+                                                <IconX size={13} />
+                                            </ActionIcon>
+                                        ) : null
+                                    }
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                    size="xs"
+                                    style={{ flex: 1, minWidth: 160 }}
+                                    styles={{
+                                        input: {
+                                            backgroundColor:
+                                                'rgba(15, 23, 42, 0.6)',
+                                            borderColor:
+                                                'rgba(168, 85, 247, 0.2)',
+                                            color: '#f8fafc',
+                                            height: 36,
+                                        },
+                                    }}
+                                />
+
+                                {/* Ink Colors Filter */}
+                                <Group
+                                    gap={6}
+                                    align="center"
+                                    style={{ flexShrink: 0 }}
+                                    wrap="nowrap"
+                                >
+                                    {[
+                                        {
+                                            name: 'Amber',
+                                            color: '#F5B041',
+                                        },
+                                        {
+                                            name: 'Amethyst',
+                                            color: '#AF7AC5',
+                                        },
+                                        {
+                                            name: 'Emerald',
+                                            color: '#2ECC71',
+                                        },
+                                        {
+                                            name: 'Ruby',
+                                            color: '#EC7063',
+                                        },
+                                        {
+                                            name: 'Sapphire',
+                                            color: '#5DADE2',
+                                        },
+                                        {
+                                            name: 'Steel',
+                                            color: '#A6ACAF',
+                                        },
+                                    ].map((ink) => {
+                                        const isSelected =
+                                            selectedInks.includes(ink.name);
+                                        const isDimmed =
+                                            selectedInks.length > 0 &&
+                                            !isSelected;
+                                        const handleInkClick = () => {
+                                            if (isSelected) {
+                                                setSelectedInks((prev) =>
+                                                    prev.filter(
+                                                        (name) =>
+                                                            name !== ink.name,
+                                                    ),
+                                                );
+                                            } else if (
+                                                selectedInks.length < 3
+                                            ) {
+                                                setSelectedInks((prev) => [
+                                                    ...prev,
+                                                    ink.name,
+                                                ]);
+                                            }
+                                        };
+                                        return (
+                                            <Tooltip
+                                                key={ink.name}
+                                                label={`${ink.name}${isSelected ? ' (Selected)' : ''}`}
+                                                withArrow
+                                                position="top"
+                                            >
                                                 <Box
-                                                    key={ink.name}
                                                     onClick={handleInkClick}
                                                     style={{
                                                         cursor:
@@ -1776,50 +1618,45 @@ export default function Collection() {
                                                             : '2px solid transparent',
                                                         backgroundColor:
                                                             isSelected
-                                                                ? 'rgba(255,255,255,0.03)'
+                                                                ? 'rgba(255,255,255,0.04)'
                                                                 : 'transparent',
                                                         display: 'flex',
                                                         justifyContent:
                                                             'center',
                                                         alignItems: 'center',
-                                                        width: 38,
-                                                        height: 38,
+                                                        width: 36,
+                                                        height: 36,
                                                     }}
-                                                    title={
-                                                        ink.name +
-                                                        (selectedInks.length >=
-                                                            3 && !isSelected
-                                                            ? ' (Max 3 colors)'
-                                                            : '')
-                                                    }
                                                 >
                                                     <img
                                                         src={`/inks/${ink.name.toLowerCase()}.svg`}
                                                         alt={ink.name}
                                                         style={{
-                                                            width: 24,
-                                                            height: 24,
+                                                            width: 22,
+                                                            height: 22,
                                                             display: 'block',
                                                         }}
                                                     />
                                                 </Box>
-                                            );
-                                        })}
-                                    </Group>
+                                            </Tooltip>
+                                        );
+                                    })}
                                     {selectedInks.length > 0 && (
-                                        <Text
-                                            size="xs"
-                                            c="violet.4"
-                                            fw={700}
-                                            style={{ cursor: 'pointer' }}
+                                        <ActionIcon
+                                            size="sm"
+                                            radius="xl"
+                                            variant="subtle"
+                                            color="violet"
                                             onClick={() => setSelectedInks([])}
+                                            title="Clear ink filters"
+                                            ml={2}
                                         >
-                                            Clear
-                                        </Text>
+                                            <IconX size={15} />
+                                        </ActionIcon>
                                     )}
                                 </Group>
                             </Group>
-                        </Card>
+                        </Paper>
 
                         {filteredCards.length === 0 ? (
                             <Card
@@ -1830,12 +1667,38 @@ export default function Collection() {
                                 style={{
                                     textAlign: 'center',
                                     borderStyle: 'dashed',
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
                                 }}
                             >
-                                <Text c="dimmed" size="sm">
-                                    No cards in catalog match your current
-                                    filters.
-                                </Text>
+                                <Stack align="center" gap="sm" py="md">
+                                    <Text c="gray.3" fw={700} size="md">
+                                        {selectedOwnership === 'owned'
+                                            ? 'No owned cards match your current filters.'
+                                            : selectedOwnership === 'missing'
+                                              ? 'No unowned cards match your current filters.'
+                                              : 'No cards in catalog match your current filters.'}
+                                    </Text>
+                                    {selectedOwnership === 'owned' &&
+                                    totals.uniqueCardsCount === 0 ? (
+                                        <Text c="dimmed" size="xs" maw={420}>
+                                            You haven't added any cards to your
+                                            inventory yet. Switch to "All Cards"
+                                            or adjust your filters to start
+                                            adding cards!
+                                        </Text>
+                                    ) : null}
+                                    {hasActiveFilters && (
+                                        <Button
+                                            variant="light"
+                                            color="violet"
+                                            size="xs"
+                                            radius="md"
+                                            onClick={handleResetFilters}
+                                        >
+                                            Reset All Filters
+                                        </Button>
+                                    )}
+                                </Stack>
                             </Card>
                         ) : (
                             <>
@@ -1851,17 +1714,22 @@ export default function Collection() {
                                     spacing="md"
                                 >
                                     {slicedCards.map((card) => {
-                                        const qtyNormal =
-                                            inventoryMap.get(
-                                                `${card.id}_normal`,
-                                            ) || 0;
-                                        const qtyFoil =
-                                            inventoryMap.get(
-                                                `${card.id}_foil`,
-                                            ) || 0;
+                                        const cardId = card.id || card.$id;
+                                        const qtyNormal = getCardQuantity(
+                                            card,
+                                            false,
+                                        );
+                                        const qtyFoil = getCardQuantity(
+                                            card,
+                                            true,
+                                        );
                                         const badgeStyle = getInkBadgeStyle(
                                             card.ink_color,
                                         );
+                                        const isFoilOnly =
+                                            card.rarity === 'Enchanted' ||
+                                            card.rarity === 'Epic' ||
+                                            card.rarity === 'Iconic';
 
                                         return (
                                             <Card
@@ -1958,225 +1826,363 @@ export default function Collection() {
                                                         </Text>
                                                     </Box>
 
-                                                    <SimpleGrid
-                                                        cols={2}
-                                                        spacing="xs"
-                                                        mt={4}
-                                                        style={{
-                                                            borderTop: `1px solid ${badgeStyle.color}40`,
-                                                            paddingTop: 10,
-                                                        }}
-                                                    >
-                                                        {/* Normal Counter */}
-                                                        <Stack
-                                                            gap={4}
-                                                            align="center"
+                                                    {isFoilOnly ? (
+                                                        <Box
+                                                            mt={4}
+                                                            style={{
+                                                                borderTop: `1px solid ${badgeStyle.color}40`,
+                                                                paddingTop: 10,
+                                                            }}
                                                         >
-                                                            <Text
-                                                                size="10px"
-                                                                fw={700}
-                                                                c={
-                                                                    qtyNormal >
-                                                                    0
-                                                                        ? badgeStyle.color
-                                                                        : 'dimmed'
-                                                                }
-                                                                style={{
-                                                                    textTransform:
-                                                                        'uppercase',
-                                                                    letterSpacing:
-                                                                        '0.5px',
-                                                                    opacity:
-                                                                        qtyNormal >
-                                                                        0
-                                                                            ? 1
-                                                                            : 0.6,
-                                                                }}
+                                                            <Stack
+                                                                gap={4}
+                                                                align="center"
                                                             >
-                                                                Normal
-                                                            </Text>
-                                                            <Group
-                                                                gap={0}
-                                                                bg={
-                                                                    qtyNormal >
-                                                                    0
-                                                                        ? `${badgeStyle.color}18`
-                                                                        : 'var(--mantine-color-dark-9)'
-                                                                }
-                                                                px={4}
-                                                                py={2}
-                                                                justify="space-between"
-                                                                style={{
-                                                                    borderRadius: 20,
-                                                                    border:
-                                                                        qtyNormal >
-                                                                        0
-                                                                            ? `1px solid ${badgeStyle.color}50`
-                                                                            : '1px solid rgba(255,255,255,0.06)',
-                                                                    width: '100%',
-                                                                    transition:
-                                                                        'border-color 0.2s ease, background-color 0.2s ease',
-                                                                }}
-                                                            >
-                                                                <ActionIcon
-                                                                    size="xs"
-                                                                    radius="xl"
-                                                                    variant="subtle"
-                                                                    color="gray"
-                                                                    onClick={() =>
-                                                                        handleAdjustQuantity(
-                                                                            card.id,
-                                                                            false,
-                                                                            qtyNormal,
-                                                                            -1,
-                                                                        )
-                                                                    }
+                                                                <Group
+                                                                    gap={3}
+                                                                    align="center"
                                                                 >
-                                                                    <IconMinus
-                                                                        size={8}
+                                                                    <IconSparkles
+                                                                        size={
+                                                                            11
+                                                                        }
+                                                                        color="var(--mantine-color-pink-4)"
                                                                     />
-                                                                </ActionIcon>
-                                                                <Text
-                                                                    size="xs"
-                                                                    fw={800}
+                                                                    <Text
+                                                                        size="10px"
+                                                                        fw={700}
+                                                                        c="pink.4"
+                                                                        style={{
+                                                                            textTransform:
+                                                                                'uppercase',
+                                                                            letterSpacing:
+                                                                                '0.5px',
+                                                                        }}
+                                                                    >
+                                                                        Foil
+                                                                        Only
+                                                                    </Text>
+                                                                </Group>
+                                                                <Group
+                                                                    gap={0}
+                                                                    bg={
+                                                                        qtyFoil >
+                                                                        0
+                                                                            ? 'rgba(240, 98, 146, 0.14)'
+                                                                            : 'var(--mantine-color-dark-9)'
+                                                                    }
+                                                                    px={6}
+                                                                    py={2}
+                                                                    justify="space-between"
                                                                     style={{
-                                                                        textAlign:
-                                                                            'center',
+                                                                        borderRadius: 20,
+                                                                        border:
+                                                                            qtyFoil >
+                                                                            0
+                                                                                ? '1px solid var(--mantine-color-pink-5)'
+                                                                                : '1px solid rgba(255,255,255,0.06)',
+                                                                        width: '100%',
+                                                                        transition:
+                                                                            'border-color 0.2s ease, background-color 0.2s ease',
                                                                     }}
+                                                                >
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        radius="xl"
+                                                                        variant="subtle"
+                                                                        color="pink"
+                                                                        onClick={() =>
+                                                                            handleAdjustQuantity(
+                                                                                cardId,
+                                                                                true,
+                                                                                qtyFoil,
+                                                                                -1,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconMinus
+                                                                            size={
+                                                                                8
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                    <Text
+                                                                        size="xs"
+                                                                        fw={800}
+                                                                        c={
+                                                                            qtyFoil >
+                                                                            0
+                                                                                ? 'pink.4'
+                                                                                : 'dimmed'
+                                                                        }
+                                                                        style={{
+                                                                            textAlign:
+                                                                                'center',
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            qtyFoil
+                                                                        }
+                                                                    </Text>
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        radius="xl"
+                                                                        variant="subtle"
+                                                                        color="pink"
+                                                                        onClick={() =>
+                                                                            handleAdjustQuantity(
+                                                                                cardId,
+                                                                                true,
+                                                                                qtyFoil,
+                                                                                1,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconPlus
+                                                                            size={
+                                                                                8
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                </Group>
+                                                            </Stack>
+                                                        </Box>
+                                                    ) : (
+                                                        <SimpleGrid
+                                                            cols={2}
+                                                            spacing="xs"
+                                                            mt={4}
+                                                            style={{
+                                                                borderTop: `1px solid ${badgeStyle.color}40`,
+                                                                paddingTop: 10,
+                                                            }}
+                                                        >
+                                                            {/* Normal Counter */}
+                                                            <Stack
+                                                                gap={4}
+                                                                align="center"
+                                                            >
+                                                                <Text
+                                                                    size="10px"
+                                                                    fw={700}
                                                                     c={
                                                                         qtyNormal >
                                                                         0
                                                                             ? badgeStyle.color
                                                                             : 'dimmed'
                                                                     }
-                                                                >
-                                                                    {qtyNormal}
-                                                                </Text>
-                                                                <ActionIcon
-                                                                    size="xs"
-                                                                    radius="xl"
-                                                                    variant="subtle"
-                                                                    color="gray"
-                                                                    onClick={() =>
-                                                                        handleAdjustQuantity(
-                                                                            card.id,
-                                                                            false,
-                                                                            qtyNormal,
-                                                                            1,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <IconPlus
-                                                                        size={8}
-                                                                    />
-                                                                </ActionIcon>
-                                                            </Group>
-                                                        </Stack>
-
-                                                        {/* Foil Counter */}
-                                                        <Stack
-                                                            gap={4}
-                                                            align="center"
-                                                        >
-                                                            <Group
-                                                                gap={2}
-                                                                align="center"
-                                                            >
-                                                                <IconSparkles
-                                                                    size={10}
-                                                                    color="var(--mantine-color-pink-4)"
-                                                                />
-                                                                <Text
-                                                                    size="10px"
-                                                                    fw={700}
-                                                                    c="pink.4"
                                                                     style={{
                                                                         textTransform:
                                                                             'uppercase',
                                                                         letterSpacing:
                                                                             '0.5px',
+                                                                        opacity:
+                                                                            qtyNormal >
+                                                                            0
+                                                                                ? 1
+                                                                                : 0.6,
                                                                     }}
                                                                 >
-                                                                    Foil
+                                                                    Normal
                                                                 </Text>
-                                                            </Group>
-                                                            <Group
-                                                                gap={0}
-                                                                bg={
-                                                                    qtyFoil > 0
-                                                                        ? 'rgba(240, 98, 146, 0.12)'
-                                                                        : 'var(--mantine-color-dark-9)'
-                                                                }
-                                                                px={4}
-                                                                py={2}
-                                                                justify="space-between"
-                                                                style={{
-                                                                    borderRadius: 20,
-                                                                    border:
-                                                                        qtyFoil >
+                                                                <Group
+                                                                    gap={0}
+                                                                    bg={
+                                                                        qtyNormal >
                                                                         0
-                                                                            ? '1px solid var(--mantine-color-pink-5)'
-                                                                            : '1px solid rgba(255,255,255,0.06)',
-                                                                    width: '100%',
-                                                                    transition:
-                                                                        'border-color 0.2s ease, background-color 0.2s ease',
-                                                                }}
-                                                            >
-                                                                <ActionIcon
-                                                                    size="xs"
-                                                                    radius="xl"
-                                                                    variant="subtle"
-                                                                    color="pink"
-                                                                    onClick={() =>
-                                                                        handleAdjustQuantity(
-                                                                            card.id,
-                                                                            true,
-                                                                            qtyFoil,
-                                                                            -1,
-                                                                        )
+                                                                            ? `${badgeStyle.color}18`
+                                                                            : 'var(--mantine-color-dark-9)'
                                                                     }
-                                                                >
-                                                                    <IconMinus
-                                                                        size={8}
-                                                                    />
-                                                                </ActionIcon>
-                                                                <Text
-                                                                    size="xs"
-                                                                    fw={800}
-                                                                    c={
-                                                                        qtyFoil >
-                                                                        0
-                                                                            ? 'pink.4'
-                                                                            : 'dimmed'
-                                                                    }
+                                                                    px={4}
+                                                                    py={2}
+                                                                    justify="space-between"
                                                                     style={{
-                                                                        textAlign:
-                                                                            'center',
+                                                                        borderRadius: 20,
+                                                                        border:
+                                                                            qtyNormal >
+                                                                            0
+                                                                                ? `1px solid ${badgeStyle.color}50`
+                                                                                : '1px solid rgba(255,255,255,0.06)',
+                                                                        width: '100%',
+                                                                        transition:
+                                                                            'border-color 0.2s ease, background-color 0.2s ease',
                                                                     }}
                                                                 >
-                                                                    {qtyFoil}
-                                                                </Text>
-                                                                <ActionIcon
-                                                                    size="xs"
-                                                                    radius="xl"
-                                                                    variant="subtle"
-                                                                    color="pink"
-                                                                    onClick={() =>
-                                                                        handleAdjustQuantity(
-                                                                            card.id,
-                                                                            true,
-                                                                            qtyFoil,
-                                                                            1,
-                                                                        )
-                                                                    }
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        radius="xl"
+                                                                        variant="subtle"
+                                                                        color="gray"
+                                                                        onClick={() =>
+                                                                            handleAdjustQuantity(
+                                                                                cardId,
+                                                                                false,
+                                                                                qtyNormal,
+                                                                                -1,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconMinus
+                                                                            size={
+                                                                                8
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                    <Text
+                                                                        size="xs"
+                                                                        fw={800}
+                                                                        style={{
+                                                                            textAlign:
+                                                                                'center',
+                                                                        }}
+                                                                        c={
+                                                                            qtyNormal >
+                                                                            0
+                                                                                ? badgeStyle.color
+                                                                                : 'dimmed'
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            qtyNormal
+                                                                        }
+                                                                    </Text>
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        radius="xl"
+                                                                        variant="subtle"
+                                                                        color="gray"
+                                                                        onClick={() =>
+                                                                            handleAdjustQuantity(
+                                                                                cardId,
+                                                                                false,
+                                                                                qtyNormal,
+                                                                                1,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconPlus
+                                                                            size={
+                                                                                8
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                </Group>
+                                                            </Stack>
+
+                                                            {/* Foil Counter */}
+                                                            <Stack
+                                                                gap={4}
+                                                                align="center"
+                                                            >
+                                                                <Group
+                                                                    gap={2}
+                                                                    align="center"
                                                                 >
-                                                                    <IconPlus
-                                                                        size={8}
+                                                                    <IconSparkles
+                                                                        size={
+                                                                            10
+                                                                        }
+                                                                        color="var(--mantine-color-pink-4)"
                                                                     />
-                                                                </ActionIcon>
-                                                            </Group>
-                                                        </Stack>
-                                                    </SimpleGrid>
+                                                                    <Text
+                                                                        size="10px"
+                                                                        fw={700}
+                                                                        c="pink.4"
+                                                                        style={{
+                                                                            textTransform:
+                                                                                'uppercase',
+                                                                            letterSpacing:
+                                                                                '0.5px',
+                                                                        }}
+                                                                    >
+                                                                        Foil
+                                                                    </Text>
+                                                                </Group>
+                                                                <Group
+                                                                    gap={0}
+                                                                    bg={
+                                                                        qtyFoil >
+                                                                        0
+                                                                            ? 'rgba(240, 98, 146, 0.12)'
+                                                                            : 'var(--mantine-color-dark-9)'
+                                                                    }
+                                                                    px={4}
+                                                                    py={2}
+                                                                    justify="space-between"
+                                                                    style={{
+                                                                        borderRadius: 20,
+                                                                        border:
+                                                                            qtyFoil >
+                                                                            0
+                                                                                ? '1px solid var(--mantine-color-pink-5)'
+                                                                                : '1px solid rgba(255,255,255,0.06)',
+                                                                        width: '100%',
+                                                                        transition:
+                                                                            'border-color 0.2s ease, background-color 0.2s ease',
+                                                                    }}
+                                                                >
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        radius="xl"
+                                                                        variant="subtle"
+                                                                        color="pink"
+                                                                        onClick={() =>
+                                                                            handleAdjustQuantity(
+                                                                                cardId,
+                                                                                true,
+                                                                                qtyFoil,
+                                                                                -1,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconMinus
+                                                                            size={
+                                                                                8
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                    <Text
+                                                                        size="xs"
+                                                                        fw={800}
+                                                                        c={
+                                                                            qtyFoil >
+                                                                            0
+                                                                                ? 'pink.4'
+                                                                                : 'dimmed'
+                                                                        }
+                                                                        style={{
+                                                                            textAlign:
+                                                                                'center',
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            qtyFoil
+                                                                        }
+                                                                    </Text>
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        radius="xl"
+                                                                        variant="subtle"
+                                                                        color="pink"
+                                                                        onClick={() =>
+                                                                            handleAdjustQuantity(
+                                                                                cardId,
+                                                                                true,
+                                                                                qtyFoil,
+                                                                                1,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconPlus
+                                                                            size={
+                                                                                8
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                </Group>
+                                                            </Stack>
+                                                        </SimpleGrid>
+                                                    )}
                                                 </Stack>
                                             </Card>
                                         );
