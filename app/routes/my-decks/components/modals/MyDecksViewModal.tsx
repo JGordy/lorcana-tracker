@@ -1,7 +1,6 @@
 import {
     Modal,
     Stack,
-    Card,
     Group,
     Text,
     Badge,
@@ -68,117 +67,158 @@ export function MyDecksViewModal({
             opened={opened}
             onClose={onClose}
             title={
-                <Group gap="sm" align="center">
-                    <Box
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '10px',
-                            background:
-                                'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
-                            border: '1px solid rgba(168, 85, 247, 0.35)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <IconCards size={20} color="#c084fc" />
-                    </Box>
-                    <Box>
-                        <Group gap="xs" align="center">
-                            <Text
-                                fw={900}
-                                size="md"
-                                style={{
-                                    fontFamily: "'Cinzel Decorative', serif",
-                                    letterSpacing: '0.5px',
-                                    background:
-                                        'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                }}
-                            >
-                                {activeDeck.title}
-                            </Text>
-                            <Group gap={4} ml={2}>
-                                {activeDeck.displayInks.map(
-                                    (inkName: string) => {
-                                        const inkSlug = ALL_INKS.some(
-                                            (i) =>
-                                                i.id ===
-                                                inkName.toLowerCase().trim(),
-                                        )
-                                            ? inkName.toLowerCase().trim()
-                                            : 'amber';
-                                        return (
-                                            <Box
-                                                key={inkName}
-                                                style={{
-                                                    padding: 3,
-                                                    borderRadius: '50%',
-                                                    background:
-                                                        'rgba(255, 255, 255, 0.08)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.12)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                }}
-                                            >
-                                                <img
-                                                    src={`/inks/${inkSlug}.svg`}
-                                                    alt={inkName}
+                <Group
+                    justify="space-between"
+                    align="center"
+                    style={{ width: '100%' }}
+                >
+                    <Group gap="sm" align="center">
+                        <Box
+                            style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '10px',
+                                background:
+                                    'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
+                                border: '1px solid rgba(168, 85, 247, 0.35)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <IconCards size={20} color="#c084fc" />
+                        </Box>
+                        <Box>
+                            <Group gap="xs" align="center">
+                                <Text
+                                    fw={900}
+                                    size="md"
+                                    style={{
+                                        fontFamily:
+                                            "'Cinzel Decorative', serif",
+                                        letterSpacing: '0.5px',
+                                        background:
+                                            'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent',
+                                    }}
+                                >
+                                    {activeDeck.title}
+                                </Text>
+                                <Group gap={4} ml={2}>
+                                    {activeDeck.displayInks.map(
+                                        (inkName: string) => {
+                                            const inkSlug = ALL_INKS.some(
+                                                (i) =>
+                                                    i.id ===
+                                                    inkName
+                                                        .toLowerCase()
+                                                        .trim(),
+                                            )
+                                                ? inkName.toLowerCase().trim()
+                                                : 'amber';
+                                            return (
+                                                <Box
+                                                    key={inkName}
                                                     style={{
-                                                        width: 15,
-                                                        height: 15,
-                                                        display: 'block',
+                                                        padding: 3,
+                                                        borderRadius: '50%',
+                                                        background:
+                                                            'rgba(255, 255, 255, 0.08)',
+                                                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent:
+                                                            'center',
                                                     }}
-                                                    title={inkName}
-                                                />
-                                            </Box>
-                                        );
-                                    },
-                                )}
+                                                >
+                                                    <img
+                                                        src={`/inks/${inkSlug}.svg`}
+                                                        alt={inkName}
+                                                        style={{
+                                                            width: 15,
+                                                            height: 15,
+                                                            display: 'block',
+                                                        }}
+                                                        title={inkName}
+                                                    />
+                                                </Box>
+                                            );
+                                        },
+                                    )}
+                                </Group>
+                                <Badge
+                                    size="xs"
+                                    variant="gradient"
+                                    gradient={
+                                        activeDeck.isCoreLegal
+                                            ? {
+                                                  from: 'teal.7',
+                                                  to: 'emerald.8',
+                                                  deg: 90,
+                                              }
+                                            : {
+                                                  from: 'orange.7',
+                                                  to: 'amber.8',
+                                                  deg: 90,
+                                              }
+                                    }
+                                    radius="sm"
+                                    style={{
+                                        fontWeight: 700,
+                                        letterSpacing: '0.3px',
+                                    }}
+                                >
+                                    {activeDeck.isCoreLegal
+                                        ? 'CORE LEGAL'
+                                        : 'INFINITY'}
+                                </Badge>
                             </Group>
-                            <Badge
-                                size="xs"
-                                variant="gradient"
-                                gradient={
-                                    activeDeck.isCoreLegal
-                                        ? {
-                                              from: 'teal.7',
-                                              to: 'emerald.8',
-                                              deg: 90,
-                                          }
-                                        : {
-                                              from: 'orange.7',
-                                              to: 'amber.8',
-                                              deg: 90,
-                                          }
-                                }
-                                radius="sm"
-                                style={{
-                                    fontWeight: 700,
-                                    letterSpacing: '0.3px',
-                                }}
+                        </Box>
+                    </Group>
+
+                    {/* Header Right: Compact Collection Completion */}
+                    <Box style={{ width: 220, marginLeft: 'auto' }}>
+                        <Group justify="space-between" align="center" mb={4}>
+                            <Text
+                                size="10px"
+                                fw={800}
+                                c="gray.4"
+                                tt="uppercase"
                             >
-                                {activeDeck.isCoreLegal
-                                    ? 'CORE LEGAL'
-                                    : 'INFINITY'}
-                            </Badge>
+                                Completion
+                            </Text>
                             <Badge
                                 size="xs"
                                 variant="light"
-                                color="violet"
+                                color={
+                                    activeDeck.progress.percentage >= 80
+                                        ? 'teal'
+                                        : activeDeck.progress.percentage >= 50
+                                          ? 'yellow'
+                                          : 'red'
+                                }
                                 radius="sm"
-                                style={{
-                                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                                    background: 'rgba(168, 85, 247, 0.12)',
-                                    fontWeight: 700,
-                                }}
+                                style={{ fontWeight: 800 }}
                             >
-                                {activeDeck.totalCardsCount}/60 CARDS
+                                {activeDeck.progress.ownedCount}/
+                                {activeDeck.progress.totalCount} (
+                                {activeDeck.progress.percentage}%)
                             </Badge>
                         </Group>
+                        <Progress
+                            value={activeDeck.progress.percentage}
+                            color={
+                                activeDeck.progress.percentage >= 80
+                                    ? 'teal'
+                                    : activeDeck.progress.percentage >= 50
+                                      ? 'yellow'
+                                      : 'red'
+                            }
+                            size="xs"
+                            radius="xl"
+                            striped
+                        />
                     </Box>
                 </Group>
             }
@@ -198,66 +238,16 @@ export function MyDecksViewModal({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                     padding: '16px 22px',
                 },
+                title: {
+                    flex: 1,
+                    marginRight: 16,
+                },
                 body: {
                     padding: '20px 22px',
                 },
             }}
         >
             <Stack gap="md">
-                {/* Summary & Progress Bar */}
-                <Card
-                    padding="md"
-                    radius="md"
-                    style={{
-                        background:
-                            'linear-gradient(135deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.6) 100%)',
-                        border: '1px solid rgba(168, 85, 247, 0.2)',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-                    }}
-                >
-                    <Group justify="space-between" align="center" mb={6}>
-                        <Text size="xs" fw={800} c="gray.3" tt="uppercase">
-                            Collection Completion:
-                        </Text>
-                        <Badge
-                            size="md"
-                            variant="light"
-                            color={
-                                activeDeck.progress.percentage >= 80
-                                    ? 'teal'
-                                    : activeDeck.progress.percentage >= 50
-                                      ? 'yellow'
-                                      : 'red'
-                            }
-                            radius="sm"
-                            style={{ fontWeight: 800 }}
-                        >
-                            {activeDeck.progress.ownedCount} /{' '}
-                            {activeDeck.progress.totalCount} Owned (
-                            {activeDeck.progress.percentage}%)
-                        </Badge>
-                    </Group>
-                    <Progress
-                        value={activeDeck.progress.percentage}
-                        color={
-                            activeDeck.progress.percentage >= 80
-                                ? 'teal'
-                                : activeDeck.progress.percentage >= 50
-                                  ? 'yellow'
-                                  : 'red'
-                        }
-                        size="md"
-                        radius="xl"
-                        striped
-                        animated={activeDeck.progress.percentage < 100}
-                    />
-                    {activeDeck.meta.description && (
-                        <Text size="xs" c="gray.4" mt="xs" lh={1.5}>
-                            {activeDeck.meta.description}
-                        </Text>
-                    )}
-                </Card>
-
                 {/* Toolbar */}
                 <Group justify="space-between" wrap="wrap" gap="xs">
                     <Group gap="xs" style={{ flex: 1 }}>
@@ -374,7 +364,7 @@ export function MyDecksViewModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={260} type="auto">
+                        <ScrollArea h={420} type="auto">
                             <Table highlightOnHover style={{ minWidth: 700 }}>
                                 <Table.Thead>
                                     <Table.Tr
@@ -743,29 +733,6 @@ export function MyDecksViewModal({
                         </ScrollArea>
                     )}
                 </Box>
-
-                {/* Fixed Modal Footer */}
-                <Group
-                    justify="space-between"
-                    align="center"
-                    mt="xs"
-                    style={{ flexShrink: 0 }}
-                >
-                    <Text size="xs" c="dimmed">
-                        Total Cards:{' '}
-                        <strong style={{ color: '#f8fafc' }}>
-                            {activeDeck.totalCardsCount}/60
-                        </strong>{' '}
-                        • {activeDeck.cards.length} Unique Cards
-                    </Text>
-                    <Button
-                        variant="gradient"
-                        gradient={{ from: 'violet.6', to: 'indigo.6' }}
-                        onClick={onClose}
-                    >
-                        Done
-                    </Button>
-                </Group>
             </Stack>
         </Modal>
     );
