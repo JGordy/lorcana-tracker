@@ -69,6 +69,56 @@ export async function getCardsCatalog(): Promise<Card[]> {
     }
 }
 
+// In-Memory Server Cache for Trending Decks
+let cachedTrendingDecks: any[] = [];
+let lastTrendingFetchTime = 0;
+const TRENDING_CACHE_TTL = 15 * 60 * 1000; // 15 minutes cache
+
+export async function fetchTrendingDecks(): Promise<any[]> {
+    const now = Date.now();
+    if (
+        cachedTrendingDecks.length > 0 &&
+        now - lastTrendingFetchTime < TRENDING_CACHE_TTL
+    ) {
+        return cachedTrendingDecks;
+    }
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2500);
+        const res = await fetch('https://api-lorcana.com/decks/trending', {
+            headers: { Accept: 'application/json' },
+            signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+                cachedTrendingDecks = data;
+                lastTrendingFetchTime = now;
+                return cachedTrendingDecks;
+            }
+        }
+    } catch (err: any) {
+        if (err.name === 'AbortError') {
+            console.warn(
+                `[Trending Decks] Fetch from api-lorcana.com timed out (2.5s) — ${
+                    cachedTrendingDecks.length > 0
+                        ? 'serving cached trending decks'
+                        : 'proceeding with database decks'
+                }.`,
+            );
+        } else {
+            console.warn(
+                `[Trending Decks] Failed to fetch from api-lorcana.com: ${err.message}`,
+            );
+        }
+    }
+
+    return cachedTrendingDecks;
+}
+
 // ---------------------------------------------------------
 // Database & Collection Services (Server-Side)
 // ---------------------------------------------------------
@@ -386,26 +436,8 @@ export const dbService = {
 
         const resolvedDecks: DeckWithProgress[] = [];
 
-        // Fetch trending decks from api-lorcana.com
-        let apiDecks: any[] = [];
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 4000);
-            const res = await fetch('https://api-lorcana.com/decks/trending', {
-                headers: { Accept: 'application/json' },
-                signal: controller.signal,
-            });
-            clearTimeout(timeoutId);
-
-            if (res.ok) {
-                apiDecks = await res.json();
-            }
-        } catch (err) {
-            console.warn(
-                'Failed to fetch trending decks from api-lorcana.com:',
-                err,
-            );
-        }
+        // Fetch trending decks from api-lorcana.com with in-memory caching & safe timeout
+        const apiDecks = await fetchTrendingDecks();
 
         if (Array.isArray(apiDecks) && apiDecks.length > 0) {
             for (const apiDeck of apiDecks) {
