@@ -222,7 +222,7 @@ export function ViewDeckModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={340} type="auto">
+                        <ScrollArea h={260} type="auto">
                             <Table
                                 striped
                                 highlightOnHover

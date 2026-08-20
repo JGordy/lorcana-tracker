@@ -374,7 +374,7 @@ export function MyDecksViewModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={340} type="auto">
+                        <ScrollArea h={260} type="auto">
                             <Table highlightOnHover style={{ minWidth: 700 }}>
                                 <Table.Thead>
                                     <Table.Tr
