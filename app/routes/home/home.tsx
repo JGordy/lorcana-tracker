@@ -1,5 +1,4 @@
 import type { Route } from './+types/home';
-import { useLoaderData } from 'react-router';
 import { Container } from '@mantine/core';
 
 import { HomeHero } from './components/HomeHero';
@@ -7,9 +6,7 @@ import { HomeFeaturesGrid } from './components/HomeFeaturesGrid';
 import { HomeQuickStart } from './components/HomeQuickStart';
 import { HomeDemoCallout } from './components/HomeDemoCallout';
 
-import { loader } from './loader';
-
-export { loader };
+export { loader } from './loader';
 export { action } from './action';
 
 export function meta(_args: Route.MetaArgs) {
@@ -23,8 +20,8 @@ export function meta(_args: Route.MetaArgs) {
     ];
 }
 
-export default function Home() {
-    const { user } = useLoaderData<typeof loader>();
+export default function Home({ loaderData }: Route.ComponentProps) {
+    const { user } = loaderData;
 
     const triggerDemoLogin = () => {
         const form = document.createElement('form');

@@ -1,58 +1,52 @@
 import {
     Card,
-    Group,
-    Stack,
-    Text,
-    Badge,
-    Progress,
     Box,
+    Group,
+    Badge,
+    Text,
+    Stack,
+    Progress,
     Button,
     ActionIcon,
     Tooltip,
 } from '@mantine/core';
 import {
     IconCards,
-    IconFolderPlus,
-    IconBrandYoutube,
+    IconPlus,
+    IconEdit,
+    IconTrash,
     IconCopy,
     IconCheck,
 } from '@tabler/icons-react';
-import type { useFetcher } from 'react-router';
 import {
-    INK_HEX_MAP,
     getFeaturedDeckCard,
     getKeyDeckCards,
+    INK_HEX_MAP,
 } from '../../../utils/deck';
-import type { ProcessedDeck } from '../utils/deckHelpers';
+import { ALL_INKS } from '../../../types/lorcana';
 
-interface DeckCardItemProps {
-    deck: ProcessedDeck;
-    cloneFetcher: ReturnType<typeof useFetcher>;
+interface MyDeckCardItemProps {
+    deck: any;
     copyFeedback: string | null;
     onOpenViewModal: (deckId: string) => void;
-    onCloneDeck: (deck: ProcessedDeck) => void;
-    onExportDeck: (deck: ProcessedDeck) => void;
+    onOpenEditModal: (deck: any) => void;
+    onOpenDeleteModal: (deck: any) => void;
+    onExportDeck: (deck: any) => void;
+    onOpenAddCardsModal?: (deck: any) => void;
 }
 
-export function DeckCardItem({
+export function MyDeckCardItem({
     deck,
-    cloneFetcher,
     copyFeedback,
     onOpenViewModal,
-    onCloneDeck,
+    onOpenEditModal,
+    onOpenDeleteModal,
     onExportDeck,
-}: DeckCardItemProps) {
+    onOpenAddCardsModal,
+}: MyDeckCardItemProps) {
     const { percentage, ownedCount, totalCount } = deck.progress;
-    const featuredCard = getFeaturedDeckCard(deck.cards);
+    const featuredCard = getFeaturedDeckCard(deck.cards, deck.meta.coverCardId);
     const keyCards = getKeyDeckCards(deck.cards, 4);
-
-    const deckInks = Array.from(
-        new Set(
-            deck.cards.flatMap((dc) =>
-                dc.card.ink_color ? dc.card.ink_color.split('/') : [],
-            ),
-        ),
-    );
 
     let progressColor = 'red';
     if (percentage >= 80) progressColor = 'teal';
@@ -76,6 +70,7 @@ export function DeckCardItem({
                 overflow: 'hidden',
             }}
         >
+            {/* Top Section: Hero Card Cover Art */}
             <Card.Section
                 className="deck-cover-section"
                 style={{
@@ -121,6 +116,7 @@ export function DeckCardItem({
                     </Box>
                 )}
 
+                {/* Gradient Fade Overlay */}
                 <Box
                     style={{
                         position: 'absolute',
@@ -131,7 +127,7 @@ export function DeckCardItem({
                     }}
                 />
 
-                {/* Top Floating Badges (Top Right) */}
+                {/* Top Floating Inks (Top Right) */}
                 <Group
                     justify="flex-end"
                     align="center"
@@ -143,46 +139,27 @@ export function DeckCardItem({
                         right: 0,
                     }}
                 >
-                    <Group gap={6}>
-                        {deck.is_trending ? (
-                            <Badge
-                                size="xs"
-                                variant="gradient"
-                                gradient={{
-                                    from: 'violet',
-                                    to: 'grape',
-                                }}
-                            >
-                                Trending
-                            </Badge>
-                        ) : deck.creator_id === 'system' ? (
-                            <Badge
-                                size="xs"
-                                variant="gradient"
-                                gradient={{
-                                    from: 'cyan',
-                                    to: 'blue',
-                                }}
-                            >
-                                Meta
-                            </Badge>
-                        ) : null}
-
-                        <Group
-                            gap={5}
-                            bg="rgba(10, 15, 29, 0.8)"
-                            px={8}
-                            py={4}
-                            style={{
-                                borderRadius: 20,
-                                backdropFilter: 'blur(6px)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                            }}
-                        >
-                            {deckInks.map((inkName) => (
+                    <Group
+                        gap={5}
+                        bg="rgba(10, 15, 29, 0.8)"
+                        px={8}
+                        py={4}
+                        style={{
+                            borderRadius: 20,
+                            backdropFilter: 'blur(6px)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                        }}
+                    >
+                        {deck.displayInks.map((inkName: string) => {
+                            const inkSlug = ALL_INKS.some(
+                                (i) => i.id === inkName.toLowerCase().trim(),
+                            )
+                                ? inkName.toLowerCase().trim()
+                                : 'amber';
+                            return (
                                 <img
                                     key={inkName}
-                                    src={`/inks/${inkName.toLowerCase().trim()}.svg`}
+                                    src={`/inks/${inkSlug}.svg`}
                                     alt={inkName}
                                     style={{
                                         width: 18,
@@ -194,8 +171,8 @@ export function DeckCardItem({
                                         inkName.slice(1)
                                     }
                                 />
-                            ))}
-                        </Group>
+                            );
+                        })}
                     </Group>
                 </Group>
 
@@ -242,13 +219,14 @@ export function DeckCardItem({
                     <Text fw={800} size="md" c="gray.1" lineClamp={1}>
                         {deck.title}
                     </Text>
-                    {deck.description && deck.description.trim() ? (
+                    {deck.meta.description && deck.meta.description.trim() ? (
                         <Text size="xs" c="gray.4" lineClamp={2} mt={2}>
-                            {deck.description}
+                            {deck.meta.description}
                         </Text>
                     ) : null}
                 </Box>
 
+                {/* Key Cards Row */}
                 {keyCards.length > 0 && (
                     <Box>
                         <Text
@@ -282,16 +260,15 @@ export function DeckCardItem({
                                         position="top"
                                     >
                                         <Box
-                                            className="deck-key-card"
                                             style={{
+                                                position: 'relative',
                                                 width: 32,
                                                 height: 32,
                                                 borderRadius: '50%',
                                                 overflow: 'hidden',
                                                 border: `2px solid ${inkBorderColor}`,
-                                                boxShadow: `0 0 6px ${inkBorderColor}40`,
-                                                background: '#0a0f1d',
-                                                flexShrink: 0,
+                                                boxShadow:
+                                                    '0 2px 6px rgba(0,0,0,0.5)',
                                             }}
                                         >
                                             {kc.image_url ? (
@@ -303,17 +280,30 @@ export function DeckCardItem({
                                                         height: '100%',
                                                         objectFit: 'cover',
                                                         objectPosition:
-                                                            'center 20%',
+                                                            'center top',
                                                     }}
                                                 />
                                             ) : (
-                                                <IconCards
-                                                    size={16}
+                                                <Box
                                                     style={{
-                                                        margin: 6,
-                                                        opacity: 0.5,
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        background: '#1e293b',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent:
+                                                            'center',
                                                     }}
-                                                />
+                                                >
+                                                    <Text size="8px" c="gray.4">
+                                                        {kc?.name
+                                                            ? kc.name.slice(
+                                                                  0,
+                                                                  3,
+                                                              )
+                                                            : ''}
+                                                    </Text>
+                                                </Box>
                                             )}
                                         </Box>
                                     </Tooltip>
@@ -323,9 +313,10 @@ export function DeckCardItem({
                     </Box>
                 )}
 
-                <Box mt="xs">
+                {/* Progress Bar */}
+                <Box mt="auto" pt="xs">
                     <Group justify="space-between" align="center" mb={4}>
-                        <Text size="xs" fw={700} c="gray.4">
+                        <Text size="xs" c="gray.4" fw={600}>
                             Collection Progress
                         </Text>
                         <Badge size="xs" variant="light" color={progressColor}>
@@ -342,84 +333,78 @@ export function DeckCardItem({
                 </Box>
             </Stack>
 
-            <Box
+            {/* Action Bar */}
+            <Group
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
                 mt="md"
-                style={{
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
-                    paddingTop: 12,
-                }}
+                pt="xs"
+                style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
             >
-                <Group
-                    justify="space-between"
-                    align="center"
-                    wrap="nowrap"
-                    gap="xs"
+                <Button
+                    size="xs"
+                    px={8}
+                    variant="light"
+                    color="violet"
+                    leftSection={<IconCards size={14} />}
+                    onClick={() => onOpenViewModal(deck.$id)}
+                    style={{ flexShrink: 1, minWidth: 0, fontSize: '11px' }}
                 >
-                    <Button
-                        variant="light"
-                        color="violet"
-                        size="xs"
-                        px={8}
-                        style={{ flexShrink: 1, minWidth: 0, fontSize: '11px' }}
-                        leftSection={<IconCards size={14} />}
-                        onClick={() => onOpenViewModal(deck.$id)}
-                    >
-                        View Decklist
-                    </Button>
+                    View & Edit Deck
+                </Button>
 
-                    <Group gap={2} style={{ flexShrink: 0 }}>
-                        <Tooltip label="Save to My Decks" withArrow>
-                            <ActionIcon
-                                variant="subtle"
-                                color="violet"
-                                size="sm"
-                                loading={cloneFetcher.state === 'submitting'}
-                                onClick={() => onCloneDeck(deck)}
-                            >
-                                <IconFolderPlus size={16} />
-                            </ActionIcon>
-                        </Tooltip>
-
-                        {deck.youtube && (
-                            <Tooltip label="Watch YouTube Guide" withArrow>
-                                <ActionIcon
-                                    component="a"
-                                    href={`https://www.youtube.com/watch?v=${deck.youtube}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    variant="subtle"
-                                    color="red"
-                                    size="sm"
-                                >
-                                    <IconBrandYoutube size={16} />
-                                </ActionIcon>
-                            </Tooltip>
-                        )}
-
-                        <Tooltip
-                            label={
-                                copyFeedback === deck.$id
-                                    ? 'Copied!'
-                                    : 'Export Decklist'
+                <Group gap={2} style={{ flexShrink: 0 }}>
+                    <Tooltip label="Add Cards" withArrow>
+                        <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="gray"
+                            onClick={() =>
+                                onOpenAddCardsModal
+                                    ? onOpenAddCardsModal(deck)
+                                    : onOpenViewModal(deck.$id)
                             }
-                            withArrow
                         >
-                            <ActionIcon
-                                variant="subtle"
-                                color="gray"
-                                size="sm"
-                                onClick={() => onExportDeck(deck)}
-                            >
-                                {copyFeedback === deck.$id ? (
-                                    <IconCheck size={16} color="#2ecc71" />
-                                ) : (
-                                    <IconCopy size={16} />
-                                )}
-                            </ActionIcon>
-                        </Tooltip>
-                    </Group>
+                            <IconPlus size={16} />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Edit Title / Cover Art" withArrow>
+                        <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="gray"
+                            onClick={() => onOpenEditModal(deck)}
+                        >
+                            <IconEdit size={16} />
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Export Decklist" withArrow>
+                        <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="gray"
+                            onClick={() => onExportDeck(deck)}
+                        >
+                            {copyFeedback === deck.$id ? (
+                                <IconCheck size={16} color="#2ecc71" />
+                            ) : (
+                                <IconCopy size={16} />
+                            )}
+                        </ActionIcon>
+                    </Tooltip>
+                    <Tooltip label="Delete Deck" withArrow>
+                        <ActionIcon
+                            size="sm"
+                            variant="subtle"
+                            color="red"
+                            onClick={() => onOpenDeleteModal(deck)}
+                        >
+                            <IconTrash size={16} />
+                        </ActionIcon>
+                    </Tooltip>
                 </Group>
-            </Box>
+            </Group>
         </Card>
     );
 }

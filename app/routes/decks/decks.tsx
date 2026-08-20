@@ -1,9 +1,4 @@
-import {
-    useLoaderData,
-    useNavigate,
-    useFetcher,
-    useSubmit,
-} from 'react-router';
+import { useNavigate, useFetcher, useSubmit } from 'react-router';
 import { useState, useMemo } from 'react';
 import { Container } from '@mantine/core';
 
@@ -16,13 +11,13 @@ import { DeckGrid } from './components/DeckGrid';
 import { ImportDeckModal } from './components/ImportDeckModal';
 import { ViewDeckModal } from './components/ViewDeckModal';
 
-import { loader } from './loader';
+import type { Route } from './+types/decks';
 
-export { loader };
+export { loader } from './loader';
 export { action } from './action';
 
-export default function Decks() {
-    const { decks, cards, user, sort } = useLoaderData<typeof loader>();
+export default function Decks({ loaderData }: Route.ComponentProps) {
+    const { decks, cards, user, sort } = loaderData;
     const navigate = useNavigate();
     const fetcher = useFetcher();
     const cloneFetcher = useFetcher();

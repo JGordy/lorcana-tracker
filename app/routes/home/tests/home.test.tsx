@@ -19,7 +19,7 @@ describe('Home Route Integration', () => {
         render(
             <MantineProvider>
                 <MemoryRouter>
-                    <Home />
+                    <Home {...({ loaderData: { user: null } } as any)} />
                 </MemoryRouter>
             </MantineProvider>,
         );

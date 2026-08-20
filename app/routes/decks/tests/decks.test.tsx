@@ -44,12 +44,45 @@ vi.mock('react-router', async () => {
     };
 });
 
+const testDeck = {
+    $id: 'd1',
+    title: 'Amber Ruby Aggro',
+    description: 'Fast aggro deck',
+    is_trending: true,
+    cards: [
+        {
+            card: {
+                id: 'c1',
+                name: 'Stitch',
+                set: 'The First Chapter',
+                formats: ['core', 'infinity'],
+            },
+            requiredQty: 4,
+        },
+    ],
+    progress: {
+        percentage: 100,
+        ownedCount: 60,
+        totalCount: 60,
+        missingCards: [],
+    },
+};
+
 describe('Decks Route Integration', () => {
     it('renders header, deck list grid and format tabs', () => {
         render(
             <MantineProvider>
                 <MemoryRouter>
-                    <Decks />
+                    <Decks
+                        {...({
+                            loaderData: {
+                                decks: [testDeck],
+                                cards: [],
+                                user: null,
+                                sort: 'progress',
+                            },
+                        } as any)}
+                    />
                 </MemoryRouter>
             </MantineProvider>,
         );
