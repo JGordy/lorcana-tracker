@@ -95,8 +95,24 @@ export function ViewDeckModal({
             size="1100px"
             centered
             radius="lg"
+            styles={{
+                content: {
+                    maxHeight: '85vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                },
+                header: {
+                    flexShrink: 0,
+                },
+                body: {
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                },
+            }}
         >
-            <Stack gap="md">
+            <Stack gap="md" style={{ flex: 1, overflow: 'hidden' }}>
                 {/* Progress Bar & Summary */}
                 <Card padding="sm" radius="md" bg="dark.8" withBorder>
                     <Group justify="space-between" align="center">
@@ -213,6 +229,10 @@ export function ViewDeckModal({
                         background: 'rgba(10, 15, 29, 0.55)',
                         borderRadius: 10,
                         border: '1px solid rgba(255, 255, 255, 0.05)',
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
                 >
                     {filteredCards.length === 0 ? (
@@ -222,7 +242,7 @@ export function ViewDeckModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={380} type="auto">
+                        <ScrollArea h="100%" type="auto" style={{ flex: 1 }}>
                             <Table
                                 striped
                                 highlightOnHover
@@ -500,7 +520,12 @@ export function ViewDeckModal({
                 </Box>
 
                 {/* Modal Footer */}
-                <Group justify="space-between" align="center" mt="xs">
+                <Group
+                    justify="space-between"
+                    align="center"
+                    mt="xs"
+                    style={{ flexShrink: 0 }}
+                >
                     <Text size="xs" c="dimmed">
                         Total Cards:{' '}
                         <strong>

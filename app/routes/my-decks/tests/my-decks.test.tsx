@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { MantineProvider } from '@mantine/core';
+import { MemoryRouter } from 'react-router';
 import MyDecks from '../my-decks';
 
 vi.mock('react-router', async () => {
@@ -24,16 +25,18 @@ describe('MyDecks Route Integration', () => {
     it('renders header and container correctly', () => {
         render(
             <MantineProvider>
-                <MyDecks
-                    {...({
-                        loaderData: {
-                            decks: [],
-                            cards: [],
-                            user: { $id: 'user-1' },
-                            sort: 'progress',
-                        },
-                    } as any)}
-                />
+                <MemoryRouter>
+                    <MyDecks
+                        {...({
+                            loaderData: {
+                                decks: [],
+                                cards: [],
+                                user: { $id: 'user-1' },
+                                sort: 'progress',
+                            },
+                        } as any)}
+                    />
+                </MemoryRouter>
             </MantineProvider>,
         );
 

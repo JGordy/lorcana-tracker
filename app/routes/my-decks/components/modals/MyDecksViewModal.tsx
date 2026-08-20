@@ -192,18 +192,26 @@ export function MyDecksViewModal({
                     border: '1px solid rgba(168, 85, 247, 0.25)',
                     boxShadow:
                         '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.12)',
+                    maxHeight: '85vh',
+                    display: 'flex',
+                    flexDirection: 'column',
                 },
                 header: {
                     background: 'rgba(15, 11, 32, 0.95)',
                     borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                     padding: '16px 22px',
+                    flexShrink: 0,
                 },
                 body: {
                     padding: '20px 22px',
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
                 },
             }}
         >
-            <Stack gap="md">
+            <Stack gap="md" style={{ flex: 1, overflow: 'hidden' }}>
                 {/* Summary & Progress Bar */}
                 <Card
                     padding="md"
@@ -365,6 +373,10 @@ export function MyDecksViewModal({
                         background: 'rgba(10, 15, 29, 0.55)',
                         borderRadius: 10,
                         border: '1px solid rgba(255, 255, 255, 0.06)',
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
                     }}
                 >
                     {filteredCards.length === 0 ? (
@@ -374,7 +386,7 @@ export function MyDecksViewModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={380} type="auto">
+                        <ScrollArea h="100%" type="auto" style={{ flex: 1 }}>
                             <Table highlightOnHover style={{ minWidth: 700 }}>
                                 <Table.Thead>
                                     <Table.Tr
@@ -745,7 +757,12 @@ export function MyDecksViewModal({
                 </Box>
 
                 {/* Fixed Modal Footer */}
-                <Group justify="space-between" align="center" mt="xs">
+                <Group
+                    justify="space-between"
+                    align="center"
+                    mt="xs"
+                    style={{ flexShrink: 0 }}
+                >
                     <Text size="xs" c="dimmed">
                         Total Cards:{' '}
                         <strong style={{ color: '#f8fafc' }}>
