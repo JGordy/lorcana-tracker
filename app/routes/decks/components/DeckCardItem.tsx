@@ -22,6 +22,7 @@ import {
     INK_HEX_MAP,
     getFeaturedDeckCard,
     getKeyDeckCards,
+    parseDeckMetadata,
 } from '../../../utils/deck';
 import type { ProcessedDeck } from '../utils/deckHelpers';
 
@@ -42,17 +43,35 @@ export function DeckCardItem({
     onCloneDeck,
     onExportDeck,
 }: DeckCardItemProps) {
+    const meta = parseDeckMetadata(deck.description);
+    const displayDesc = deck.displayDescription || meta.description;
     const { percentage, ownedCount, totalCount } = deck.progress;
-    const featuredCard = getFeaturedDeckCard(deck.cards);
-    const keyCards = getKeyDeckCards(deck.cards, 4);
-
-    const deckInks = Array.from(
-        new Set(
-            deck.cards.flatMap((dc) =>
-                dc.card.ink_color ? dc.card.ink_color.split('/') : [],
-            ),
-        ),
-    );
+    const featuredCard = getFeaturedDeckCard(deck.cards, meta.coverCardId);
+    const keyCards = getKeyDeckCards(deck.cards);
+    const deckInks =
+        deck.displayInks && deck.displayInks.length > 0
+            ? deck.displayInks
+            : Array.from(
+                  new Set(
+                      [
+                          ...(meta.inks || []),
+                          ...deck.cards.flatMap((dc) =>
+                              dc.card?.ink_color
+                                  ? dc.card.ink_color.split('/')
+                                  : [],
+                          ),
+                      ].map((i) => i.toLowerCase().trim()),
+                  ),
+              ).filter((i) =>
+                  [
+                      'amber',
+                      'amethyst',
+                      'emerald',
+                      'ruby',
+                      'sapphire',
+                      'steel',
+                  ].includes(i),
+              );
 
     let progressColor = 'red';
     if (percentage >= 80) progressColor = 'teal';
@@ -242,9 +261,9 @@ export function DeckCardItem({
                     <Text fw={800} size="md" c="gray.1" lineClamp={1}>
                         {deck.title}
                     </Text>
-                    {deck.description && deck.description.trim() ? (
+                    {displayDesc && displayDesc.trim() ? (
                         <Text size="xs" c="gray.4" lineClamp={2} mt={2}>
-                            {deck.description}
+                            {displayDesc}
                         </Text>
                     ) : null}
                 </Box>
