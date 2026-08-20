@@ -5,9 +5,7 @@ import { COLLECTIONS, type Card as LorcanaCard } from '../../types/lorcana';
 export async function loader({ request }: Route.LoaderArgs) {
     const url = new URL(request.url);
     const sort = (url.searchParams.get('sort') || 'progress') as
-        | 'progress'
-        | 'missing_cost'
-        | 'name';
+        'progress' | 'missing_cost' | 'name';
 
     const user = await authService.getSessionUser(request);
     const userId = user ? user.$id : null;

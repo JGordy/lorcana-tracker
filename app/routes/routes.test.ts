@@ -40,8 +40,14 @@ vi.mock('../services/appwrite.server', () => ({
 
 import { loader as verifyLoader } from './verify/verify';
 import { loader as homeLoader, action as homeAction } from './home/home';
-import { loader as logoutLoader, action as logoutAction } from './logout/logout';
-import { loader as myDecksLoader, action as myDecksAction } from './my-decks';
+import {
+    loader as logoutLoader,
+    action as logoutAction,
+} from './logout/logout';
+import {
+    loader as myDecksLoader,
+    action as myDecksAction,
+} from './my-decks/my-decks';
 import { authService } from '../services/auth.server';
 import { dbService } from '../services/appwrite.server';
 

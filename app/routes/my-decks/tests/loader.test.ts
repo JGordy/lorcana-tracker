@@ -22,8 +22,12 @@ describe('MyDecks Loader', () => {
 
     it('loads decks and cards for authenticated user', async () => {
         const mockUser = { $id: 'user-1' };
-        vi.mocked(authService.getSessionUser).mockResolvedValue(mockUser as any);
-        vi.mocked(dbService.getUserDecksWithProgress).mockResolvedValue(['deck-1'] as any);
+        vi.mocked(authService.getSessionUser).mockResolvedValue(
+            mockUser as any,
+        );
+        vi.mocked(dbService.getUserDecksWithProgress).mockResolvedValue([
+            'deck-1',
+        ] as any);
         vi.mocked(dbService.getCollection).mockResolvedValue(['card-1'] as any);
 
         const request = new Request('http://localhost:3000/my-decks?sort=name');
