@@ -49,7 +49,16 @@ describe('Decks Route Integration', () => {
         render(
             <MantineProvider>
                 <MemoryRouter>
-                    <Decks />
+                    <Decks
+                        {...({
+                            loaderData: {
+                                decks: [],
+                                cards: [],
+                                user: null,
+                                sort: 'progress',
+                            },
+                        } as any)}
+                    />
                 </MemoryRouter>
             </MantineProvider>,
         );

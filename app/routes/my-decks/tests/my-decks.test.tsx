@@ -24,10 +24,21 @@ describe('MyDecks Route Integration', () => {
     it('renders header and container correctly', () => {
         render(
             <MantineProvider>
-                <MyDecks />
+                <MyDecks
+                    {...({
+                        loaderData: {
+                            decks: [],
+                            cards: [],
+                            user: { $id: 'user-1' },
+                            sort: 'progress',
+                        },
+                    } as any)}
+                />
             </MantineProvider>,
         );
 
-        expect(screen.getByText('My Decks')).toBeInTheDocument();
+        expect(
+            screen.getByRole('heading', { name: /my decks/i }),
+        ).toBeInTheDocument();
     });
 });

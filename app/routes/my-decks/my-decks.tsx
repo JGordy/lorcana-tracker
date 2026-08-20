@@ -1,5 +1,4 @@
 import {
-    useLoaderData,
     useSubmit,
     useFetcher,
     useNavigate,
@@ -97,12 +96,13 @@ export function serializeDeckMetadata(
     return JSON.stringify({ format, inks, description, coverCardId });
 }
 
-import { loader } from './loader';
+import type { Route } from './+types/my-decks';
+
 export { loader } from './loader';
 export { action } from './action';
 
-export default function MyDecks() {
-    const { decks, cards, user, sort } = useLoaderData<typeof loader>();
+export default function MyDecks({ loaderData }: Route.ComponentProps) {
+    const { decks, cards, user, sort } = loaderData;
     const submit = useSubmit();
     const fetcher = useFetcher();
     const navigate = useNavigate();
@@ -2978,7 +2978,7 @@ export default function MyDecks() {
                                                                     wrap="nowrap"
                                                                 >
                                                                     <img
-                                                                        src={`/inks/${(card.ink_color || 'amber').toLowerCase().trim()}.svg`}
+                                                                        src={`/inks/${ALL_INKS.some((i) => i.id === (card.ink_color || '').toLowerCase().trim()) ? card.ink_color.toLowerCase().trim() : 'amber'}.svg`}
                                                                         alt={
                                                                             card.ink_color
                                                                         }

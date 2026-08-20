@@ -1,4 +1,4 @@
-import { useLoaderData, useFetcher } from 'react-router';
+import { useFetcher } from 'react-router';
 import { useMemo } from 'react';
 import { Container, Grid } from '@mantine/core';
 
@@ -10,17 +10,13 @@ import { CollectionHeader } from './components/CollectionHeader';
 import { CollectionFiltersSidebar } from './components/CollectionFiltersSidebar';
 import { CollectionTopFilterBar } from './components/CollectionTopFilterBar';
 import { CollectionCardGrid } from './components/CollectionCardGrid';
-import { loader } from './loader';
+import type { Route } from './+types/collection';
 
-export { loader };
+export { loader } from './loader';
 export { action } from './action';
 
-export default function Collection() {
-    const {
-        cards,
-        userCollection: serverCollection,
-        user,
-    } = useLoaderData<typeof loader>();
+export default function Collection({ loaderData }: Route.ComponentProps) {
+    const { cards, userCollection: serverCollection, user } = loaderData;
     const fetcher = useFetcher();
 
     const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
