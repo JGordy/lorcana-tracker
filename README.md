@@ -7,8 +7,19 @@ A modern, full-stack web application designed for Disney Lorcana TCG players to 
 - 🎴 **Collection Management**: Track owned cards with support for quantities, foil variants, set numbers, and ink colors.
 - 🛠️ **Deck Building**: Design custom decks, toggle deck privacy, and view detailed card breakdowns.
 - 📊 **Progress Calculations**: Automatically calculate collection progress for any deck, showing overall percentage and listing specific missing cards.
+- 🔥 **Trending Community Decks**: Explore current metagame decks with live collection completion progress.
 - ⚡ **Modern Stack**: Built with React Router (v8), TypeScript, Tailwind CSS, and Mantine UI components for a premium user interface.
 - 🔌 **Appwrite Integration**: Configured with Appwrite for secure database storage and user authentication, featuring a fully functional cookie-based local fallback for testing without configuration.
+
+---
+
+## Documentation
+
+- 📐 [**System Architecture**](./docs/ARCHITECTURE.md): Complete technical design, frontend/backend architecture, and data flow.
+- 🗄️ [**Data Sources & APIs**](./docs/DATA_SOURCES.md): Detailed guide on external APIs, community datasets, and card synchronization.
+- 🤖 [**Agent & LLM Guide**](./AGENTS.md): Context guide for AI coding assistants and developers.
+
+---
 
 ## Getting Started
 
@@ -19,6 +30,16 @@ Install the dependencies:
 ```bash
 npm install
 ```
+
+### Card Data Synchronization
+
+Synchronize the local card database with the latest Lorcana catalog:
+
+```bash
+npm run sync:cards
+```
+
+_(Pulls bulk card data from [LorcanaJSON](https://lorcanajson.org), normalizes slugs and promos, and updates `public/cards.json`)_.
 
 ### Development
 
