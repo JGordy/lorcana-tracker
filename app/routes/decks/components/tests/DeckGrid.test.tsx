@@ -22,9 +22,13 @@ describe('DeckGrid', () => {
         );
 
         expect(screen.getByText('Core Constructed (0)')).toBeInTheDocument();
-        expect(screen.getByText('Infinity Constructed (0)')).toBeInTheDocument();
         expect(
-            screen.getByText('No decks found matching your filters in this format.'),
+            screen.getByText('Infinity Constructed (0)'),
+        ).toBeInTheDocument();
+        expect(
+            screen.getAllByText(
+                'No decks found matching your filters in this format.',
+            )[0],
         ).toBeInTheDocument();
     });
 });

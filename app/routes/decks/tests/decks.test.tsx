@@ -15,7 +15,17 @@ vi.mock('react-router', async () => {
                     title: 'Amber Ruby Aggro',
                     description: 'Fast aggro deck',
                     is_trending: true,
-                    cards: [],
+                    cards: [
+                        {
+                            card: {
+                                id: 'c1',
+                                name: 'Stitch',
+                                set: 'The First Chapter',
+                                formats: ['core', 'infinity'],
+                            },
+                            requiredQty: 4,
+                        },
+                    ],
                     progress: {
                         percentage: 100,
                         ownedCount: 60,
@@ -47,6 +57,6 @@ describe('Decks Route Integration', () => {
         expect(
             screen.getByText('Disney Lorcana Metagame Deck Matcher'),
         ).toBeInTheDocument();
-        expect(screen.getByText('Amber Ruby Aggro')).toBeInTheDocument();
+        expect(screen.getAllByText('Amber Ruby Aggro')[0]).toBeInTheDocument();
     });
 });

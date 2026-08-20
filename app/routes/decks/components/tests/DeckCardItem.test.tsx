@@ -17,7 +17,12 @@ describe('DeckCardItem', () => {
         isCoreLegal: true,
         cards: [
             {
-                card: { id: 'c1', name: 'Stitch', set: 'The First Chapter', ink_color: 'Amber' },
+                card: {
+                    id: 'c1',
+                    name: 'Stitch',
+                    set: 'The First Chapter',
+                    ink_color: 'Amber',
+                },
                 requiredQty: 4,
             },
         ],
@@ -48,7 +53,7 @@ describe('DeckCardItem', () => {
     it('renders deck title, progress, and badges', () => {
         renderComponent();
         expect(screen.getByText('Amber Ruby Aggro')).toBeInTheDocument();
-        expect(screen.getByText('100%')).toBeInTheDocument();
+        expect(screen.getByText(/100%/)).toBeInTheDocument();
         expect(screen.getByText('Trending')).toBeInTheDocument();
         expect(screen.getByText('Core')).toBeInTheDocument();
     });

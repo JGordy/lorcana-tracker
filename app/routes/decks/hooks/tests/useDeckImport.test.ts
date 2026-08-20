@@ -31,7 +31,9 @@ describe('useDeckImport', () => {
             result.current.handleValidateImport();
         });
 
-        expect(result.current.importError).toBe('Please paste a decklist first.');
+        expect(result.current.importError).toBe(
+            'Please paste a decklist first.',
+        );
         expect(result.current.parsedResults).toBeNull();
     });
 
@@ -41,27 +43,43 @@ describe('useDeckImport', () => {
         );
 
         act(() => {
-            result.current.setImportText('4 Stitch - Rock Star (001-023)\n2 Unknown Dragon');
+            result.current.setImportText(
+                '4 Stitch - Rock Star (001-023)\n2 Unknown Dragon',
+            );
+        });
+
+        act(() => {
             result.current.handleValidateImport();
         });
 
         expect(result.current.importError).toBeNull();
         expect(result.current.parsedResults?.matched).toHaveLength(1);
-        expect(result.current.parsedResults?.matched[0].card.name).toBe('Stitch - Rock Star');
+        expect(result.current.parsedResults?.matched[0].card.name).toBe(
+            'Stitch - Rock Star',
+        );
         expect(result.current.parsedResults?.matched[0].quantity).toBe(4);
 
         expect(result.current.parsedResults?.unmatched).toHaveLength(1);
-        expect(result.current.parsedResults?.unmatched[0].name).toBe('Unknown Dragon');
+        expect(result.current.parsedResults?.unmatched[0].name).toBe(
+            'Unknown Dragon',
+        );
     });
 
     it('submits validated import successfully', () => {
         const { result } = renderHook(() =>
-            useDeckImport({ cards: mockCards, submit: mockSubmit, userId: 'user-1' }),
+            useDeckImport({
+                cards: mockCards,
+                submit: mockSubmit,
+                userId: 'user-1',
+            }),
         );
 
         act(() => {
             result.current.setImportTitle('My Aggro Deck');
             result.current.setImportText('4 Stitch - Rock Star');
+        });
+
+        act(() => {
             result.current.handleValidateImport();
         });
 
