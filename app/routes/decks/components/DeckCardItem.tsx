@@ -349,19 +349,25 @@ export function DeckCardItem({
                     paddingTop: 12,
                 }}
             >
-                <Group justify="space-between" align="center" gap="xs">
+                <Group
+                    justify="space-between"
+                    align="center"
+                    wrap="nowrap"
+                    gap="xs"
+                >
                     <Button
                         variant="light"
                         color="violet"
                         size="xs"
-                        style={{ flex: 1 }}
+                        px={8}
+                        style={{ flexShrink: 1, minWidth: 0, fontSize: '11px' }}
                         leftSection={<IconCards size={14} />}
                         onClick={() => onOpenViewModal(deck.$id)}
                     >
                         View Decklist
                     </Button>
 
-                    <Group gap={4}>
+                    <Group gap={2} style={{ flexShrink: 0 }}>
                         <Tooltip label="Save to My Decks" withArrow>
                             <ActionIcon
                                 variant="subtle"

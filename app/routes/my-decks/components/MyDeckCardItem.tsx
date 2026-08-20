@@ -336,21 +336,25 @@ export function MyDeckCardItem({
             {/* Action Bar */}
             <Group
                 justify="space-between"
+                align="center"
+                wrap="nowrap"
                 mt="md"
                 pt="xs"
                 style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}
             >
                 <Button
                     size="xs"
+                    px={8}
                     variant="light"
                     color="violet"
                     leftSection={<IconCards size={14} />}
                     onClick={() => onOpenViewModal(deck.$id)}
+                    style={{ flexShrink: 1, minWidth: 0, fontSize: '11px' }}
                 >
                     View & Edit Deck
                 </Button>
 
-                <Group gap={4}>
+                <Group gap={2} style={{ flexShrink: 0 }}>
                     <Tooltip label="Add Cards" withArrow>
                         <ActionIcon
                             size="sm"
