@@ -60,7 +60,6 @@ import {
     SET_NAME_TO_INDEX,
     type DeckWithProgress,
 } from '../types/lorcana';
-import { Navbar } from '../components/Navbar';
 
 // Lorcana Inks Configuration
 const ALL_INKS = [
@@ -1561,9 +1560,7 @@ export default function MyDecks() {
     };
 
     return (
-        <Box bg="#0d0e12" style={{ minHeight: '100vh', color: '#e2e8f0' }}>
-            <Navbar user={user} />
-
+        <>
             <Container size="xl" py="xl">
                 {/* Undo Notification Banner */}
                 {undoState && (
@@ -4130,6 +4127,6 @@ export default function MyDecks() {
                     </Group>
                 </Stack>
             </Modal>
-        </Box>
+        </>
     );
 }
