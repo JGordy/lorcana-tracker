@@ -73,33 +73,17 @@ export function DeckGrid({
         <Tabs
             defaultValue="core"
             color="violet"
-            variant="outline"
+            className="deck-format-tabs"
             mt="md"
             mb="xl"
-            styles={{
-                tab: {
-                    fontWeight: 600,
-                    fontSize: '14px',
-                    borderColor: 'rgba(168, 85, 247, 0.2)',
-                    '&[data-active]': {
-                        borderColor: 'rgba(168, 85, 247, 0.6)',
-                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                        color: '#c084fc',
-                    },
-                },
-                list: {
-                    borderBottom: '1px solid rgba(168, 85, 247, 0.2)',
-                    marginBottom: 16,
-                },
-            }}
         >
             <Tabs.List>
-                <Tabs.Tab value="core" leftSection={<IconCards size={16} />}>
+                <Tabs.Tab value="core" leftSection={<IconCards size={18} />}>
                     Core Constructed ({coreDecks.length})
                 </Tabs.Tab>
                 <Tabs.Tab
                     value="infinity"
-                    leftSection={<IconInfinity size={16} />}
+                    leftSection={<IconInfinity size={18} />}
                 >
                     Infinity Constructed ({infinityDecks.length})
                 </Tabs.Tab>
