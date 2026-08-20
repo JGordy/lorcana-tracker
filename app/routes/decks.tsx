@@ -47,7 +47,6 @@ import {
     type Card as LorcanaCard,
     SET_NAME_TO_INDEX,
 } from '../types/lorcana';
-import { Navbar } from '../components/Navbar';
 
 // ---------------------------------------------------------
 // Loader (Runs on the Server in SSR mode)
@@ -973,9 +972,7 @@ export default function Decks() {
     };
 
     return (
-        <Box mih="100vh" bg="dark.9" c="gray.1">
-            <Navbar user={user} />
-
+        <>
             <Container size="lg" py="xl">
                 {/* Banner Hero */}
                 <Card
@@ -1842,6 +1839,6 @@ export default function Decks() {
                     </Stack>
                 )}
             </Modal>
-        </Box>
+        </>
     );
 }

@@ -5,6 +5,7 @@ import {
     Outlet,
     Scripts,
     ScrollRestoration,
+    useLoaderData,
 } from 'react-router';
 
 import type { Route } from './+types/root';
@@ -13,8 +14,11 @@ import {
     ColorSchemeScript,
     MantineProvider,
     mantineHtmlProps,
+    Box,
 } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { Navbar } from './components/Navbar';
+import { authService } from './services/appwrite.server';
 
 export const links: Route.LinksFunction = () => [
     { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -34,6 +38,11 @@ export const links: Route.LinksFunction = () => [
         href: '/glimmerforge-192.png',
     },
 ];
+
+export async function loader({ request }: Route.LoaderArgs) {
+    const user = await authService.getSessionUser(request);
+    return { user };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
     return (
@@ -60,7 +69,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-    return <Outlet />;
+    const { user } = useLoaderData<typeof loader>();
+
+    return (
+        <Box mih="100vh" bg="#0b0d14" c="gray.1">
+            <Navbar user={user} />
+            <Outlet context={{ user }} />
+        </Box>
+    );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
