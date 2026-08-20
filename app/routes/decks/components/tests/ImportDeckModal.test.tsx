@@ -30,7 +30,9 @@ describe('ImportDeckModal', () => {
 
     it('renders modal header and input fields', () => {
         renderComponent();
-        expect(screen.getByText('Import Lorcana Deck List')).toBeInTheDocument();
+        expect(
+            screen.getByText('Import Lorcana Deck List'),
+        ).toBeInTheDocument();
         expect(screen.getByText('Validate List')).toBeInTheDocument();
     });
 

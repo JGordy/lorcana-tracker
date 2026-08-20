@@ -17,7 +17,13 @@ describe('ViewDeckModal', () => {
         isCoreLegal: true,
         cards: [
             {
-                card: { id: 'c1', name: 'Stitch', ink_color: 'Amber', rarity: 'Super Rare', cost: 6 },
+                card: {
+                    id: 'c1',
+                    name: 'Stitch',
+                    ink_color: 'Amber',
+                    rarity: 'Super Rare',
+                    cost: 6,
+                },
                 requiredQty: 4,
                 ownedQty: 2,
             },

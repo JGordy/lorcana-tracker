@@ -31,7 +31,9 @@ describe('Verify Loader', () => {
         vi.mocked(authService.getSessionUser).mockResolvedValue(null);
         vi.mocked(authService.verifyEmail).mockResolvedValue({} as any);
 
-        const request = new Request('http://localhost:3000/verify?userId=u1&secret=s1');
+        const request = new Request(
+            'http://localhost:3000/verify?userId=u1&secret=s1',
+        );
         const result = await loader({ request } as any);
 
         expect(authService.verifyEmail).toHaveBeenCalledWith({

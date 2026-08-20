@@ -28,13 +28,10 @@ export function HomeDemoCallout({ onTriggerDemoLogin }: HomeDemoCalloutProps) {
                     Ready to test it in action?
                 </Text>
             </Group>
-            <Text
-                size="xs"
-                c="gray.4"
-                mb="lg"
-                style={{ lineHeight: 1.6 }}
-            >
-                Try GlimmerForge instantly without creating an account. Launch an anonymous mock-user session pre-populated with sample cards to explore real-time recommendation calculations!
+            <Text size="xs" c="gray.4" mb="lg" style={{ lineHeight: 1.6 }}>
+                Try GlimmerForge instantly without creating an account. Launch
+                an anonymous mock-user session pre-populated with sample cards
+                to explore real-time recommendation calculations!
             </Text>
             <Button
                 onClick={onTriggerDemoLogin}

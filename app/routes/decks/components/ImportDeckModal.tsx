@@ -118,7 +118,8 @@ export function ImportDeckModal({
                                     (acc, curr) => acc + curr.quantity,
                                     0,
                                 )}{' '}
-                                Cards Matched ({parsedResults.matched.length} Unique)
+                                Cards Matched ({parsedResults.matched.length}{' '}
+                                Unique)
                             </Badge>
                             {parsedResults.unmatched.length > 0 && (
                                 <Badge color="red" variant="light">
@@ -134,8 +135,9 @@ export function ImportDeckModal({
                         {parsedResults.unmatched.length > 0 && (
                             <Box>
                                 <Text size="xs" c="red.4" fw={500} mb={4}>
-                                    Warning: The following cards could not be found
-                                    in the database (they will be skipped):
+                                    Warning: The following cards could not be
+                                    found in the database (they will be
+                                    skipped):
                                 </Text>
                                 <Box
                                     style={{
@@ -146,19 +148,23 @@ export function ImportDeckModal({
                                         borderRadius: 4,
                                     }}
                                 >
-                                    {parsedResults.unmatched.map((item, idx) => (
-                                        <Text
-                                            key={idx}
-                                            size="xs"
-                                            c="gray.4"
-                                            style={{
-                                                fontFamily: 'monospace',
-                                            }}
-                                        >
-                                            - {item.quantity}x {item.name}{' '}
-                                            {item.setCode ? `(${item.setCode})` : ''}
-                                        </Text>
-                                    ))}
+                                    {parsedResults.unmatched.map(
+                                        (item, idx) => (
+                                            <Text
+                                                key={idx}
+                                                size="xs"
+                                                c="gray.4"
+                                                style={{
+                                                    fontFamily: 'monospace',
+                                                }}
+                                            >
+                                                - {item.quantity}x {item.name}{' '}
+                                                {item.setCode
+                                                    ? `(${item.setCode})`
+                                                    : ''}
+                                            </Text>
+                                        ),
+                                    )}
                                 </Box>
                             </Box>
                         )}
@@ -166,18 +172,10 @@ export function ImportDeckModal({
                 )}
 
                 <Group justify="end" mt="md">
-                    <Button
-                        variant="outline"
-                        color="gray"
-                        onClick={onClose}
-                    >
+                    <Button variant="outline" color="gray" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button
-                        variant="light"
-                        color="blue"
-                        onClick={onValidate}
-                    >
+                    <Button variant="light" color="blue" onClick={onValidate}>
                         Validate List
                     </Button>
                     <Button

@@ -23,7 +23,12 @@ describe('useDeckActions', () => {
         description: 'Control deck',
         cards: [
             {
-                card: { id: 'c1', name: 'Mickey Mouse', set: 'The First Chapter', number: 1 },
+                card: {
+                    id: 'c1',
+                    name: 'Mickey Mouse',
+                    set: 'The First Chapter',
+                    number: 1,
+                },
                 requiredQty: 4,
             },
         ],
@@ -31,7 +36,11 @@ describe('useDeckActions', () => {
 
     it('alerts guest user when attempting to clone deck', () => {
         const { result } = renderHook(() =>
-            useDeckActions({ user: null, fetcher: mockFetcher, cloneFetcher: mockCloneFetcher }),
+            useDeckActions({
+                user: null,
+                fetcher: mockFetcher,
+                cloneFetcher: mockCloneFetcher,
+            }),
         );
 
         result.current.handleCloneDeck(mockDeck);

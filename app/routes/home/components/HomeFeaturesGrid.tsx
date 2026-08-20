@@ -43,7 +43,11 @@ export function HomeFeaturesGrid() {
                             <Badge size="xs" variant="filled" color="violet">
                                 Normal
                             </Badge>
-                            <Badge size="xs" variant="gradient" gradient={{ from: 'indigo.4', to: 'violet.4' }}>
+                            <Badge
+                                size="xs"
+                                variant="gradient"
+                                gradient={{ from: 'indigo.4', to: 'violet.4' }}
+                            >
                                 ✨ Foil
                             </Badge>
                         </Group>
@@ -53,7 +57,9 @@ export function HomeFeaturesGrid() {
                         Catalog Collection
                     </Text>
                     <Text size="xs" c="gray.4" style={{ lineHeight: 1.6 }}>
-                        Log both normal and foil card copies from physical Lorcana booster packs. Everything syncs instantly to your secure inventory.
+                        Log both normal and foil card copies from physical
+                        Lorcana booster packs. Everything syncs instantly to
+                        your secure inventory.
                     </Text>
                 </Box>
 
@@ -112,7 +118,9 @@ export function HomeFeaturesGrid() {
                         Progress Matcher
                     </Text>
                     <Text size="xs" c="gray.4" style={{ lineHeight: 1.6 }}>
-                        Our matching loop maps inventory card counts directly against competitive metagame deck recipes to compute real-time completion scores.
+                        Our matching loop maps inventory card counts directly
+                        against competitive metagame deck recipes to compute
+                        real-time completion scores.
                     </Text>
                 </Box>
 
@@ -172,7 +180,9 @@ export function HomeFeaturesGrid() {
                         Smart Sort & Buy List
                     </Text>
                     <Text size="xs" c="gray.4" style={{ lineHeight: 1.6 }}>
-                        Filter decks by highest completion percentage or lowest missing card count. Generate exact missing card lists instantly for your next buy.
+                        Filter decks by highest completion percentage or lowest
+                        missing card count. Generate exact missing card lists
+                        instantly for your next buy.
                     </Text>
                 </Box>
 
