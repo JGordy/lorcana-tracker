@@ -38,9 +38,9 @@ vi.mock('../services/appwrite.server', () => ({
     SET_NAME_TO_INDEX: {},
 }));
 
-import { loader as verifyLoader } from './verify';
+import { loader as verifyLoader } from './verify/verify';
 import { loader as homeLoader, action as homeAction } from './home/home';
-import { loader as logoutLoader, action as logoutAction } from './logout';
+import { loader as logoutLoader, action as logoutAction } from './logout/logout';
 import { loader as myDecksLoader, action as myDecksAction } from './my-decks';
 import { authService } from '../services/auth.server';
 import { dbService } from '../services/appwrite.server';
