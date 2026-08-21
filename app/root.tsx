@@ -18,6 +18,7 @@ import {
 } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Navbar } from './components/Navbar';
+import { BackToTop } from './components/BackToTop';
 import { authService } from './services/appwrite.server';
 
 export const links: Route.LinksFunction = () => [
@@ -75,6 +76,7 @@ export default function App() {
         <Box mih="100vh" bg="#0b0d14" c="gray.1">
             <Navbar user={user} />
             <Outlet context={{ user }} />
+            <BackToTop />
         </Box>
     );
 }
