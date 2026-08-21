@@ -61,16 +61,75 @@ export interface ProcessedDeck extends DeckWithProgress {
     };
 }
 
-// Filter decks locally based on deck title, creator, or descriptions
+export type CompletionFilter = 'all' | 'ready' | 'near' | 'in_progress';
+
+export function isDeckMatchingCompletion(
+    deck: DeckWithProgress,
+    filter: CompletionFilter,
+): boolean {
+    if (!filter || filter === 'all') return true;
+    const total = deck.progress?.totalCount || 0;
+    const owned = deck.progress?.ownedCount || 0;
+    const pct = deck.progress?.percentage || 0;
+    const missing = total - owned;
+
+    if (filter === 'ready') {
+        return pct >= 100 || (total > 0 && owned >= total);
+    }
+    if (filter === 'near') {
+        const isReady = pct >= 100 || (total > 0 && owned >= total);
+        return !isReady && (pct >= 80 || missing <= 4);
+    }
+    if (filter === 'in_progress') {
+        const isReady = pct >= 100 || (total > 0 && owned >= total);
+        const isNear = !isReady && (pct >= 80 || missing <= 4);
+        return !isReady && !isNear;
+    }
+    return true;
+}
+
+export function getCompletionCounts(decks: DeckWithProgress[]) {
+    let ready = 0;
+    let near = 0;
+    let inProgress = 0;
+
+    for (const deck of decks) {
+        const total = deck.progress?.totalCount || 0;
+        const owned = deck.progress?.ownedCount || 0;
+        const pct = deck.progress?.percentage || 0;
+        const missing = total - owned;
+
+        if (pct >= 100 || (total > 0 && owned >= total)) {
+            ready++;
+        } else if (pct >= 80 || missing <= 4) {
+            near++;
+        } else {
+            inProgress++;
+        }
+    }
+
+    return {
+        all: decks.length,
+        ready,
+        near,
+        in_progress: inProgress,
+    };
+}
+
+// Filter decks locally based on deck title, creator, descriptions, and completion
 export function filterDecks(
     decks: DeckWithProgress[],
     searchQuery: string,
     cardsLookup?: { get: (id: string) => LorcanaCard | undefined },
+    completionFilter: CompletionFilter = 'all',
 ): ProcessedDeck[] {
     const query = searchQuery.trim().toLowerCase();
 
     return decks
         .filter((deck) => {
+            if (!isDeckMatchingCompletion(deck, completionFilter)) {
+                return false;
+            }
             const meta = parseDeckMetadata(deck.description);
             const titleMatch = deck.title.toLowerCase().includes(query);
             const descMatch = meta.description.toLowerCase().includes(query);
