@@ -182,7 +182,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const inProgressCount = totalDecksCount - readyToPlayCount;
 
     return (
-        <Container size="xl" py="xl">
+        <Container size="xl" py="lg">
             {/* Undo Notification Banner */}
             {undoState && (
                 <Alert
@@ -211,17 +211,18 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 totalDecksCount={totalDecksCount}
                 readyToPlayCount={readyToPlayCount}
                 inProgressCount={inProgressCount}
-                onOpenCreateModal={() => setCreateModalOpen(true)}
-                onOpenImportModal={() => setImportModalOpen(true)}
             />
 
-            {/* Sticky Filter Toolbar */}
+            {/* Sticky Filter Toolbar with Actions */}
             <MyDecksToolbar
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 sort={sort}
                 navigate={navigate}
                 activeCount={filteredDecks.length}
+                user={user}
+                onOpenCreateModal={() => setCreateModalOpen(true)}
+                onOpenImportModal={() => setImportModalOpen(true)}
             />
 
             {/* Main Cards Grid */}

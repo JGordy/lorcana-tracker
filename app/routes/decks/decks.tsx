@@ -121,13 +121,11 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
     };
 
     return (
-        <Container size="xl" py="xl">
+        <Container size="xl" py="lg">
             <DecksHeader
                 totalDecksCount={decks.length}
                 coreDecksCount={allCoreDecks.length}
                 infinityDecksCount={decks.length}
-                user={user}
-                onOpenImportModal={() => setImportModalOpen(true)}
             />
 
             <DecksToolbar

@@ -4,9 +4,16 @@ import {
     TextInput,
     ActionIcon,
     Select,
+    Button,
     Badge,
 } from '@mantine/core';
-import { IconSearch, IconX, IconArrowsSort } from '@tabler/icons-react';
+import {
+    IconSearch,
+    IconX,
+    IconArrowsSort,
+    IconPlus,
+    IconUpload,
+} from '@tabler/icons-react';
 import type { NavigateFunction } from 'react-router';
 
 interface MyDecksToolbarProps {
@@ -15,6 +22,9 @@ interface MyDecksToolbarProps {
     sort: string;
     navigate: NavigateFunction;
     activeCount: number;
+    user?: { $id: string } | null;
+    onOpenCreateModal: () => void;
+    onOpenImportModal: () => void;
 }
 
 export function MyDecksToolbar({
@@ -23,13 +33,16 @@ export function MyDecksToolbar({
     sort,
     navigate,
     activeCount,
+    user,
+    onOpenCreateModal,
+    onOpenImportModal,
 }: MyDecksToolbarProps) {
     return (
         <Paper
             p="sm"
             radius="lg"
             withBorder
-            mb="xl"
+            mb="lg"
             style={{
                 position: 'sticky',
                 top: 76,
@@ -42,7 +55,7 @@ export function MyDecksToolbar({
                     '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
             }}
         >
-            <Group justify="space-between" wrap="wrap" gap="md" align="center">
+            <Group justify="space-between" wrap="wrap" gap="sm" align="center">
                 {/* Search Input */}
                 <TextInput
                     placeholder="Search personal decks by name or notes..."
@@ -62,7 +75,7 @@ export function MyDecksToolbar({
                     }
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.currentTarget.value)}
-                    style={{ flex: 1, minWidth: 260 }}
+                    style={{ flex: '1 1 220px', minWidth: 200 }}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.6)',
@@ -73,8 +86,30 @@ export function MyDecksToolbar({
                     radius="md"
                 />
 
-                {/* Right Controls: Sort & Active Counter */}
-                <Group gap="sm" align="center">
+                {/* Actions, Sort & Active Counter */}
+                <Group gap="xs" align="center" wrap="wrap">
+                    <Button
+                        variant="gradient"
+                        gradient={{ from: 'violet.6', to: 'indigo.6' }}
+                        radius="md"
+                        size="sm"
+                        leftSection={<IconPlus size={16} />}
+                        onClick={onOpenCreateModal}
+                        disabled={!user}
+                    >
+                        New Deck
+                    </Button>
+                    <Button
+                        variant="light"
+                        color="violet"
+                        radius="md"
+                        size="sm"
+                        leftSection={<IconUpload size={16} />}
+                        onClick={onOpenImportModal}
+                    >
+                        Import
+                    </Button>
+
                     <Select
                         leftSection={
                             <IconArrowsSort size={15} color="#c084fc" />
@@ -86,9 +121,9 @@ export function MyDecksToolbar({
                             },
                             {
                                 value: 'missing_cost',
-                                label: 'Fewest Missing Cards',
+                                label: 'Fewest Missing',
                             },
-                            { value: 'name', label: 'Deck Name (A-Z)' },
+                            { value: 'name', label: 'Alphabetical (A-Z)' },
                         ]}
                         value={sort}
                         onChange={(val) => {
@@ -104,7 +139,7 @@ export function MyDecksToolbar({
                             },
                         }}
                         radius="md"
-                        style={{ width: 220 }}
+                        style={{ width: 175 }}
                     />
 
                     <Badge
@@ -113,7 +148,7 @@ export function MyDecksToolbar({
                         color="violet"
                         style={{
                             height: 36,
-                            padding: '0 12px',
+                            padding: '0 10px',
                             borderRadius: 8,
                             fontWeight: 600,
                         }}

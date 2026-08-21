@@ -39,7 +39,7 @@ export function DecksToolbar({
             p="sm"
             radius="lg"
             withBorder
-            mb="xl"
+            mb="md"
             style={{
                 position: 'sticky',
                 top: 76,
@@ -52,7 +52,7 @@ export function DecksToolbar({
                     '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
             }}
         >
-            <Group justify="space-between" wrap="wrap" gap="md" align="center">
+            <Group justify="space-between" wrap="wrap" gap="sm" align="center">
                 {/* Search Input */}
                 <TextInput
                     placeholder="Search meta decks..."
@@ -72,7 +72,7 @@ export function DecksToolbar({
                     }
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.currentTarget.value)}
-                    style={{ flex: 1, minWidth: 260 }}
+                    style={{ flex: '1 1 220px', minWidth: 200 }}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.6)',
@@ -84,12 +84,13 @@ export function DecksToolbar({
                 />
 
                 {/* Right Controls: Import Button, Sort Dropdown & Active Counter */}
-                <Group gap="sm" align="center">
+                <Group gap="xs" align="center" wrap="wrap">
                     {user && (
                         <Button
                             variant="light"
                             color="violet"
                             radius="md"
+                            size="sm"
                             leftSection={<IconUpload size={16} />}
                             onClick={onOpenImportModal}
                         >
@@ -108,7 +109,7 @@ export function DecksToolbar({
                             },
                             {
                                 value: 'missing_cost',
-                                label: 'Lowest Missing Count',
+                                label: 'Fewest Missing',
                             },
                             { value: 'name', label: 'Alphabetical (A-Z)' },
                         ]}
@@ -126,7 +127,7 @@ export function DecksToolbar({
                             },
                         }}
                         radius="md"
-                        style={{ width: 220 }}
+                        style={{ width: 175 }}
                     />
 
                     <Badge
@@ -135,7 +136,7 @@ export function DecksToolbar({
                         color="violet"
                         style={{
                             height: 36,
-                            padding: '0 12px',
+                            padding: '0 10px',
                             borderRadius: 8,
                             fontWeight: 600,
                         }}

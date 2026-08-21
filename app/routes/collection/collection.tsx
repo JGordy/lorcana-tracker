@@ -48,7 +48,7 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
     });
 
     return (
-        <Container size="xl" py="xl">
+        <Container size="xl" py="lg">
             {/* Banner Dashboard Header */}
             <CollectionHeader
                 totals={totals}

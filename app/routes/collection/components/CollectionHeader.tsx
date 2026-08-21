@@ -28,30 +28,25 @@ export function CollectionHeader({
 
     return (
         <Paper
-            p={{ base: 'lg', md: 'xl' }}
+            p={{ base: 'md', md: 'lg' }}
             radius="lg"
-            mb="xl"
+            mb="md"
             style={{
                 background:
                     'linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)',
                 border: '1px solid rgba(168, 85, 247, 0.15)',
             }}
         >
-            <Group
-                justify="space-between"
-                align="flex-start"
-                wrap="wrap"
-                gap="lg"
-            >
-                <Box style={{ maxWidth: 640 }}>
-                    <Group gap="xs" mb="xs">
-                        <IconCards size={28} color="#a855f7" />
+            <Group justify="space-between" align="center" wrap="wrap" gap="md">
+                <Box style={{ maxWidth: 540 }}>
+                    <Group gap="xs" mb={4}>
+                        <IconCards size={24} color="#a855f7" />
                         <Title
                             order={1}
                             style={{
                                 fontFamily: "'Cinzel Decorative', serif",
                                 letterSpacing: '0.5px',
-                                fontSize: 28,
+                                fontSize: 24,
                                 background:
                                     'linear-gradient(to right, #c084fc, #f472b6)',
                                 WebkitBackgroundClip: 'text',
@@ -61,68 +56,73 @@ export function CollectionHeader({
                             My Collection
                         </Title>
                     </Group>
-                    <Text size="sm" c="gray.4" lh={1.6}>
+                    <Text size="xs" c="gray.4" lh={1.5}>
                         Track your Lorcana cards (foil & non-foil counts) here.
                         Changes save instantly and automatically update deck
                         percentages.
                     </Text>
                 </Box>
-            </Group>
 
-            {/* Metric Quick Stats */}
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md" mt="xl">
-                <Card
-                    padding="md"
-                    radius="md"
-                    bg="rgba(15, 23, 42, 0.6)"
-                    withBorder
-                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                {/* Metric Quick Stats */}
+                <SimpleGrid
+                    cols={{ base: 3 }}
+                    spacing="xs"
+                    style={{ minWidth: 320, flex: '1 1 320px', maxWidth: 540 }}
                 >
-                    <Text size="xs" c="gray.5" fw={600} tt="uppercase">
-                        Total Cards Owned
-                    </Text>
-                    <Text size="xl" fw={800} c="gray.1" mt={4}>
-                        {totals.totalCardsOwned}
-                    </Text>
-                </Card>
-                <Card
-                    padding="md"
-                    radius="md"
-                    bg="rgba(15, 23, 42, 0.6)"
-                    withBorder
-                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
-                >
-                    <Text size="xs" c="teal.4" fw={600} tt="uppercase">
-                        Unique Cards Owned
-                    </Text>
-                    <Text size="xl" fw={800} c="teal.3" mt={4}>
-                        {totals.uniqueCardsCount}
-                    </Text>
-                </Card>
-                <Card
-                    padding="md"
-                    radius="md"
-                    bg="rgba(15, 23, 42, 0.6)"
-                    withBorder
-                    style={{ borderColor: 'rgba(255,255,255,0.06)' }}
-                >
-                    <Text size="xs" c="violet.4" fw={600} tt="uppercase">
-                        Catalog Completion
-                    </Text>
-                    <Text size="xl" fw={800} c="violet.3" mt={4}>
-                        {`${completionPercentage}%`}
-                        <Text
-                            component="span"
-                            size="xs"
-                            c="dimmed"
-                            fw={500}
-                            ml={6}
-                        >
-                            ({totals.uniqueCardsCount} / {totalCatalogCards})
+                    <Card
+                        padding="xs"
+                        radius="md"
+                        bg="rgba(15, 23, 42, 0.6)"
+                        withBorder
+                        style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                    >
+                        <Text size="10px" c="gray.5" fw={600} tt="uppercase">
+                            Total Cards
                         </Text>
-                    </Text>
-                </Card>
-            </SimpleGrid>
+                        <Text size="lg" fw={800} c="gray.1" mt={2}>
+                            {totals.totalCardsOwned}
+                        </Text>
+                    </Card>
+                    <Card
+                        padding="xs"
+                        radius="md"
+                        bg="rgba(15, 23, 42, 0.6)"
+                        withBorder
+                        style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                    >
+                        <Text size="10px" c="teal.4" fw={600} tt="uppercase">
+                            Unique
+                        </Text>
+                        <Text size="lg" fw={800} c="teal.3" mt={2}>
+                            {totals.uniqueCardsCount}
+                        </Text>
+                    </Card>
+                    <Card
+                        padding="xs"
+                        radius="md"
+                        bg="rgba(15, 23, 42, 0.6)"
+                        withBorder
+                        style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                    >
+                        <Text size="10px" c="violet.4" fw={600} tt="uppercase">
+                            Completion
+                        </Text>
+                        <Text size="lg" fw={800} c="violet.3" mt={2}>
+                            {`${completionPercentage}%`}
+                            <Text
+                                component="span"
+                                size="10px"
+                                c="dimmed"
+                                fw={500}
+                                ml={4}
+                            >
+                                ({totals.uniqueCardsCount} / {totalCatalogCards}
+                                )
+                            </Text>
+                        </Text>
+                    </Card>
+                </SimpleGrid>
+            </Group>
         </Paper>
     );
 }

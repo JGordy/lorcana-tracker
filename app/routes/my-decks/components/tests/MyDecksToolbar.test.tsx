@@ -9,6 +9,9 @@ const defaultProps = {
     sort: 'progress',
     navigate: vi.fn(),
     activeCount: 5,
+    user: { $id: 'user_1' },
+    onOpenCreateModal: vi.fn(),
+    onOpenImportModal: vi.fn(),
 };
 
 function renderToolbar(props = {}) {
@@ -20,14 +23,35 @@ function renderToolbar(props = {}) {
 }
 
 describe('MyDecksToolbar', () => {
-    it('renders the search input and sort select', () => {
+    it('renders the search input, action buttons, and sort select', () => {
         renderToolbar();
         expect(
             screen.getByPlaceholderText(
                 'Search personal decks by name or notes...',
             ),
         ).toBeInTheDocument();
+        expect(screen.getByText('New Deck')).toBeInTheDocument();
+        expect(screen.getByText('Import')).toBeInTheDocument();
         expect(screen.getByText('Highest Match %')).toBeInTheDocument();
+    });
+
+    it('triggers onOpenCreateModal when New Deck button is clicked', () => {
+        const onOpenCreateModal = vi.fn();
+        renderToolbar({ onOpenCreateModal });
+        fireEvent.click(screen.getByText('New Deck'));
+        expect(onOpenCreateModal).toHaveBeenCalledOnce();
+    });
+
+    it('triggers onOpenImportModal when Import button is clicked', () => {
+        const onOpenImportModal = vi.fn();
+        renderToolbar({ onOpenImportModal });
+        fireEvent.click(screen.getByText('Import'));
+        expect(onOpenImportModal).toHaveBeenCalledOnce();
+    });
+
+    it('disables New Deck button when user is not logged in', () => {
+        renderToolbar({ user: null });
+        expect(screen.getByText('New Deck').closest('button')).toBeDisabled();
     });
 
     it('displays the active deck count badge — plural', () => {
@@ -72,7 +96,7 @@ describe('MyDecksToolbar', () => {
         renderToolbar({ navigate });
         const combobox = screen.getByRole('combobox');
         fireEvent.click(combobox);
-        const option = screen.getByText('Deck Name (A-Z)');
+        const option = screen.getByText('Alphabetical (A-Z)');
         fireEvent.click(option);
         expect(navigate).toHaveBeenCalledWith('/my-decks?sort=name');
     });
