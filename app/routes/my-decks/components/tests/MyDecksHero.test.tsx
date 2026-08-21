@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
 import { MantineProvider } from '@mantine/core';
 import { MemoryRouter } from 'react-router';
 import { MyDecksHero } from '../MyDecksHero';
@@ -8,8 +8,6 @@ const defaultProps = {
     totalDecksCount: 7,
     readyToPlayCount: 3,
     inProgressCount: 4,
-    onOpenCreateModal: vi.fn(),
-    onOpenImportModal: vi.fn(),
 };
 
 function renderHero(props = {}) {
@@ -33,34 +31,12 @@ describe('MyDecksHero', () => {
 
     it('displays the three metric stat cards with correct values', () => {
         renderHero();
-        expect(screen.getByText('Total Personal Decks')).toBeInTheDocument();
+        expect(screen.getByText('Total Decks')).toBeInTheDocument();
         expect(screen.getByText('7')).toBeInTheDocument();
-        expect(
-            screen.getByText('Ready to Play (100% Owned)'),
-        ).toBeInTheDocument();
+        expect(screen.getByText('Ready (100%)')).toBeInTheDocument();
         expect(screen.getByText('3')).toBeInTheDocument();
-        expect(screen.getByText('Decks In-Progress')).toBeInTheDocument();
+        expect(screen.getByText('In-Progress')).toBeInTheDocument();
         expect(screen.getByText('4')).toBeInTheDocument();
-    });
-
-    it('calls onOpenCreateModal when New Deck button is clicked', () => {
-        const onOpenCreateModal = vi.fn();
-        renderHero({ onOpenCreateModal });
-        fireEvent.click(screen.getByText('New Deck'));
-        expect(onOpenCreateModal).toHaveBeenCalledOnce();
-    });
-
-    it('calls onOpenImportModal when Import Decklist button is clicked', () => {
-        const onOpenImportModal = vi.fn();
-        renderHero({ onOpenImportModal });
-        fireEvent.click(screen.getByText('Import Decklist'));
-        expect(onOpenImportModal).toHaveBeenCalledOnce();
-    });
-
-    it('renders the Directory link pointing to /decks', () => {
-        renderHero();
-        const link = screen.getByText('Directory').closest('a');
-        expect(link).toHaveAttribute('href', '/decks');
     });
 
     it('renders zero counts without crashing', () => {
