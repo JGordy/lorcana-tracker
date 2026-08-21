@@ -7,6 +7,7 @@ describe('DecksToolbar', () => {
     const mockNavigate = vi.fn();
     const mockSetSearchChange = vi.fn();
     const mockOpenImportModal = vi.fn();
+    const mockOnCompletionChange = vi.fn();
 
     const renderComponent = (props: any = {}) => {
         return render(
@@ -15,6 +16,14 @@ describe('DecksToolbar', () => {
                     searchQuery=""
                     onSearchChange={mockSetSearchChange}
                     sort="progress"
+                    completion="all"
+                    onCompletionChange={mockOnCompletionChange}
+                    completionCounts={{
+                        all: 5,
+                        ready: 1,
+                        near: 2,
+                        in_progress: 2,
+                    }}
                     navigate={mockNavigate}
                     activeCount={5}
                     user={null}
@@ -25,13 +34,24 @@ describe('DecksToolbar', () => {
         );
     };
 
-    it('renders search input, sort select, and active count badge', () => {
+    it('renders search input, sort select, active count badge, and completion segments', () => {
         renderComponent();
         expect(
             screen.getByPlaceholderText('Search meta decks...'),
         ).toBeInTheDocument();
         expect(screen.getByDisplayValue('Highest Match %')).toBeInTheDocument();
         expect(screen.getByText('5 Decks')).toBeInTheDocument();
+        expect(screen.getByText('All Decks (5)')).toBeInTheDocument();
+        expect(screen.getByText('Ready to Play (1)')).toBeInTheDocument();
+        expect(screen.getByText('Near Complete (2)')).toBeInTheDocument();
+        expect(screen.getByText('In Progress (2)')).toBeInTheDocument();
+    });
+
+    it('triggers onCompletionChange when clicking a completion filter option', () => {
+        renderComponent();
+        const readyChip = screen.getByText('Ready to Play (1)');
+        fireEvent.click(readyChip);
+        expect(mockOnCompletionChange).toHaveBeenCalledWith('ready');
     });
 
     it('allows typing into search input', () => {

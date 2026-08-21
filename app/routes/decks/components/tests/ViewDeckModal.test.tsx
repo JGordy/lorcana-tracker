@@ -9,6 +9,7 @@ describe('ViewDeckModal', () => {
     const mockOnCloneDeck = vi.fn();
     const mockOnExportDeck = vi.fn();
     const mockOnQuickAdd = vi.fn();
+    const mockOnOpenShoppingList = vi.fn();
 
     const mockActiveDeck: any = {
         $id: 'd1',
@@ -51,22 +52,30 @@ describe('ViewDeckModal', () => {
                     onCloneDeck={mockOnCloneDeck}
                     onExportDeck={mockOnExportDeck}
                     onQuickAdd={mockOnQuickAdd}
+                    onOpenShoppingList={mockOnOpenShoppingList}
                     {...props}
                 />
             </MantineProvider>,
         );
     };
 
-    it('renders deck title and cards table', () => {
+    it('renders deck title, cards table, and Shopping List button', () => {
         renderComponent();
         expect(screen.getByText('Amber Ruby Aggro')).toBeInTheDocument();
-        expect(screen.getByText('Stitch')).toBeInTheDocument();
+        expect(screen.getAllByText('Stitch')[0]).toBeInTheDocument();
         expect(screen.getByText('+1 Coll')).toBeInTheDocument();
+        expect(screen.getByText('Shopping List')).toBeInTheDocument();
     });
 
     it('triggers quick add callback when clicking +1 Coll button', () => {
         renderComponent();
         fireEvent.click(screen.getByText('+1 Coll'));
         expect(mockOnQuickAdd).toHaveBeenCalledWith('c1', 2);
+    });
+
+    it('triggers onOpenShoppingList when clicking Shopping List button', () => {
+        renderComponent();
+        fireEvent.click(screen.getByText('Shopping List'));
+        expect(mockOnOpenShoppingList).toHaveBeenCalledWith(mockActiveDeck);
     });
 });

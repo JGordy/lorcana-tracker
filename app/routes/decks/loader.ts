@@ -6,6 +6,8 @@ export async function loader({ request }: Route.LoaderArgs) {
     const url = new URL(request.url);
     const sort = (url.searchParams.get('sort') || 'progress') as
         'progress' | 'missing_cost' | 'name';
+    const completion = (url.searchParams.get('completion') || 'all') as
+        'all' | 'ready' | 'near' | 'in_progress';
 
     // Get active session user
     const user = await authService.getSessionUser(request);
@@ -17,5 +19,5 @@ export async function loader({ request }: Route.LoaderArgs) {
         dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], request),
     ]);
 
-    return { decks, cards, user, sort };
+    return { decks, cards, user, sort, completion };
 }

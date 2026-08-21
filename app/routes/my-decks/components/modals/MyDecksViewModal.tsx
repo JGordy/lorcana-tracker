@@ -10,7 +10,9 @@ import {
     Button,
     Box,
     ScrollArea,
-    Table,
+    SimpleGrid,
+    Card,
+    Tooltip,
     ActionIcon,
 } from '@mantine/core';
 import {
@@ -22,6 +24,7 @@ import {
     IconCheck,
     IconTrash,
     IconMinus,
+    IconShoppingCart,
 } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 
@@ -41,6 +44,7 @@ interface MyDecksViewModalProps {
     onUpdateCardQty: (deck: any, cardId: string, delta: number) => void;
     onQuickAdd: (cardId: string, currentOwned: number) => void;
     onRemoveCard: (deck: any, card: any, currentQty: number) => void;
+    onOpenShoppingList?: (deck: any) => void;
 }
 
 export function MyDecksViewModal({
@@ -59,6 +63,7 @@ export function MyDecksViewModal({
     onUpdateCardQty,
     onQuickAdd,
     onRemoveCard,
+    onOpenShoppingList,
 }: MyDecksViewModalProps) {
     if (!activeDeck) return null;
 
@@ -328,6 +333,33 @@ export function MyDecksViewModal({
                             Edit Info
                         </Button>
                         <Button
+                            variant="gradient"
+                            gradient={{
+                                from: 'violet.6',
+                                to: 'pink.6',
+                                deg: 90,
+                            }}
+                            size="xs"
+                            radius="md"
+                            leftSection={<IconShoppingCart size={14} />}
+                            onClick={() => onOpenShoppingList?.(activeDeck)}
+                        >
+                            Shopping List
+                            {activeDeck.progress.ownedCount <
+                                activeDeck.progress.totalCount && (
+                                <Badge
+                                    size="xs"
+                                    color="red"
+                                    variant="filled"
+                                    ml={6}
+                                    style={{ fontWeight: 800 }}
+                                >
+                                    {activeDeck.progress.totalCount -
+                                        activeDeck.progress.ownedCount}
+                                </Badge>
+                            )}
+                        </Button>
+                        <Button
                             variant="light"
                             color="violet"
                             size="xs"
@@ -348,12 +380,12 @@ export function MyDecksViewModal({
                     </Group>
                 </Group>
 
-                {/* Cards Table with Bounded ScrollArea */}
+                {/* Cards Visual Grid Gallery */}
                 <Box
-                    p="xs"
+                    p="sm"
                     style={{
                         background: 'rgba(10, 15, 29, 0.55)',
-                        borderRadius: 10,
+                        borderRadius: 12,
                         border: '1px solid rgba(255, 255, 255, 0.06)',
                     }}
                 >
@@ -364,226 +396,188 @@ export function MyDecksViewModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={420} type="auto">
-                            <Table highlightOnHover style={{ minWidth: 700 }}>
-                                <Table.Thead>
-                                    <Table.Tr
-                                        style={{
-                                            borderBottom:
-                                                '1px solid rgba(255, 255, 255, 0.08)',
-                                        }}
-                                    >
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Card
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Ink Color
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Cost
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Rarity
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Deck Qty (1–4)
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Owned
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Status
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'right',
-                                                tt: 'uppercase',
-                                            }}
-                                        >
-                                            Actions
-                                        </Table.Th>
-                                    </Table.Tr>
-                                </Table.Thead>
-                                <Table.Tbody>
-                                    {filteredCards.map(
-                                        ({ card, requiredQty, ownedQty }) => {
-                                            const isMissing =
-                                                ownedQty < requiredQty;
-                                            const missingCount =
-                                                requiredQty - ownedQty;
-                                            const inkSlug = ALL_INKS.some(
-                                                (i) =>
-                                                    i.id ===
-                                                    (card.ink_color || '')
-                                                        .toLowerCase()
-                                                        .trim(),
-                                            )
-                                                ? card.ink_color
-                                                      .toLowerCase()
-                                                      .trim()
-                                                : 'amber';
+                        <ScrollArea h={520} type="auto" offsetScrollbars>
+                            <SimpleGrid
+                                cols={{ base: 2, xs: 2, sm: 3, md: 4, lg: 5 }}
+                                spacing="md"
+                            >
+                                {filteredCards.map(
+                                    ({ card, requiredQty, ownedQty }) => {
+                                        const isMissing =
+                                            ownedQty < requiredQty;
+                                        const missingCount =
+                                            requiredQty - ownedQty;
 
-                                            return (
-                                                <Table.Tr
-                                                    key={card.id}
+                                        return (
+                                            <Card
+                                                key={card.id}
+                                                padding={10}
+                                                radius="md"
+                                                withBorder
+                                                style={{
+                                                    backgroundColor:
+                                                        'rgba(18, 22, 34, 0.85)',
+                                                    borderColor: isMissing
+                                                        ? 'rgba(239, 68, 68, 0.35)'
+                                                        : 'rgba(168, 85, 247, 0.25)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    justifyContent:
+                                                        'space-between',
+                                                    transition:
+                                                        'transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
+                                                }}
+                                            >
+                                                {/* Top: Card Image with floating status badge & remove button */}
+                                                <Box
                                                     style={{
-                                                        background: isMissing
-                                                            ? 'rgba(239, 68, 68, 0.05)'
-                                                            : 'rgba(255, 255, 255, 0.015)',
-                                                        borderBottom:
-                                                            '1px solid rgba(255, 255, 255, 0.03)',
+                                                        position: 'relative',
+                                                        borderRadius: 6,
+                                                        overflow: 'hidden',
+                                                        backgroundColor:
+                                                            'rgba(0, 0, 0, 0.3)',
+                                                        aspectRatio: '5/7',
                                                     }}
                                                 >
-                                                    <Table.Td>
-                                                        <Group
-                                                            gap="xs"
-                                                            wrap="nowrap"
+                                                    {card.image_url ? (
+                                                        <img
+                                                            src={card.image_url}
+                                                            alt={card.name}
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                objectFit:
+                                                                    'cover',
+                                                                display:
+                                                                    'block',
+                                                            }}
+                                                            loading="lazy"
+                                                        />
+                                                    ) : (
+                                                        <Box
+                                                            style={{
+                                                                width: '100%',
+                                                                height: '100%',
+                                                                display: 'flex',
+                                                                flexDirection:
+                                                                    'column',
+                                                                alignItems:
+                                                                    'center',
+                                                                justifyContent:
+                                                                    'center',
+                                                                padding: 8,
+                                                            }}
                                                         >
-                                                            {card.image_url && (
-                                                                <img
-                                                                    src={
-                                                                        card.image_url
-                                                                    }
-                                                                    alt={
-                                                                        card.name
-                                                                    }
-                                                                    style={{
-                                                                        width: 28,
-                                                                        height: 38,
-                                                                        objectFit:
-                                                                            'cover',
-                                                                        borderRadius: 4,
-                                                                    }}
-                                                                />
-                                                            )}
-                                                            <Box>
-                                                                <Text
-                                                                    size="xs"
-                                                                    fw={700}
-                                                                    c="gray.1"
-                                                                >
-                                                                    {card.name}
-                                                                </Text>
-                                                                <Text
-                                                                    size="10px"
-                                                                    c="gray.5"
-                                                                >
-                                                                    {card.set} •
-                                                                    #
-                                                                    {
-                                                                        card.number
-                                                                    }
-                                                                </Text>
-                                                            </Box>
-                                                        </Group>
-                                                    </Table.Td>
-                                                    <Table.Td>
-                                                        <Group
-                                                            gap={6}
-                                                            wrap="nowrap"
-                                                        >
-                                                            <img
-                                                                src={`/inks/${inkSlug}.svg`}
-                                                                alt={
-                                                                    card.ink_color
-                                                                }
+                                                            <IconCards
+                                                                size={24}
                                                                 style={{
-                                                                    width: 16,
-                                                                    height: 16,
+                                                                    opacity: 0.3,
+                                                                    marginBottom: 4,
                                                                 }}
                                                             />
                                                             <Text
                                                                 size="xs"
+                                                                fw={700}
+                                                                ta="center"
                                                                 c="gray.3"
+                                                                lineClamp={2}
                                                             >
-                                                                {card.ink_color ||
-                                                                    'Amber'}
+                                                                {card.name}
                                                             </Text>
-                                                        </Group>
-                                                    </Table.Td>
-                                                    <Table.Td
-                                                        style={{
-                                                            textAlign: 'center',
-                                                        }}
+                                                        </Box>
+                                                    )}
+
+                                                    {/* Floating Remove Button */}
+                                                    <Tooltip
+                                                        label="Remove from deck"
+                                                        position="bottom"
                                                     >
-                                                        <Badge
+                                                        <ActionIcon
                                                             size="xs"
-                                                            variant="light"
-                                                            color="indigo"
+                                                            variant="filled"
+                                                            color="dark"
+                                                            onClick={() =>
+                                                                onRemoveCard(
+                                                                    activeDeck,
+                                                                    card,
+                                                                    requiredQty,
+                                                                )
+                                                            }
+                                                            style={{
+                                                                position:
+                                                                    'absolute',
+                                                                top: 6,
+                                                                left: 6,
+                                                                backgroundColor:
+                                                                    'rgba(15, 23, 42, 0.85)',
+                                                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                            }}
                                                         >
-                                                            {card.cost}⬡
-                                                        </Badge>
-                                                    </Table.Td>
-                                                    <Table.Td
+                                                            <IconTrash
+                                                                size={12}
+                                                                color="#f87171"
+                                                            />
+                                                        </ActionIcon>
+                                                    </Tooltip>
+
+                                                    {/* Floating Status Badge */}
+                                                    <Badge
+                                                        size="sm"
+                                                        color={
+                                                            isMissing
+                                                                ? 'red'
+                                                                : 'teal'
+                                                        }
+                                                        variant={
+                                                            isMissing
+                                                                ? 'filled'
+                                                                : 'light'
+                                                        }
                                                         style={{
-                                                            textAlign: 'center',
+                                                            position:
+                                                                'absolute',
+                                                            top: 6,
+                                                            right: 6,
+                                                            fontWeight: 900,
+                                                            boxShadow:
+                                                                '0 2px 8px rgba(0, 0, 0, 0.75)',
                                                         }}
                                                     >
-                                                        <Badge
-                                                            size="xs"
-                                                            variant="outline"
-                                                            color="gray"
-                                                        >
-                                                            {card.rarity}
-                                                        </Badge>
-                                                    </Table.Td>
-                                                    <Table.Td
+                                                        {isMissing
+                                                            ? `Need ${missingCount}`
+                                                            : '✓ Owned'}
+                                                    </Badge>
+                                                </Box>
+
+                                                {/* Bottom: Card Name, Deck Stepper, Ownership, & Quick Add */}
+                                                <Stack
+                                                    gap={8}
+                                                    mt="xs"
+                                                    justify="space-between"
+                                                    style={{ flex: 1 }}
+                                                >
+                                                    <Text
+                                                        size="xs"
+                                                        fw={700}
+                                                        c="gray.2"
+                                                        lh={1.3}
                                                         style={{
-                                                            textAlign: 'center',
+                                                            minHeight: '2.6em',
                                                         }}
                                                     >
+                                                        {card.name}
+                                                    </Text>
+
+                                                    <Group
+                                                        justify="space-between"
+                                                        align="center"
+                                                        wrap="nowrap"
+                                                    >
+                                                        {/* Deck Stepper (1-4) */}
                                                         <Group
                                                             gap={4}
-                                                            justify="center"
+                                                            align="center"
+                                                            wrap="nowrap"
                                                         >
                                                             <ActionIcon
                                                                 size="xs"
@@ -598,14 +592,14 @@ export function MyDecksViewModal({
                                                                 }
                                                             >
                                                                 <IconMinus
-                                                                    size={12}
+                                                                    size={11}
                                                                 />
                                                             </ActionIcon>
                                                             <Text
                                                                 size="xs"
                                                                 fw={800}
                                                                 style={{
-                                                                    width: 20,
+                                                                    width: 16,
                                                                     textAlign:
                                                                         'center',
                                                                 }}
@@ -629,107 +623,77 @@ export function MyDecksViewModal({
                                                                 }
                                                             >
                                                                 <IconPlus
-                                                                    size={12}
+                                                                    size={11}
                                                                 />
                                                             </ActionIcon>
                                                         </Group>
-                                                    </Table.Td>
-                                                    <Table.Td
-                                                        style={{
-                                                            textAlign: 'center',
-                                                        }}
-                                                    >
-                                                        <Text
-                                                            size="xs"
-                                                            c={
-                                                                ownedQty > 0
-                                                                    ? 'teal.4'
-                                                                    : 'dimmed'
-                                                            }
-                                                            fw={700}
-                                                        >
-                                                            {ownedQty} Owned
-                                                        </Text>
-                                                    </Table.Td>
-                                                    <Table.Td
-                                                        style={{
-                                                            textAlign: 'center',
-                                                        }}
-                                                    >
-                                                        {isMissing ? (
-                                                            <Badge
-                                                                size="xs"
-                                                                color="red"
-                                                                variant="light"
-                                                            >
-                                                                Need{' '}
-                                                                {missingCount}
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge
-                                                                size="xs"
-                                                                color="teal"
-                                                                variant="light"
-                                                            >
-                                                                ✓ Owned
-                                                            </Badge>
-                                                        )}
-                                                    </Table.Td>
-                                                    <Table.Td
-                                                        style={{
-                                                            textAlign: 'right',
-                                                        }}
-                                                    >
+
+                                                        {/* Ownership & Quick Add */}
                                                         <Group
-                                                            gap={6}
-                                                            justify="flex-end"
+                                                            gap={4}
+                                                            wrap="nowrap"
                                                         >
-                                                            {isMissing && (
-                                                                <Button
-                                                                    size="compact-xs"
-                                                                    variant="light"
-                                                                    color="violet"
-                                                                    leftSection={
-                                                                        <IconPlus
-                                                                            size={
-                                                                                10
-                                                                            }
-                                                                        />
-                                                                    }
-                                                                    onClick={() =>
-                                                                        onQuickAdd(
-                                                                            card.id,
-                                                                            ownedQty,
-                                                                        )
+                                                            <Text
+                                                                size="11px"
+                                                                c="dimmed"
+                                                            >
+                                                                Own{' '}
+                                                                <Text
+                                                                    component="span"
+                                                                    fw={700}
+                                                                    c={
+                                                                        isMissing
+                                                                            ? ownedQty >
+                                                                              0
+                                                                                ? 'orange.4'
+                                                                                : 'red.4'
+                                                                            : 'teal.4'
                                                                     }
                                                                 >
-                                                                    +1 Coll
-                                                                </Button>
+                                                                    {ownedQty}
+                                                                </Text>
+                                                            </Text>
+
+                                                            {isMissing && (
+                                                                <Tooltip
+                                                                    label="Add 1 copy to your collection"
+                                                                    position="top"
+                                                                >
+                                                                    <Button
+                                                                        size="compact-xs"
+                                                                        variant="light"
+                                                                        color="violet"
+                                                                        leftSection={
+                                                                            <IconPlus
+                                                                                size={
+                                                                                    11
+                                                                                }
+                                                                            />
+                                                                        }
+                                                                        onClick={() =>
+                                                                            onQuickAdd(
+                                                                                card.id,
+                                                                                ownedQty,
+                                                                            )
+                                                                        }
+                                                                        style={{
+                                                                            paddingLeft: 4,
+                                                                            paddingRight: 6,
+                                                                            fontSize: 10,
+                                                                        }}
+                                                                    >
+                                                                        +1 Coll
+                                                                    </Button>
+                                                                </Tooltip>
                                                             )}
-                                                            <ActionIcon
-                                                                size="xs"
-                                                                variant="subtle"
-                                                                color="red"
-                                                                onClick={() =>
-                                                                    onRemoveCard(
-                                                                        activeDeck,
-                                                                        card,
-                                                                        requiredQty,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <IconTrash
-                                                                    size={12}
-                                                                />
-                                                            </ActionIcon>
                                                         </Group>
-                                                    </Table.Td>
-                                                </Table.Tr>
-                                            );
-                                        },
-                                    )}
-                                </Table.Tbody>
-                            </Table>
+                                                    </Group>
+                                                </Stack>
+                                            </Card>
+                                        );
+                                    },
+                                )}
+                            </SimpleGrid>
                         </ScrollArea>
                     )}
                 </Box>

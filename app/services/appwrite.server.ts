@@ -588,6 +588,12 @@ export const dbService = {
             resolvedDecks.sort(
                 (a, b) => b.progress.percentage - a.progress.percentage,
             );
+        } else if (sort === 'missing_cost') {
+            resolvedDecks.sort((a, b) => {
+                const missingA = a.progress.totalCount - a.progress.ownedCount;
+                const missingB = b.progress.totalCount - b.progress.ownedCount;
+                return missingA - missingB;
+            });
         } else if (sort === 'name') {
             resolvedDecks.sort((a, b) => a.title.localeCompare(b.title));
         }
