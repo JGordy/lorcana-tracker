@@ -165,6 +165,13 @@ describe('MyDeckCardItem', () => {
         expect(onOpenAddCardsModal).toHaveBeenCalledWith(mockDeck);
     });
 
+    it('calls onOpenPlaytest when the playtest action icon button is clicked', () => {
+        const onOpenPlaytest = vi.fn();
+        renderCard({ onOpenPlaytest });
+        fireEvent.click(screen.getByRole('button', { name: /playtest/i }));
+        expect(onOpenPlaytest).toHaveBeenCalledWith(mockDeck);
+    });
+
     it('shows copyFeedback check state without crashing', () => {
         // When copyFeedback matches deck id the copy button switches to a check icon
         renderCard({ copyFeedback: 'deck-1' });

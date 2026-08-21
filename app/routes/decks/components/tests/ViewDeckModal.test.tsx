@@ -78,4 +78,11 @@ describe('ViewDeckModal', () => {
         fireEvent.click(screen.getByText('Shopping List'));
         expect(mockOnOpenShoppingList).toHaveBeenCalledWith(mockActiveDeck);
     });
+
+    it('triggers onOpenPlaytest when clicking Playtest Hand button', () => {
+        const mockOnOpenPlaytest = vi.fn();
+        renderComponent({ onOpenPlaytest: mockOnOpenPlaytest });
+        fireEvent.click(screen.getByText('Playtest Hand'));
+        expect(mockOnOpenPlaytest).toHaveBeenCalledWith(mockActiveDeck);
+    });
 });

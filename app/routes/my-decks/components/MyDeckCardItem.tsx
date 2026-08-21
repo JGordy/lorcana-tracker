@@ -17,6 +17,7 @@ import {
     IconTrash,
     IconCopy,
     IconCheck,
+    IconDice,
 } from '@tabler/icons-react';
 import {
     getFeaturedDeckCard,
@@ -33,6 +34,7 @@ interface MyDeckCardItemProps {
     onOpenDeleteModal: (deck: any) => void;
     onExportDeck: (deck: any) => void;
     onOpenAddCardsModal?: (deck: any) => void;
+    onOpenPlaytest?: (deck: any) => void;
 }
 
 export function MyDeckCardItem({
@@ -43,6 +45,7 @@ export function MyDeckCardItem({
     onOpenDeleteModal,
     onExportDeck,
     onOpenAddCardsModal,
+    onOpenPlaytest,
 }: MyDeckCardItemProps) {
     const { percentage, ownedCount, totalCount } = deck.progress;
     const featuredCard = getFeaturedDeckCard(deck.cards, deck.meta.coverCardId);
@@ -355,6 +358,20 @@ export function MyDeckCardItem({
                 </Button>
 
                 <Group gap={2} style={{ flexShrink: 0 }}>
+                    {onOpenPlaytest && (
+                        <Tooltip label="Playtest Hand (Simulator)" withArrow>
+                            <ActionIcon
+                                size="sm"
+                                variant="subtle"
+                                color="violet"
+                                aria-label="Playtest Hand"
+                                onClick={() => onOpenPlaytest(deck)}
+                            >
+                                <IconDice size={16} />
+                            </ActionIcon>
+                        </Tooltip>
+                    )}
+
                     <Tooltip label="Add Cards" withArrow>
                         <ActionIcon
                             size="sm"
