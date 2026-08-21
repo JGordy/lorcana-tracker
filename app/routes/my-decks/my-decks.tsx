@@ -20,6 +20,7 @@ import { MyDecksViewModal } from './components/modals/MyDecksViewModal';
 import { MyDecksAddCardsModal } from './components/modals/MyDecksAddCardsModal';
 import { MyDecksDeleteModal } from './components/modals/MyDecksDeleteModal';
 import { ShoppingListModal } from '../../components/ShoppingListModal';
+import { PlaytestModal } from '../../components/PlaytestModal';
 
 export { loader } from './loader';
 export { action } from './action';
@@ -49,6 +50,15 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
 
     const [shoppingListModalOpen, setShoppingListModalOpen] = useState(false);
     const [shoppingListDeck, setShoppingListDeck] = useState<any>(null);
+
+    const [playtestModalOpen, setPlaytestModalOpen] = useState(false);
+    const [playtestDeck, setPlaytestDeck] = useState<any>(null);
+
+    const handleOpenPlaytest = (deck: any) => {
+        setPlaytestDeck(deck);
+        setViewModalOpen(false); // Seamless transition: no stacked modals
+        setPlaytestModalOpen(true);
+    };
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingDeck, setEditingDeck] = useState<any>(null);
@@ -257,6 +267,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setActiveDeckId(deck.$id);
                     setAddCardsModalOpen(true);
                 }}
+                onOpenPlaytest={handleOpenPlaytest}
             />
 
             {/* 1. Create Deck Modal */}
@@ -364,6 +375,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setShoppingListDeck(deck);
                     setShoppingListModalOpen(true);
                 }}
+                onOpenPlaytest={handleOpenPlaytest}
             />
 
             {/* 5. Add Cards Modal */}
@@ -423,6 +435,16 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 deck={shoppingListDeck}
                 user={user}
                 onQuickAdd={handleQuickAdd}
+            />
+
+            {/* 8. Playtest / Opening Hand & Alter Simulator Modal */}
+            <PlaytestModal
+                opened={playtestModalOpen}
+                onClose={() => {
+                    setPlaytestModalOpen(false);
+                    setPlaytestDeck(null);
+                }}
+                deck={playtestDeck}
             />
         </Container>
     );

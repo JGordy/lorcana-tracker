@@ -18,6 +18,7 @@ import { DeckGrid } from './components/DeckGrid';
 import { ImportDeckModal } from './components/ImportDeckModal';
 import { ViewDeckModal } from './components/ViewDeckModal';
 import { ShoppingListModal } from '../../components/ShoppingListModal';
+import { PlaytestModal } from '../../components/PlaytestModal';
 
 import type { Route } from './+types/decks';
 
@@ -42,6 +43,17 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
     const [shoppingListModalOpen, setShoppingListModalOpen] = useState(false);
     const [shoppingListDeck, setShoppingListDeck] =
         useState<ProcessedDeck | null>(null);
+
+    const [playtestModalOpen, setPlaytestModalOpen] = useState(false);
+    const [playtestDeck, setPlaytestDeck] = useState<ProcessedDeck | null>(
+        null,
+    );
+
+    const handleOpenPlaytest = (deck: ProcessedDeck) => {
+        setPlaytestDeck(deck);
+        setViewDeckModalOpen(false); // Seamless transition: no stacked modals
+        setPlaytestModalOpen(true);
+    };
 
     const handleCompletionChange = (val: CompletionFilter) => {
         setCompletionFilter(val);
@@ -175,6 +187,7 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                 onOpenViewModal={handleOpenViewModal}
                 onCloneDeck={handleCloneDeck}
                 onExportDeck={handleExportDeck}
+                onOpenPlaytest={handleOpenPlaytest}
             />
 
             <ImportDeckModal
@@ -209,6 +222,7 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                     setShoppingListDeck(deck);
                     setShoppingListModalOpen(true);
                 }}
+                onOpenPlaytest={handleOpenPlaytest}
             />
 
             <ShoppingListModal
@@ -220,6 +234,15 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                 deck={shoppingListDeck}
                 user={user}
                 onQuickAdd={handleQuickAdd}
+            />
+
+            <PlaytestModal
+                opened={playtestModalOpen}
+                onClose={() => {
+                    setPlaytestModalOpen(false);
+                    setPlaytestDeck(null);
+                }}
+                deck={playtestDeck}
             />
         </Container>
     );

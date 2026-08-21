@@ -16,6 +16,7 @@ import {
     IconBrandYoutube,
     IconCopy,
     IconCheck,
+    IconDice,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
 import {
@@ -33,6 +34,7 @@ interface DeckCardItemProps {
     onOpenViewModal: (deckId: string) => void;
     onCloneDeck: (deck: ProcessedDeck) => void;
     onExportDeck: (deck: ProcessedDeck) => void;
+    onOpenPlaytest?: (deck: ProcessedDeck) => void;
 }
 
 export function DeckCardItem({
@@ -42,6 +44,7 @@ export function DeckCardItem({
     onOpenViewModal,
     onCloneDeck,
     onExportDeck,
+    onOpenPlaytest,
 }: DeckCardItemProps) {
     const meta = parseDeckMetadata(deck.description);
     const displayDesc = deck.displayDescription || meta.description;
@@ -387,6 +390,23 @@ export function DeckCardItem({
                     </Button>
 
                     <Group gap={2} style={{ flexShrink: 0 }}>
+                        {onOpenPlaytest && (
+                            <Tooltip
+                                label="Playtest Hand (Simulator)"
+                                withArrow
+                            >
+                                <ActionIcon
+                                    variant="subtle"
+                                    color="violet"
+                                    size="sm"
+                                    onClick={() => onOpenPlaytest(deck)}
+                                    aria-label="Playtest Hand"
+                                >
+                                    <IconDice size={16} />
+                                </ActionIcon>
+                            </Tooltip>
+                        )}
+
                         <Tooltip label="Save to My Decks" withArrow>
                             <ActionIcon
                                 variant="subtle"

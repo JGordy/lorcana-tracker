@@ -12,6 +12,7 @@ interface DeckGridProps {
     onOpenViewModal: (deckId: string) => void;
     onCloneDeck: (deck: ProcessedDeck) => void;
     onExportDeck: (deck: ProcessedDeck) => void;
+    onOpenPlaytest?: (deck: ProcessedDeck) => void;
 }
 
 export function DeckGrid({
@@ -22,6 +23,7 @@ export function DeckGrid({
     onOpenViewModal,
     onCloneDeck,
     onExportDeck,
+    onOpenPlaytest,
 }: DeckGridProps) {
     const renderList = (decksToRender: ProcessedDeck[]) => {
         if (decksToRender.length === 0) {
@@ -63,6 +65,7 @@ export function DeckGrid({
                         onOpenViewModal={onOpenViewModal}
                         onCloneDeck={onCloneDeck}
                         onExportDeck={onExportDeck}
+                        onOpenPlaytest={onOpenPlaytest}
                     />
                 ))}
             </SimpleGrid>

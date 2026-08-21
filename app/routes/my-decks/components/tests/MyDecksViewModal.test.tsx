@@ -155,6 +155,13 @@ describe('MyDecksViewModal', () => {
         expect(onOpenShoppingList).toHaveBeenCalledWith(mockDeck);
     });
 
+    it('calls onOpenPlaytest when "Playtest Hand" button is clicked', () => {
+        const onOpenPlaytest = vi.fn();
+        renderModal({ onOpenPlaytest });
+        fireEvent.click(screen.getByText('Playtest Hand'));
+        expect(onOpenPlaytest).toHaveBeenCalledWith(mockDeck);
+    });
+
     it('shows empty filter message when filteredCards is empty', () => {
         renderModal({ filteredCards: [] });
         expect(

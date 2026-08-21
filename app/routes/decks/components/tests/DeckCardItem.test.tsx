@@ -58,6 +58,14 @@ describe('DeckCardItem', () => {
         expect(screen.getByText('Core')).toBeInTheDocument();
     });
 
+    it('triggers onOpenPlaytest when clicking Playtest action button', () => {
+        const mockOpenPlaytest = vi.fn();
+        renderComponent({ onOpenPlaytest: mockOpenPlaytest });
+        const playtestBtn = screen.getByLabelText('Playtest Hand');
+        fireEvent.click(playtestBtn);
+        expect(mockOpenPlaytest).toHaveBeenCalledWith(mockDeck);
+    });
+
     it('triggers view modal callback on View Decklist button click', () => {
         renderComponent();
         fireEvent.click(screen.getByText('View Decklist'));

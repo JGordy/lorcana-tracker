@@ -25,6 +25,7 @@ import {
     IconTrash,
     IconMinus,
     IconShoppingCart,
+    IconDice,
 } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 
@@ -45,6 +46,7 @@ interface MyDecksViewModalProps {
     onQuickAdd: (cardId: string, currentOwned: number) => void;
     onRemoveCard: (deck: any, card: any, currentQty: number) => void;
     onOpenShoppingList?: (deck: any) => void;
+    onOpenPlaytest?: (deck: any) => void;
 }
 
 export function MyDecksViewModal({
@@ -64,6 +66,7 @@ export function MyDecksViewModal({
     onQuickAdd,
     onRemoveCard,
     onOpenShoppingList,
+    onOpenPlaytest,
 }: MyDecksViewModalProps) {
     if (!activeDeck) return null;
 
@@ -307,6 +310,24 @@ export function MyDecksViewModal({
                     </Group>
 
                     <Group gap="xs">
+                        {onOpenPlaytest && (
+                            <Button
+                                variant="gradient"
+                                gradient={{
+                                    from: 'violet.7',
+                                    to: 'indigo.6',
+                                    deg: 90,
+                                }}
+                                size="xs"
+                                radius="md"
+                                leftSection={<IconDice size={14} />}
+                                onClick={() => onOpenPlaytest(activeDeck)}
+                                style={{ fontWeight: 700 }}
+                            >
+                                Playtest Hand
+                            </Button>
+                        )}
+
                         <Button
                             variant="gradient"
                             gradient={{

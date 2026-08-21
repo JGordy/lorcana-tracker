@@ -25,6 +25,7 @@ import {
     IconPlus,
     IconX,
     IconShoppingCart,
+    IconDice,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
 import { parseDeckMetadata } from '../../../utils/deck';
@@ -50,6 +51,7 @@ interface ViewDeckModalProps {
     onExportDeck: (deck: ProcessedDeck) => void;
     onQuickAdd: (cardId: string, currentOwned: number) => void;
     onOpenShoppingList?: (deck: ProcessedDeck) => void;
+    onOpenPlaytest?: (deck: ProcessedDeck) => void;
 }
 
 export function ViewDeckModal({
@@ -68,6 +70,7 @@ export function ViewDeckModal({
     onExportDeck,
     onQuickAdd,
     onOpenShoppingList,
+    onOpenPlaytest,
 }: ViewDeckModalProps) {
     if (!activeDeck) return null;
 
@@ -278,6 +281,22 @@ export function ViewDeckModal({
                     </Group>
 
                     <Group gap="xs">
+                        {onOpenPlaytest && (
+                            <Button
+                                variant="gradient"
+                                gradient={{
+                                    from: 'violet.7',
+                                    to: 'indigo.6',
+                                    deg: 90,
+                                }}
+                                size="xs"
+                                leftSection={<IconDice size={14} />}
+                                onClick={() => onOpenPlaytest(activeDeck)}
+                            >
+                                Playtest Hand
+                            </Button>
+                        )}
+
                         <Button
                             variant="light"
                             color="violet"
