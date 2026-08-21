@@ -64,6 +64,7 @@ const defaultProps = {
     onUpdateCardQty: vi.fn(),
     onQuickAdd: vi.fn(),
     onRemoveCard: vi.fn(),
+    onOpenShoppingList: vi.fn(),
 };
 
 function renderModal(props = {}) {
@@ -132,10 +133,10 @@ describe('MyDecksViewModal', () => {
 
     it('renders table rows for cards in deck with ownership status', () => {
         renderModal();
-        expect(screen.getByText('Merlin - Goat')).toBeInTheDocument();
+        expect(screen.getAllByText('Merlin - Goat')[0]).toBeInTheDocument();
         expect(screen.getByText('✓ Owned')).toBeInTheDocument();
 
-        expect(screen.getByText('Madam Mim - Fox')).toBeInTheDocument();
+        expect(screen.getAllByText('Madam Mim - Fox')[0]).toBeInTheDocument();
         expect(screen.getByText('Need 2')).toBeInTheDocument();
         expect(screen.getByText('+1 Coll')).toBeInTheDocument();
     });
@@ -145,6 +146,13 @@ describe('MyDecksViewModal', () => {
         renderModal({ onQuickAdd });
         fireEvent.click(screen.getByText('+1 Coll'));
         expect(onQuickAdd).toHaveBeenCalledWith('card-2', 2);
+    });
+
+    it('calls onOpenShoppingList when "Shopping List" button is clicked', () => {
+        const onOpenShoppingList = vi.fn();
+        renderModal({ onOpenShoppingList });
+        fireEvent.click(screen.getByText('Shopping List'));
+        expect(onOpenShoppingList).toHaveBeenCalledWith(mockDeck);
     });
 
     it('shows empty filter message when filteredCards is empty', () => {

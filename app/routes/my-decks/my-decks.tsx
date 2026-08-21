@@ -19,6 +19,7 @@ import { MyDecksImportModal } from './components/modals/MyDecksImportModal';
 import { MyDecksViewModal } from './components/modals/MyDecksViewModal';
 import { MyDecksAddCardsModal } from './components/modals/MyDecksAddCardsModal';
 import { MyDecksDeleteModal } from './components/modals/MyDecksDeleteModal';
+import { ShoppingListModal } from '../../components/ShoppingListModal';
 
 export { loader } from './loader';
 export { action } from './action';
@@ -45,6 +46,9 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
     const [deckModalSearch, setDeckModalSearch] = useState('');
     const [deckModalInkFilter, setDeckModalInkFilter] = useState('all');
+
+    const [shoppingListModalOpen, setShoppingListModalOpen] = useState(false);
+    const [shoppingListDeck, setShoppingListDeck] = useState<any>(null);
 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingDeck, setEditingDeck] = useState<any>(null);
@@ -356,6 +360,10 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     );
                     handleRemoveCard(deck, card, existing?.requiredQty || 1);
                 }}
+                onOpenShoppingList={(deck) => {
+                    setShoppingListDeck(deck);
+                    setShoppingListModalOpen(true);
+                }}
             />
 
             {/* 5. Add Cards Modal */}
@@ -403,6 +411,18 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                         setDeleteModalOpen(false);
                     }
                 }}
+            />
+
+            {/* 7. Shopping List / Missing Cards Modal */}
+            <ShoppingListModal
+                opened={shoppingListModalOpen}
+                onClose={() => {
+                    setShoppingListModalOpen(false);
+                    setShoppingListDeck(null);
+                }}
+                deck={shoppingListDeck}
+                user={user}
+                onQuickAdd={handleQuickAdd}
             />
         </Container>
     );

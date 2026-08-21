@@ -10,7 +10,9 @@ import {
     Select,
     Button,
     ScrollArea,
-    Table,
+    SimpleGrid,
+    Card,
+    Tooltip,
     ActionIcon,
 } from '@mantine/core';
 import {
@@ -22,9 +24,10 @@ import {
     IconCopy,
     IconPlus,
     IconX,
+    IconShoppingCart,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
-import { RARITY_COLOR, parseDeckMetadata } from '../../../utils/deck';
+import { parseDeckMetadata } from '../../../utils/deck';
 import {
     getInkBadgeStyle,
     VALID_LORCANA_INKS,
@@ -46,6 +49,7 @@ interface ViewDeckModalProps {
     onCloneDeck: (deck: ProcessedDeck) => void;
     onExportDeck: (deck: ProcessedDeck) => void;
     onQuickAdd: (cardId: string, currentOwned: number) => void;
+    onOpenShoppingList?: (deck: ProcessedDeck) => void;
 }
 
 export function ViewDeckModal({
@@ -63,6 +67,7 @@ export function ViewDeckModal({
     onCloneDeck,
     onExportDeck,
     onQuickAdd,
+    onOpenShoppingList,
 }: ViewDeckModalProps) {
     if (!activeDeck) return null;
 
@@ -300,6 +305,33 @@ export function ViewDeckModal({
                         )}
 
                         <Button
+                            variant="gradient"
+                            gradient={{
+                                from: 'violet.6',
+                                to: 'pink.6',
+                                deg: 90,
+                            }}
+                            size="xs"
+                            leftSection={<IconShoppingCart size={14} />}
+                            onClick={() => onOpenShoppingList?.(activeDeck)}
+                        >
+                            Shopping List
+                            {activeDeck.progress.ownedCount <
+                                activeDeck.progress.totalCount && (
+                                <Badge
+                                    size="xs"
+                                    color="red"
+                                    variant="filled"
+                                    ml={6}
+                                    style={{ fontWeight: 800 }}
+                                >
+                                    {activeDeck.progress.totalCount -
+                                        activeDeck.progress.ownedCount}
+                                </Badge>
+                            )}
+                        </Button>
+
+                        <Button
                             variant="outline"
                             color="gray"
                             size="xs"
@@ -319,12 +351,12 @@ export function ViewDeckModal({
                     </Group>
                 </Group>
 
-                {/* Cards Table */}
+                {/* Cards Visual Grid Gallery */}
                 <Box
-                    p="xs"
+                    p="sm"
                     style={{
                         background: 'rgba(10, 15, 29, 0.55)',
-                        borderRadius: 10,
+                        borderRadius: 12,
                         border: '1px solid rgba(255, 255, 255, 0.05)',
                     }}
                 >
@@ -335,279 +367,208 @@ export function ViewDeckModal({
                             </Text>
                         </Box>
                     ) : (
-                        <ScrollArea h={420} type="auto">
-                            <Table
-                                striped
-                                highlightOnHover
-                                style={{ minWidth: 700 }}
+                        <ScrollArea h={520} type="auto" offsetScrollbars>
+                            <SimpleGrid
+                                cols={{ base: 2, xs: 2, sm: 3, md: 4, lg: 5 }}
+                                spacing="md"
                             >
-                                <Table.Thead>
-                                    <Table.Tr>
-                                        <Table.Th
+                                {filteredCards.map((dc) => {
+                                    const isMissing =
+                                        dc.ownedQty < dc.requiredQty;
+                                    const missingCount =
+                                        dc.requiredQty - dc.ownedQty;
+                                    const inkStyle = getInkBadgeStyle(
+                                        dc.card.ink_color || '',
+                                    );
+
+                                    return (
+                                        <Card
+                                            key={dc.card.id}
+                                            padding={10}
+                                            radius="md"
+                                            withBorder
                                             style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
+                                                backgroundColor:
+                                                    'rgba(18, 22, 34, 0.85)',
+                                                borderColor: `${inkStyle.color}40`,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'space-between',
+                                                transition:
+                                                    'transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
                                             }}
                                         >
-                                            Card
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                            }}
-                                        >
-                                            Ink Color
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                            }}
-                                        >
-                                            Cost
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                            }}
-                                        >
-                                            Rarity
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                            }}
-                                        >
-                                            Required
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                            }}
-                                        >
-                                            Owned
-                                        </Table.Th>
-                                        <Table.Th
-                                            style={{
-                                                color: '#94a3b8',
-                                                fontSize: 11,
-                                                textAlign: 'center',
-                                            }}
-                                        >
-                                            Status
-                                        </Table.Th>
-                                        {user && (
-                                            <Table.Th
+                                            {/* Top: Card Image with floating status badge */}
+                                            <Box
                                                 style={{
-                                                    color: '#94a3b8',
-                                                    fontSize: 11,
-                                                    textAlign: 'right',
+                                                    position: 'relative',
+                                                    borderRadius: 6,
+                                                    overflow: 'hidden',
+                                                    backgroundColor:
+                                                        'rgba(0, 0, 0, 0.3)',
+                                                    aspectRatio: '5/7',
                                                 }}
                                             >
-                                                Collection
-                                            </Table.Th>
-                                        )}
-                                    </Table.Tr>
-                                </Table.Thead>
-                                <Table.Tbody>
-                                    {filteredCards.map((dc) => {
-                                        const isMissing =
-                                            dc.ownedQty < dc.requiredQty;
-                                        const missingCount =
-                                            dc.requiredQty - dc.ownedQty;
-
-                                        return (
-                                            <Table.Tr key={dc.card.id}>
-                                                <Table.Td>
-                                                    <Group gap="sm">
-                                                        {dc.card.image_url ? (
-                                                            <img
-                                                                src={
-                                                                    dc.card
-                                                                        .image_url
-                                                                }
-                                                                alt={
-                                                                    dc.card.name
-                                                                }
-                                                                style={{
-                                                                    width: 32,
-                                                                    height: 44,
-                                                                    objectFit:
-                                                                        'cover',
-                                                                    borderRadius: 4,
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <Box
-                                                                style={{
-                                                                    width: 32,
-                                                                    height: 44,
-                                                                    borderRadius: 4,
-                                                                    background:
-                                                                        'rgba(255,255,255,0.05)',
-                                                                    display:
-                                                                        'flex',
-                                                                    alignItems:
-                                                                        'center',
-                                                                    justifyContent:
-                                                                        'center',
-                                                                }}
-                                                            >
-                                                                <IconCards
-                                                                    size={16}
-                                                                    opacity={
-                                                                        0.4
-                                                                    }
-                                                                />
-                                                            </Box>
-                                                        )}
-                                                        <Box>
-                                                            <Text
-                                                                size="xs"
-                                                                fw={600}
-                                                                c="gray.2"
-                                                            >
-                                                                {dc.card.name}
-                                                            </Text>
-                                                            {dc.card.type && (
-                                                                <Text
-                                                                    size="10px"
-                                                                    c="dimmed"
-                                                                >
-                                                                    {dc.card.type.join(
-                                                                        ' • ',
-                                                                    )}
-                                                                </Text>
-                                                            )}
-                                                        </Box>
-                                                    </Group>
-                                                </Table.Td>
-
-                                                <Table.Td>
-                                                    <Badge
-                                                        size="xs"
-                                                        variant="outline"
-                                                        style={getInkBadgeStyle(
-                                                            dc.card.ink_color ||
-                                                                '',
-                                                        )}
-                                                    >
-                                                        {dc.card.ink_color}
-                                                    </Badge>
-                                                </Table.Td>
-
-                                                <Table.Td
-                                                    style={{
-                                                        textAlign: 'center',
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
-                                                    {dc.card.cost}⬡
-                                                </Table.Td>
-
-                                                <Table.Td
-                                                    style={{
-                                                        textAlign: 'center',
-                                                    }}
-                                                >
-                                                    <Badge
-                                                        size="xs"
-                                                        variant="light"
-                                                        color={
-                                                            RARITY_COLOR[
-                                                                dc.card.rarity
-                                                            ] || 'gray'
-                                                        }
-                                                    >
-                                                        {dc.card.rarity}
-                                                    </Badge>
-                                                </Table.Td>
-
-                                                <Table.Td
-                                                    style={{
-                                                        textAlign: 'center',
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
-                                                    {dc.requiredQty}
-                                                </Table.Td>
-
-                                                <Table.Td
-                                                    style={{
-                                                        textAlign: 'center',
-                                                        fontWeight: 700,
-                                                        color: isMissing
-                                                            ? '#f87171'
-                                                            : '#34d399',
-                                                    }}
-                                                >
-                                                    {dc.ownedQty}
-                                                </Table.Td>
-
-                                                <Table.Td
-                                                    style={{
-                                                        textAlign: 'center',
-                                                    }}
-                                                >
-                                                    {isMissing ? (
-                                                        <Badge
-                                                            size="xs"
-                                                            color="red"
-                                                            variant="light"
-                                                        >
-                                                            Need {missingCount}
-                                                        </Badge>
-                                                    ) : (
-                                                        <Badge
-                                                            size="xs"
-                                                            color="teal"
-                                                            variant="light"
-                                                        >
-                                                            Matched
-                                                        </Badge>
-                                                    )}
-                                                </Table.Td>
-
-                                                {user && (
-                                                    <Table.Td
+                                                {dc.card.image_url ? (
+                                                    <img
+                                                        src={dc.card.image_url}
+                                                        alt={dc.card.name}
                                                         style={{
-                                                            textAlign: 'right',
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            objectFit: 'cover',
+                                                            display: 'block',
+                                                        }}
+                                                        loading="lazy"
+                                                    />
+                                                ) : (
+                                                    <Box
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            display: 'flex',
+                                                            flexDirection:
+                                                                'column',
+                                                            alignItems:
+                                                                'center',
+                                                            justifyContent:
+                                                                'center',
+                                                            padding: 8,
                                                         }}
                                                     >
-                                                        <Button
-                                                            size="compact-xs"
-                                                            variant="subtle"
-                                                            color="violet"
-                                                            leftSection={
-                                                                <IconPlus
-                                                                    size={12}
-                                                                />
-                                                            }
-                                                            onClick={() =>
-                                                                onQuickAdd(
-                                                                    dc.card.id,
-                                                                    dc.ownedQty,
-                                                                )
-                                                            }
-                                                            title="Add 1 copy to your collection"
+                                                        <IconCards
+                                                            size={24}
+                                                            style={{
+                                                                opacity: 0.3,
+                                                                marginBottom: 4,
+                                                            }}
+                                                        />
+                                                        <Text
+                                                            size="xs"
+                                                            fw={700}
+                                                            ta="center"
+                                                            c="gray.3"
+                                                            lineClamp={2}
                                                         >
-                                                            +1 Coll
-                                                        </Button>
-                                                    </Table.Td>
+                                                            {dc.card.name}
+                                                        </Text>
+                                                    </Box>
                                                 )}
-                                            </Table.Tr>
-                                        );
-                                    })}
-                                </Table.Tbody>
-                            </Table>
+
+                                                {/* Floating Status Badge */}
+                                                <Badge
+                                                    size="sm"
+                                                    color={
+                                                        isMissing
+                                                            ? 'red'
+                                                            : 'teal'
+                                                    }
+                                                    variant={
+                                                        isMissing
+                                                            ? 'filled'
+                                                            : 'light'
+                                                    }
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 6,
+                                                        right: 6,
+                                                        fontWeight: 900,
+                                                        boxShadow:
+                                                            '0 2px 8px rgba(0, 0, 0, 0.75)',
+                                                        pointerEvents: 'none',
+                                                    }}
+                                                >
+                                                    {isMissing
+                                                        ? `Need ${missingCount}`
+                                                        : '✓ Owned'}
+                                                </Badge>
+                                            </Box>
+
+                                            {/* Bottom: Card Name, Ownership, & Quick Actions */}
+                                            <Stack
+                                                gap={8}
+                                                mt="xs"
+                                                justify="space-between"
+                                                style={{ flex: 1 }}
+                                            >
+                                                <Text
+                                                    size="xs"
+                                                    fw={700}
+                                                    c="gray.2"
+                                                    lh={1.3}
+                                                    style={{
+                                                        minHeight: '2.6em',
+                                                    }}
+                                                >
+                                                    {dc.card.name}
+                                                </Text>
+
+                                                <Group
+                                                    justify="space-between"
+                                                    align="center"
+                                                    wrap="nowrap"
+                                                >
+                                                    <Text
+                                                        size="11px"
+                                                        c="dimmed"
+                                                    >
+                                                        Own{' '}
+                                                        <Text
+                                                            component="span"
+                                                            fw={700}
+                                                            c={
+                                                                isMissing
+                                                                    ? dc.ownedQty >
+                                                                      0
+                                                                        ? 'orange.4'
+                                                                        : 'red.4'
+                                                                    : 'teal.4'
+                                                            }
+                                                        >
+                                                            {dc.ownedQty}
+                                                        </Text>
+                                                        /{dc.requiredQty}
+                                                    </Text>
+
+                                                    {user && isMissing && (
+                                                        <Tooltip
+                                                            label="Add 1 copy to your collection"
+                                                            position="top"
+                                                        >
+                                                            <Button
+                                                                size="compact-xs"
+                                                                variant="light"
+                                                                color="violet"
+                                                                leftSection={
+                                                                    <IconPlus
+                                                                        size={
+                                                                            11
+                                                                        }
+                                                                    />
+                                                                }
+                                                                onClick={() =>
+                                                                    onQuickAdd(
+                                                                        dc.card
+                                                                            .id,
+                                                                        dc.ownedQty,
+                                                                    )
+                                                                }
+                                                                style={{
+                                                                    paddingLeft: 4,
+                                                                    paddingRight: 6,
+                                                                    fontSize: 10,
+                                                                }}
+                                                            >
+                                                                +1 Coll
+                                                            </Button>
+                                                        </Tooltip>
+                                                    )}
+                                                </Group>
+                                            </Stack>
+                                        </Card>
+                                    );
+                                })}
+                            </SimpleGrid>
                         </ScrollArea>
                     )}
                 </Box>
