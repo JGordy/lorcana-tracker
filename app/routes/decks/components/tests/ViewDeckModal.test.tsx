@@ -85,4 +85,23 @@ describe('ViewDeckModal', () => {
         fireEvent.click(screen.getByText('Playtest Hand'));
         expect(mockOnOpenPlaytest).toHaveBeenCalledWith(mockActiveDeck);
     });
+
+    it('toggles DeckInkCurve panel when clicking Hide Curve / Ink Curve button', () => {
+        renderComponent();
+        expect(
+            screen.getByText('Deck Ink Curve & Cost Distribution'),
+        ).toBeInTheDocument();
+
+        const hideBtn = screen.getByText('Hide Curve');
+        fireEvent.click(hideBtn);
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
+
+        const showBtn = screen.getByText('Ink Curve');
+        fireEvent.click(showBtn);
+        expect(
+            screen.getByText('Deck Ink Curve & Cost Distribution'),
+        ).toBeInTheDocument();
+    });
 });

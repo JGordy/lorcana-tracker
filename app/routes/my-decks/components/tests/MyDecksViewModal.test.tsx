@@ -10,6 +10,18 @@ const mockDeck = {
     title: 'Emerald Steel Bounce',
     displayInks: ['emerald', 'steel'],
     isCoreLegal: true,
+    cards: [
+        {
+            card: {
+                id: 'card-1',
+                name: 'Merlin - Goat',
+                cost: 4,
+                inkwell: true,
+            },
+            requiredQty: 4,
+            ownedQty: 4,
+        },
+    ],
     progress: {
         percentage: 80,
         ownedCount: 48,
@@ -166,6 +178,25 @@ describe('MyDecksViewModal', () => {
         renderModal({ filteredCards: [] });
         expect(
             screen.getByText('No cards match your search filter.'),
+        ).toBeInTheDocument();
+    });
+
+    it('toggles DeckInkCurve panel when clicking Hide Curve / Ink Curve button', () => {
+        renderModal();
+        expect(
+            screen.getByText('Deck Ink Curve & Cost Distribution'),
+        ).toBeInTheDocument();
+
+        const hideBtn = screen.getByText('Hide Curve');
+        fireEvent.click(hideBtn);
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
+
+        const showBtn = screen.getByText('Ink Curve');
+        fireEvent.click(showBtn);
+        expect(
+            screen.getByText('Deck Ink Curve & Cost Distribution'),
         ).toBeInTheDocument();
     });
 });

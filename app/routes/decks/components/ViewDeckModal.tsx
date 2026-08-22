@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Modal,
     Stack,
@@ -26,9 +27,11 @@ import {
     IconX,
     IconShoppingCart,
     IconDice,
+    IconChartBar,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
 import { parseDeckMetadata } from '../../../utils/deck';
+import { DeckInkCurve } from '../../../components/DeckInkCurve';
 import {
     getInkBadgeStyle,
     VALID_LORCANA_INKS,
@@ -72,6 +75,8 @@ export function ViewDeckModal({
     onOpenShoppingList,
     onOpenPlaytest,
 }: ViewDeckModalProps) {
+    const [showCurve, setShowCurve] = useState(true);
+
     if (!activeDeck) return null;
 
     const meta = parseDeckMetadata(activeDeck.description);
@@ -281,6 +286,16 @@ export function ViewDeckModal({
                     </Group>
 
                     <Group gap="xs">
+                        <Button
+                            variant={showCurve ? 'light' : 'subtle'}
+                            color="violet"
+                            size="xs"
+                            leftSection={<IconChartBar size={14} />}
+                            onClick={() => setShowCurve((prev) => !prev)}
+                        >
+                            {showCurve ? 'Hide Curve' : 'Ink Curve'}
+                        </Button>
+
                         {onOpenPlaytest && (
                             <Button
                                 variant="gradient"
@@ -369,6 +384,9 @@ export function ViewDeckModal({
                         </Button>
                     </Group>
                 </Group>
+
+                {/* 60-Card Deck Ink Curve & Cost Distribution */}
+                {showCurve && <DeckInkCurve cards={activeDeck.cards} />}
 
                 {/* Cards Visual Grid Gallery */}
                 <Box

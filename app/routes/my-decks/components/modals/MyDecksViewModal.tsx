@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Modal,
     Stack,
@@ -26,8 +27,10 @@ import {
     IconMinus,
     IconShoppingCart,
     IconDice,
+    IconChartBar,
 } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
+import { DeckInkCurve } from '../../../../components/DeckInkCurve';
 
 interface MyDecksViewModalProps {
     opened: boolean;
@@ -68,6 +71,8 @@ export function MyDecksViewModal({
     onOpenShoppingList,
     onOpenPlaytest,
 }: MyDecksViewModalProps) {
+    const [showCurve, setShowCurve] = useState(true);
+
     if (!activeDeck) return null;
 
     return (
@@ -310,6 +315,17 @@ export function MyDecksViewModal({
                     </Group>
 
                     <Group gap="xs">
+                        <Button
+                            variant={showCurve ? 'light' : 'subtle'}
+                            color="violet"
+                            size="xs"
+                            radius="md"
+                            leftSection={<IconChartBar size={14} />}
+                            onClick={() => setShowCurve((prev) => !prev)}
+                        >
+                            {showCurve ? 'Hide Curve' : 'Ink Curve'}
+                        </Button>
+
                         {onOpenPlaytest && (
                             <Button
                                 variant="gradient"
@@ -400,6 +416,9 @@ export function MyDecksViewModal({
                         </Button>
                     </Group>
                 </Group>
+
+                {/* 60-Card Deck Ink Curve & Cost Distribution */}
+                {showCurve && <DeckInkCurve cards={activeDeck.cards} />}
 
                 {/* Cards Visual Grid Gallery */}
                 <Box
