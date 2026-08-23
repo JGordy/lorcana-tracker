@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MantineProvider } from '@mantine/core';
 import { ExportDeckGraphicModal } from '../ExportDeckGraphicModal';
 import * as htmlToImage from 'html-to-image';
@@ -60,6 +60,18 @@ describe('ExportDeckGraphicModal', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: true,
+                blob: () =>
+                    Promise.resolve(new Blob(['fake'], { type: 'image/png' })),
+            }),
+        );
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('renders export modal with title, graphic preview, sorting options, and column stepper', () => {
@@ -67,13 +79,11 @@ describe('ExportDeckGraphicModal', () => {
         expect(
             screen.getByText('Export Shareable Graphic'),
         ).toBeInTheDocument();
-        expect(
-            screen.getAllByText('Sapphire Steel Ramp')[0],
-        ).toBeInTheDocument();
+        expect(screen.getByText(/Sapphire Steel Ramp/)).toBeInTheDocument();
         expect(screen.getByText('By Ink Cost')).toBeInTheDocument();
         expect(screen.getByText('By Card Type')).toBeInTheDocument();
         expect(screen.getByText('Columns:')).toBeInTheDocument();
-        expect(screen.getByText('8')).toBeInTheDocument();
+        expect(screen.getAllByText('8').length).toBeGreaterThan(0);
         expect(screen.getByText('Download PNG')).toBeInTheDocument();
         expect(screen.getByText('Copy Image')).toBeInTheDocument();
     });

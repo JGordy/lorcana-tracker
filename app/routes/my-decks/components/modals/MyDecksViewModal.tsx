@@ -29,9 +29,11 @@ import {
     IconShoppingCart,
     IconDice,
     IconChartBar,
+    IconPhoto,
 } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DeckInkCurve } from '../../../../components/DeckInkCurve';
+import { ExportDeckGraphicModal } from '../../../decks/components/ExportDeckGraphicModal';
 
 interface MyDecksViewModalProps {
     opened: boolean;
@@ -73,6 +75,7 @@ export function MyDecksViewModal({
     onOpenPlaytest,
 }: MyDecksViewModalProps) {
     const [showCurve, setShowCurve] = useState(false);
+    const [showGraphicModal, setShowGraphicModal] = useState(false);
 
     if (!activeDeck) return null;
 
@@ -453,6 +456,23 @@ export function MyDecksViewModal({
                                 )}
                             </ActionIcon>
                         </Tooltip>
+
+                        <Tooltip label="Share Visual Graphic" withArrow>
+                            <ActionIcon
+                                aria-label="Share Visual Graphic"
+                                variant="gradient"
+                                gradient={{
+                                    from: 'violet.6',
+                                    to: 'indigo.6',
+                                    deg: 90,
+                                }}
+                                size="md"
+                                radius="md"
+                                onClick={() => setShowGraphicModal(true)}
+                            >
+                                <IconPhoto size={16} />
+                            </ActionIcon>
+                        </Tooltip>
                     </Group>
                 </Group>
 
@@ -777,6 +797,12 @@ export function MyDecksViewModal({
                     )}
                 </Box>
             </Stack>
+
+            <ExportDeckGraphicModal
+                opened={showGraphicModal}
+                onClose={() => setShowGraphicModal(false)}
+                deck={activeDeck}
+            />
         </Modal>
     );
 }

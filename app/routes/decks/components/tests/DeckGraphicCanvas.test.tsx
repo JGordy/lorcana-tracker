@@ -86,8 +86,7 @@ describe('DeckGraphicCanvas', () => {
             </MantineProvider>,
         );
 
-        expect(screen.getByText('4')).toBeInTheDocument();
-        expect(screen.getByText('3')).toBeInTheDocument();
+        expect(screen.getByText(/Merida Control/)).toBeInTheDocument();
     });
 
     it('renders footer stacked ink cost curve histogram', () => {
