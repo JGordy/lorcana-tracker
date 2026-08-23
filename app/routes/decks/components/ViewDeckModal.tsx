@@ -76,7 +76,7 @@ export function ViewDeckModal({
     onOpenShoppingList,
     onOpenPlaytest,
 }: ViewDeckModalProps) {
-    const [showCurve, setShowCurve] = useState(true);
+    const [showCurve, setShowCurve] = useState(false);
 
     if (!activeDeck) return null;
 

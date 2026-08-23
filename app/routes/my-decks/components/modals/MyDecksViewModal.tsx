@@ -72,7 +72,7 @@ export function MyDecksViewModal({
     onOpenShoppingList,
     onOpenPlaytest,
 }: MyDecksViewModalProps) {
-    const [showCurve, setShowCurve] = useState(true);
+    const [showCurve, setShowCurve] = useState(false);
 
     if (!activeDeck) return null;
 

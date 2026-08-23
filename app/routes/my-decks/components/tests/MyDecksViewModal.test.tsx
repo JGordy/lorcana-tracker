@@ -181,14 +181,8 @@ describe('MyDecksViewModal', () => {
         ).toBeInTheDocument();
     });
 
-    it('toggles DeckInkCurve panel when clicking Hide Curve / Ink Curve button', () => {
+    it('toggles DeckInkCurve panel when clicking Show Deck Curve / Hide Deck Curve button', () => {
         renderModal();
-        expect(
-            screen.getByText('Deck Ink Curve & Cost Distribution'),
-        ).toBeInTheDocument();
-
-        const hideBtn = screen.getByLabelText('Hide Deck Curve');
-        fireEvent.click(hideBtn);
         expect(
             screen.queryByText('Deck Ink Curve & Cost Distribution'),
         ).not.toBeInTheDocument();
@@ -198,5 +192,11 @@ describe('MyDecksViewModal', () => {
         expect(
             screen.getByText('Deck Ink Curve & Cost Distribution'),
         ).toBeInTheDocument();
+
+        const hideBtn = screen.getByLabelText('Hide Deck Curve');
+        fireEvent.click(hideBtn);
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
     });
 });
