@@ -13,6 +13,42 @@ import {
 import { IconDroplet, IconFlame, IconChartBar } from '@tabler/icons-react';
 import { calculateDeckStats } from '../utils/deck';
 
+const INK_STYLE_MAP: Record<
+    string,
+    { gradient: string; color: string; label: string }
+> = {
+    amber: {
+        gradient: 'linear-gradient(180deg, #fbbf24 0%, #d97706 100%)',
+        color: 'amber.4',
+        label: 'Amber',
+    },
+    amethyst: {
+        gradient: 'linear-gradient(180deg, #c084fc 0%, #7e22ce 100%)',
+        color: 'violet.4',
+        label: 'Amethyst',
+    },
+    emerald: {
+        gradient: 'linear-gradient(180deg, #34d399 0%, #059669 100%)',
+        color: 'teal.4',
+        label: 'Emerald',
+    },
+    ruby: {
+        gradient: 'linear-gradient(180deg, #f87171 0%, #dc2626 100%)',
+        color: 'red.4',
+        label: 'Ruby',
+    },
+    sapphire: {
+        gradient: 'linear-gradient(180deg, #60a5fa 0%, #2563eb 100%)',
+        color: 'blue.4',
+        label: 'Sapphire',
+    },
+    steel: {
+        gradient: 'linear-gradient(180deg, #94a3b8 0%, #475569 100%)',
+        color: 'gray.4',
+        label: 'Steel',
+    },
+};
+
 export interface DeckInkCurveProps {
     cards: Array<{
         card: any;
@@ -148,17 +184,10 @@ export function DeckInkCurve({
                                     count: 0,
                                     inkable: 0,
                                     uninkable: 0,
+                                    inkDistribution: {},
                                     cards: [],
                                 };
                                 const tierCount = detail.count;
-                                const inkableRatio =
-                                    tierCount > 0
-                                        ? (detail.inkable / tierCount) * 100
-                                        : 0;
-                                const uninkableRatio =
-                                    tierCount > 0
-                                        ? (detail.uninkable / tierCount) * 100
-                                        : 0;
 
                                 // Calculate visual bar height (max 85px, min 6px)
                                 const barHeight =
@@ -176,7 +205,7 @@ export function DeckInkCurve({
                                     <Tooltip
                                         key={tier}
                                         multiline
-                                        w={240}
+                                        w={260}
                                         withArrow
                                         label={
                                             <Stack gap={4}>
@@ -188,39 +217,86 @@ export function DeckInkCurve({
                                                     Cost {tier} Tier (
                                                     {tierCount} Cards)
                                                 </Text>
-                                                <Text size="10px" c="gray.3">
+                                                <Group gap={4} wrap="wrap">
+                                                    {Object.entries(
+                                                        detail.inkDistribution ||
+                                                            {},
+                                                    ).map(([ink, count]) => (
+                                                        <Badge
+                                                            key={ink}
+                                                            size="xs"
+                                                            style={{
+                                                                background:
+                                                                    INK_STYLE_MAP[
+                                                                        ink
+                                                                    ]
+                                                                        ?.gradient ||
+                                                                    '#64748b',
+                                                                color: '#fff',
+                                                                fontWeight: 800,
+                                                                textTransform:
+                                                                    'capitalize',
+                                                            }}
+                                                        >
+                                                            {count} {ink}
+                                                        </Badge>
+                                                    ))}
+                                                </Group>
+                                                <Text size="10px" c="gray.4">
                                                     {detail.inkable} Inkable •{' '}
                                                     {detail.uninkable} Uninkable
                                                 </Text>
                                                 <Box mt={2}>
                                                     {detail.cards.length > 0 ? (
                                                         detail.cards.map(
-                                                            (c, i) => (
-                                                                <Text
-                                                                    key={i}
-                                                                    size="10px"
-                                                                    c={
-                                                                        c.card
-                                                                            .inkwell
-                                                                            ? 'teal.3'
-                                                                            : 'red.3'
-                                                                    }
-                                                                >
-                                                                    •{' '}
-                                                                    {c.quantity}
-                                                                    x{' '}
-                                                                    {
-                                                                        c.card
-                                                                            .name
-                                                                    }{' '}
+                                                            (c, i) => {
+                                                                const cardInk =
                                                                     (
-                                                                    {c.card
-                                                                        .inkwell
-                                                                        ? 'Inkable'
-                                                                        : 'Uninkable'}
+                                                                        c.card
+                                                                            .ink_color ||
+                                                                        c.card
+                                                                            .magic ||
+                                                                        c.card
+                                                                            .ink ||
+                                                                        c.card
+                                                                            .color ||
+                                                                        'steel'
                                                                     )
-                                                                </Text>
-                                                            ),
+                                                                        .toString()
+                                                                        .trim()
+                                                                        .toLowerCase();
+                                                                const inkStyle =
+                                                                    INK_STYLE_MAP[
+                                                                        cardInk
+                                                                    ] ||
+                                                                    INK_STYLE_MAP.steel;
+                                                                return (
+                                                                    <Text
+                                                                        key={i}
+                                                                        size="10px"
+                                                                        c={
+                                                                            inkStyle.color
+                                                                        }
+                                                                    >
+                                                                        •{' '}
+                                                                        {
+                                                                            c.quantity
+                                                                        }
+                                                                        x{' '}
+                                                                        {
+                                                                            c
+                                                                                .card
+                                                                                .name
+                                                                        }{' '}
+                                                                        (
+                                                                        {c.card
+                                                                            .inkwell
+                                                                            ? 'Inkable'
+                                                                            : 'Uninkable'}
+                                                                        )
+                                                                    </Text>
+                                                                );
+                                                            },
                                                         )
                                                     ) : (
                                                         <Text
@@ -260,7 +336,7 @@ export function DeckInkCurve({
                                                     : '-'}
                                             </Text>
 
-                                            {/* Vertical Stacked Bar Column */}
+                                            {/* Vertical Stacked Ink Color Bar Column */}
                                             <Box
                                                 style={{
                                                     width: 24,
@@ -292,26 +368,33 @@ export function DeckInkCurve({
                                                             'height 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                                                     }}
                                                 >
-                                                    {detail.uninkable > 0 && (
-                                                        <Box
-                                                            style={{
-                                                                width: '100%',
-                                                                height: `${uninkableRatio}%`,
-                                                                background:
-                                                                    'linear-gradient(180deg, #ef4444 0%, #dc2626 100%)',
-                                                            }}
-                                                        />
-                                                    )}
-                                                    {detail.inkable > 0 && (
-                                                        <Box
-                                                            style={{
-                                                                width: '100%',
-                                                                height: `${inkableRatio}%`,
-                                                                background:
-                                                                    'linear-gradient(180deg, #14b8a6 0%, #0d9488 100%)',
-                                                            }}
-                                                        />
-                                                    )}
+                                                    {Object.entries(
+                                                        detail.inkDistribution ||
+                                                            {},
+                                                    ).map(([ink, count]) => {
+                                                        const ratio =
+                                                            tierCount > 0
+                                                                ? (count /
+                                                                      tierCount) *
+                                                                  100
+                                                                : 0;
+                                                        const style =
+                                                            INK_STYLE_MAP[
+                                                                ink
+                                                            ] ||
+                                                            INK_STYLE_MAP.steel;
+                                                        return (
+                                                            <Box
+                                                                key={ink}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    height: `${ratio}%`,
+                                                                    background:
+                                                                        style.gradient,
+                                                                }}
+                                                            />
+                                                        );
+                                                    })}
                                                 </Box>
                                             </Box>
 

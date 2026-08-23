@@ -92,6 +92,7 @@ describe('deck utils', () => {
             expect(stats.costDistribution['6'].count).toBe(4);
             expect(stats.costDistribution['5'].uninkable).toBe(4);
             expect(stats.costDistribution['1'].inkable).toBe(4);
+            expect(stats.costDistribution['1'].inkDistribution.steel).toBe(4);
         });
 
         it('handles empty deck cards gracefully', () => {

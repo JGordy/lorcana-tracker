@@ -306,6 +306,7 @@ export interface CostTierDetail {
     count: number;
     inkable: number;
     uninkable: number;
+    inkDistribution: Record<string, number>;
     cards: Array<{ card: any; quantity: number }>;
 }
 
@@ -322,7 +323,7 @@ export interface DeckStatsResult {
 
 /**
  * Calculates complete 60-card deck statistics, including cost distribution curve,
- * inkable/uninkable breakdown, average cost, and early curve count.
+ * inkable/uninkable breakdown, ink color distribution, average cost, and early curve count.
  */
 export function calculateDeckStats(deckCards: any[]): DeckStatsResult {
     let totalCards = 0;
@@ -348,6 +349,16 @@ export function calculateDeckStats(deckCards: any[]): DeckStatsResult {
             const cost = typeof card.cost === 'number' ? card.cost : 0;
             const isInkable = Boolean(card.inkwell);
             const tierKey = cost >= 7 ? '7+' : String(cost);
+            const inkColor = (
+                card.ink_color ||
+                card.magic ||
+                card.ink ||
+                card.color ||
+                'steel'
+            )
+                .toString()
+                .trim()
+                .toLowerCase();
 
             totalCards += qty;
             totalCost += cost * qty;
@@ -379,6 +390,7 @@ export function calculateDeckStats(deckCards: any[]): DeckStatsResult {
                     count: 0,
                     inkable: 0,
                     uninkable: 0,
+                    inkDistribution: {},
                     cards: [],
                 };
             }
@@ -389,6 +401,9 @@ export function calculateDeckStats(deckCards: any[]): DeckStatsResult {
             } else {
                 costDistribution[tierKey].uninkable += qty;
             }
+            costDistribution[tierKey].inkDistribution[inkColor] =
+                (costDistribution[tierKey].inkDistribution[inkColor] || 0) +
+                qty;
             costDistribution[tierKey].cards.push({ card, quantity: qty });
         }
     }
