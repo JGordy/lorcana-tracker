@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
     Modal,
     Stack,
@@ -14,6 +15,7 @@ import {
     Card,
     Tooltip,
     ActionIcon,
+    Indicator,
 } from '@mantine/core';
 import {
     IconCards,
@@ -26,8 +28,10 @@ import {
     IconMinus,
     IconShoppingCart,
     IconDice,
+    IconChartBar,
 } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
+import { DeckInkCurve } from '../../../../components/DeckInkCurve';
 
 interface MyDecksViewModalProps {
     opened: boolean;
@@ -68,6 +72,8 @@ export function MyDecksViewModal({
     onOpenShoppingList,
     onOpenPlaytest,
 }: MyDecksViewModalProps) {
+    const [showCurve, setShowCurve] = useState(false);
+
     if (!activeDeck) return null;
 
     return (
@@ -341,8 +347,9 @@ export function MyDecksViewModal({
                             onClick={onOpenAddCardsModal}
                             style={{ fontWeight: 700 }}
                         >
-                            Add Cards from Catalog
+                            Add Cards
                         </Button>
+
                         <Button
                             variant="light"
                             color="gray"
@@ -353,53 +360,104 @@ export function MyDecksViewModal({
                         >
                             Edit Info
                         </Button>
-                        <Button
-                            variant="gradient"
-                            gradient={{
-                                from: 'violet.6',
-                                to: 'pink.6',
-                                deg: 90,
-                            }}
-                            size="xs"
-                            radius="md"
-                            leftSection={<IconShoppingCart size={14} />}
-                            onClick={() => onOpenShoppingList?.(activeDeck)}
-                        >
-                            Shopping List
-                            {activeDeck.progress.ownedCount <
-                                activeDeck.progress.totalCount && (
-                                <Badge
-                                    size="xs"
-                                    color="red"
-                                    variant="filled"
-                                    ml={6}
-                                    style={{ fontWeight: 800 }}
-                                >
-                                    {activeDeck.progress.totalCount -
-                                        activeDeck.progress.ownedCount}
-                                </Badge>
-                            )}
-                        </Button>
-                        <Button
-                            variant="light"
-                            color="violet"
-                            size="xs"
-                            radius="md"
-                            leftSection={
-                                copyFeedback === activeDeck.$id ? (
-                                    <IconCheck size={14} />
-                                ) : (
-                                    <IconCopy size={14} />
-                                )
+
+                        {/* Compact Tooltipped Utility Icons */}
+                        <Tooltip
+                            label={
+                                showCurve
+                                    ? 'Hide Deck Curve'
+                                    : 'Show Deck Curve'
                             }
-                            onClick={() => onExportDeck(activeDeck)}
+                            withArrow
                         >
-                            {copyFeedback === activeDeck.$id
-                                ? 'Copied!'
-                                : 'Export'}
-                        </Button>
+                            <ActionIcon
+                                aria-label={
+                                    showCurve
+                                        ? 'Hide Deck Curve'
+                                        : 'Show Deck Curve'
+                                }
+                                variant={showCurve ? 'light' : 'subtle'}
+                                color="violet"
+                                size="md"
+                                radius="md"
+                                onClick={() => setShowCurve((prev) => !prev)}
+                            >
+                                <IconChartBar size={16} />
+                            </ActionIcon>
+                        </Tooltip>
+
+                        <Tooltip
+                            label="Shopping List (Missing Cards)"
+                            withArrow
+                        >
+                            <Indicator
+                                disabled={
+                                    activeDeck.progress.ownedCount >=
+                                    activeDeck.progress.totalCount
+                                }
+                                label={
+                                    activeDeck.progress.totalCount -
+                                    activeDeck.progress.ownedCount
+                                }
+                                color="red"
+                                size={15}
+                                offset={2}
+                            >
+                                <ActionIcon
+                                    aria-label="Shopping List (Missing Cards)"
+                                    variant="gradient"
+                                    gradient={{
+                                        from: 'violet.6',
+                                        to: 'pink.6',
+                                        deg: 90,
+                                    }}
+                                    size="md"
+                                    radius="md"
+                                    onClick={() =>
+                                        onOpenShoppingList?.(activeDeck)
+                                    }
+                                >
+                                    <IconShoppingCart size={16} />
+                                </ActionIcon>
+                            </Indicator>
+                        </Tooltip>
+
+                        <Tooltip
+                            label={
+                                copyFeedback === activeDeck.$id
+                                    ? 'Copied List!'
+                                    : 'Export Deck List'
+                            }
+                            withArrow
+                        >
+                            <ActionIcon
+                                aria-label={
+                                    copyFeedback === activeDeck.$id
+                                        ? 'Copied List!'
+                                        : 'Export Deck List'
+                                }
+                                variant="outline"
+                                color={
+                                    copyFeedback === activeDeck.$id
+                                        ? 'teal'
+                                        : 'gray'
+                                }
+                                size="md"
+                                radius="md"
+                                onClick={() => onExportDeck(activeDeck)}
+                            >
+                                {copyFeedback === activeDeck.$id ? (
+                                    <IconCheck size={16} color="#2ecc71" />
+                                ) : (
+                                    <IconCopy size={16} />
+                                )}
+                            </ActionIcon>
+                        </Tooltip>
                     </Group>
                 </Group>
+
+                {/* 60-Card Deck Ink Curve & Cost Distribution */}
+                {showCurve && <DeckInkCurve cards={activeDeck.cards} />}
 
                 {/* Cards Visual Grid Gallery */}
                 <Box

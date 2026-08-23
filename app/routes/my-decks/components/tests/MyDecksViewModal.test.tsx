@@ -10,6 +10,18 @@ const mockDeck = {
     title: 'Emerald Steel Bounce',
     displayInks: ['emerald', 'steel'],
     isCoreLegal: true,
+    cards: [
+        {
+            card: {
+                id: 'card-1',
+                name: 'Merlin - Goat',
+                cost: 4,
+                inkwell: true,
+            },
+            requiredQty: 4,
+            ownedQty: 4,
+        },
+    ],
     progress: {
         percentage: 80,
         ownedCount: 48,
@@ -105,10 +117,10 @@ describe('MyDecksViewModal', () => {
         expect(onSearchChange).toHaveBeenCalledWith('Merlin');
     });
 
-    it('calls onOpenAddCardsModal when "Add Cards from Catalog" button is clicked', () => {
+    it('calls onOpenAddCardsModal when "Add Cards" button is clicked', () => {
         const onOpenAddCardsModal = vi.fn();
         renderModal({ onOpenAddCardsModal });
-        fireEvent.click(screen.getByText('Add Cards from Catalog'));
+        fireEvent.click(screen.getByText('Add Cards'));
         expect(onOpenAddCardsModal).toHaveBeenCalledOnce();
     });
 
@@ -122,13 +134,13 @@ describe('MyDecksViewModal', () => {
     it('calls onExportDeck when "Export" button is clicked', () => {
         const onExportDeck = vi.fn();
         renderModal({ onExportDeck });
-        fireEvent.click(screen.getByText('Export'));
+        fireEvent.click(screen.getByLabelText('Export Deck List'));
         expect(onExportDeck).toHaveBeenCalledWith(mockDeck);
     });
 
     it('displays Copied state when copyFeedback matches deck id', () => {
         renderModal({ copyFeedback: 'deck-123' });
-        expect(screen.getByText('Copied!')).toBeInTheDocument();
+        expect(screen.getByLabelText('Copied List!')).toBeInTheDocument();
     });
 
     it('renders table rows for cards in deck with ownership status', () => {
@@ -151,7 +163,7 @@ describe('MyDecksViewModal', () => {
     it('calls onOpenShoppingList when "Shopping List" button is clicked', () => {
         const onOpenShoppingList = vi.fn();
         renderModal({ onOpenShoppingList });
-        fireEvent.click(screen.getByText('Shopping List'));
+        fireEvent.click(screen.getByLabelText('Shopping List (Missing Cards)'));
         expect(onOpenShoppingList).toHaveBeenCalledWith(mockDeck);
     });
 
@@ -167,5 +179,24 @@ describe('MyDecksViewModal', () => {
         expect(
             screen.getByText('No cards match your search filter.'),
         ).toBeInTheDocument();
+    });
+
+    it('toggles DeckInkCurve panel when clicking Show Deck Curve / Hide Deck Curve button', () => {
+        renderModal();
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
+
+        const showBtn = screen.getByLabelText('Show Deck Curve');
+        fireEvent.click(showBtn);
+        expect(
+            screen.getByText('Deck Ink Curve & Cost Distribution'),
+        ).toBeInTheDocument();
+
+        const hideBtn = screen.getByLabelText('Hide Deck Curve');
+        fireEvent.click(hideBtn);
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
     });
 });

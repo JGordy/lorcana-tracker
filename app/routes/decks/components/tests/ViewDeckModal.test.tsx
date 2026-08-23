@@ -64,7 +64,9 @@ describe('ViewDeckModal', () => {
         expect(screen.getByText('Amber Ruby Aggro')).toBeInTheDocument();
         expect(screen.getAllByText('Stitch')[0]).toBeInTheDocument();
         expect(screen.getByText('+1 Coll')).toBeInTheDocument();
-        expect(screen.getByText('Shopping List')).toBeInTheDocument();
+        expect(
+            screen.getByLabelText('Shopping List (Missing Cards)'),
+        ).toBeInTheDocument();
     });
 
     it('triggers quick add callback when clicking +1 Coll button', () => {
@@ -75,7 +77,7 @@ describe('ViewDeckModal', () => {
 
     it('triggers onOpenShoppingList when clicking Shopping List button', () => {
         renderComponent();
-        fireEvent.click(screen.getByText('Shopping List'));
+        fireEvent.click(screen.getByLabelText('Shopping List (Missing Cards)'));
         expect(mockOnOpenShoppingList).toHaveBeenCalledWith(mockActiveDeck);
     });
 
@@ -84,5 +86,24 @@ describe('ViewDeckModal', () => {
         renderComponent({ onOpenPlaytest: mockOnOpenPlaytest });
         fireEvent.click(screen.getByText('Playtest Hand'));
         expect(mockOnOpenPlaytest).toHaveBeenCalledWith(mockActiveDeck);
+    });
+
+    it('toggles DeckInkCurve panel when clicking Show Deck Curve / Hide Deck Curve button', () => {
+        renderComponent();
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
+
+        const showBtn = screen.getByLabelText('Show Deck Curve');
+        fireEvent.click(showBtn);
+        expect(
+            screen.getByText('Deck Ink Curve & Cost Distribution'),
+        ).toBeInTheDocument();
+
+        const hideBtn = screen.getByLabelText('Hide Deck Curve');
+        fireEvent.click(hideBtn);
+        expect(
+            screen.queryByText('Deck Ink Curve & Cost Distribution'),
+        ).not.toBeInTheDocument();
     });
 });

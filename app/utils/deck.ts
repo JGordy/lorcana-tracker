@@ -300,3 +300,127 @@ export function getKeyDeckCards<
 
     return uniqueCards;
 }
+
+export interface CostTierDetail {
+    cost: number;
+    count: number;
+    inkable: number;
+    uninkable: number;
+    inkDistribution: Record<string, number>;
+    cards: Array<{ card: any; quantity: number }>;
+}
+
+export interface DeckStatsResult {
+    totalCards: number;
+    averageCost: number;
+    inkableCount: number;
+    uninkableCount: number;
+    inkablePercentage: number;
+    costDistribution: Record<string, CostTierDetail>;
+    earlyCurveCount: number;
+    typeDistribution: Record<string, number>;
+}
+
+/**
+ * Calculates complete 60-card deck statistics, including cost distribution curve,
+ * inkable/uninkable breakdown, ink color distribution, average cost, and early curve count.
+ */
+export function calculateDeckStats(deckCards: any[]): DeckStatsResult {
+    let totalCards = 0;
+    let totalCost = 0;
+    let inkableCount = 0;
+    let uninkableCount = 0;
+    let earlyCurveCount = 0;
+    const costDistribution: Record<string, CostTierDetail> = {};
+    const typeDistribution: Record<string, number> = {};
+
+    if (Array.isArray(deckCards)) {
+        for (const entry of deckCards) {
+            const card = entry?.card || entry;
+            const qty =
+                typeof entry?.requiredQty === 'number'
+                    ? entry.requiredQty
+                    : typeof entry?.quantity === 'number'
+                      ? entry.quantity
+                      : 1;
+
+            if (!card) continue;
+
+            const cost = typeof card.cost === 'number' ? card.cost : 0;
+            const isInkable = Boolean(card.inkwell);
+            const tierKey = cost >= 7 ? '7+' : String(cost);
+            const inkColor = (
+                card.ink_color ||
+                card.magic ||
+                card.ink ||
+                card.color ||
+                'steel'
+            )
+                .toString()
+                .trim()
+                .toLowerCase();
+
+            totalCards += qty;
+            totalCost += cost * qty;
+
+            if (isInkable) {
+                inkableCount += qty;
+            } else {
+                uninkableCount += qty;
+            }
+
+            if (cost === 1 || cost === 2) {
+                earlyCurveCount += qty;
+            }
+
+            // Types
+            if (Array.isArray(card.type)) {
+                for (const t of card.type) {
+                    if (t) {
+                        const norm = t.trim().toLowerCase();
+                        typeDistribution[norm] =
+                            (typeDistribution[norm] || 0) + qty;
+                    }
+                }
+            }
+
+            if (!costDistribution[tierKey]) {
+                costDistribution[tierKey] = {
+                    cost: cost >= 7 ? 7 : cost,
+                    count: 0,
+                    inkable: 0,
+                    uninkable: 0,
+                    inkDistribution: {},
+                    cards: [],
+                };
+            }
+
+            costDistribution[tierKey].count += qty;
+            if (isInkable) {
+                costDistribution[tierKey].inkable += qty;
+            } else {
+                costDistribution[tierKey].uninkable += qty;
+            }
+            costDistribution[tierKey].inkDistribution[inkColor] =
+                (costDistribution[tierKey].inkDistribution[inkColor] || 0) +
+                qty;
+            costDistribution[tierKey].cards.push({ card, quantity: qty });
+        }
+    }
+
+    const averageCost =
+        totalCards > 0 ? Math.round((totalCost / totalCards) * 10) / 10 : 0;
+    const inkablePercentage =
+        totalCards > 0 ? Math.round((inkableCount / totalCards) * 100) : 0;
+
+    return {
+        totalCards,
+        averageCost,
+        inkableCount,
+        uninkableCount,
+        inkablePercentage,
+        costDistribution,
+        earlyCurveCount,
+        typeDistribution,
+    };
+}
