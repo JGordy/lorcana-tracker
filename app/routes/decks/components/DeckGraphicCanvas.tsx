@@ -403,7 +403,7 @@ export const DeckGraphicCanvas = React.forwardRef<
             {/* 3. Enhanced Footer: Stacked Ink Color Cost Curve & Branding */}
             <div
                 style={{
-                    padding: '14px 22px',
+                    padding: '16px 24px',
                     borderRadius: 12,
                     background: 'rgba(15, 23, 42, 0.85)',
                     border: '1px solid rgba(168, 85, 247, 0.25)',
@@ -411,6 +411,8 @@ export const DeckGraphicCanvas = React.forwardRef<
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
+                    minHeight: 90,
+                    boxSizing: 'border-box',
                 }}
             >
                 {/* Stacked Ink Color Cost Curve Histogram */}
@@ -448,9 +450,9 @@ export const DeckGraphicCanvas = React.forwardRef<
                     <div
                         style={{
                             display: 'flex',
-                            gap: 14,
+                            gap: 12,
                             alignItems: 'flex-end',
-                            height: 60,
+                            height: 80,
                         }}
                     >
                         {costTiers.map((tier) => {
@@ -462,13 +464,15 @@ export const DeckGraphicCanvas = React.forwardRef<
                                 cards: [],
                             };
                             const count = detail.count;
+                            const maxBarHeight = 36;
                             const barHeight =
                                 count > 0
                                     ? Math.max(
                                           Math.round(
-                                              (count / maxCostCount) * 44,
+                                              (count / maxCostCount) *
+                                                  maxBarHeight,
                                           ),
-                                          10,
+                                          8,
                                       )
                                     : 4;
 
@@ -502,7 +506,7 @@ export const DeckGraphicCanvas = React.forwardRef<
                                     <div
                                         style={{
                                             width: 18,
-                                            height: 44,
+                                            height: 36,
                                             display: 'flex',
                                             alignItems: 'flex-end',
                                             justifyContent: 'center',
