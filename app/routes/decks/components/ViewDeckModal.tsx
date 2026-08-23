@@ -29,10 +29,12 @@ import {
     IconShoppingCart,
     IconDice,
     IconChartBar,
+    IconPhoto,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
 import { parseDeckMetadata } from '../../../utils/deck';
 import { DeckInkCurve } from '../../../components/DeckInkCurve';
+import { ExportDeckGraphicModal } from './ExportDeckGraphicModal';
 import {
     getInkBadgeStyle,
     VALID_LORCANA_INKS,
@@ -77,6 +79,7 @@ export function ViewDeckModal({
     onOpenPlaytest,
 }: ViewDeckModalProps) {
     const [showCurve, setShowCurve] = useState(false);
+    const [showGraphicModal, setShowGraphicModal] = useState(false);
 
     if (!activeDeck) return null;
 
@@ -421,6 +424,23 @@ export function ViewDeckModal({
                                 )}
                             </ActionIcon>
                         </Tooltip>
+
+                        <Tooltip label="Share Visual Graphic" withArrow>
+                            <ActionIcon
+                                aria-label="Share Visual Graphic"
+                                variant="gradient"
+                                gradient={{
+                                    from: 'violet.6',
+                                    to: 'indigo.6',
+                                    deg: 90,
+                                }}
+                                size="md"
+                                radius="md"
+                                onClick={() => setShowGraphicModal(true)}
+                            >
+                                <IconPhoto size={16} />
+                            </ActionIcon>
+                        </Tooltip>
                     </Group>
                 </Group>
 
@@ -649,6 +669,12 @@ export function ViewDeckModal({
                     )}
                 </Box>
             </Stack>
+
+            <ExportDeckGraphicModal
+                opened={showGraphicModal}
+                onClose={() => setShowGraphicModal(false)}
+                deck={activeDeck}
+            />
         </Modal>
     );
 }
