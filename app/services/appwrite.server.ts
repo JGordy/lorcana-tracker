@@ -175,14 +175,16 @@ export const dbService = {
         } catch (error: any) {
             if (
                 error?.code === 404 ||
+                error?.code === 402 ||
                 error?.code === 503 ||
                 error?.code === 504 ||
                 error?.code === 502 ||
                 error?.type === 'database_not_found' ||
-                error?.type === 'collection_not_found'
+                error?.type === 'collection_not_found' ||
+                error?.type === 'limit_databases_reads_exceeded'
             ) {
                 console.warn(
-                    `[Appwrite Server] Collection '${collectionId}' query returned ${error?.code || 'error'} — returning empty array.`,
+                    `[Appwrite Server] Collection '${collectionId}' query returned ${error?.code || 'error'} (${error?.type || 'quota/network'}) — returning empty array.`,
                 );
                 return [];
             }
@@ -506,18 +508,21 @@ export const dbService = {
 
         // Load Appwrite database decks
         try {
-            const [decks, allDeckCards] = await Promise.all([
-                this.getCollection<Deck>(
-                    COLLECTIONS.DECKS,
-                    [Query.equal('is_public', true)],
-                    request,
-                ),
-                this.getCollection<DeckCardDoc>(
-                    COLLECTIONS.DECK_CARDS,
-                    [],
-                    request,
-                ),
-            ]);
+            const decks = await this.getCollection<Deck>(
+                COLLECTIONS.DECKS,
+                [Query.equal('is_public', true)],
+                request,
+            );
+
+            const publicDeckIds = decks.map((d) => d.$id);
+            const allDeckCards =
+                publicDeckIds.length > 0
+                    ? await this.getCollection<DeckCardDoc>(
+                          COLLECTIONS.DECK_CARDS,
+                          [Query.equal('deck_id', publicDeckIds)],
+                          request,
+                      )
+                    : [];
             const cardsLookup = buildCardsLookup(cards);
 
             for (const deck of decks) {
@@ -616,21 +621,26 @@ export const dbService = {
     ): Promise<DeckWithProgress[]> {
         if (!userId) return [];
 
-        const [cards, userCollection, userDecks, allDeckCards] =
-            await Promise.all([
-                this.getCollection<Card>(COLLECTIONS.CARDS, [], request),
-                this.getUserInventory(userId, request),
-                this.getCollection<Deck>(
-                    COLLECTIONS.DECKS,
-                    [Query.equal('creator_id', userId)],
-                    request,
-                ),
-                this.getCollection<DeckCardDoc>(
-                    COLLECTIONS.DECK_CARDS,
-                    [],
-                    request,
-                ),
-            ]);
+        const [cards, userCollection, userDecks] = await Promise.all([
+            this.getCollection<Card>(COLLECTIONS.CARDS, [], request),
+            this.getUserInventory(userId, request),
+            this.getCollection<Deck>(
+                COLLECTIONS.DECKS,
+                [Query.equal('creator_id', userId)],
+                request,
+            ),
+        ]);
+
+        if (userDecks.length === 0) {
+            return [];
+        }
+
+        const userDeckIds = userDecks.map((d) => d.$id);
+        const allDeckCards = await this.getCollection<DeckCardDoc>(
+            COLLECTIONS.DECK_CARDS,
+            [Query.equal('deck_id', userDeckIds)],
+            request,
+        );
 
         const cardsLookup = buildCardsLookup(cards);
 

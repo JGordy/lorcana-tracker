@@ -13,6 +13,8 @@ import {
     IconArrowsSort,
     IconPlus,
     IconUpload,
+    IconLayersIntersect,
+    IconCheck,
 } from '@tabler/icons-react';
 import type { NavigateFunction } from 'react-router';
 
@@ -25,6 +27,9 @@ interface MyDecksToolbarProps {
     user?: { $id: string } | null;
     onOpenCreateModal: () => void;
     onOpenImportModal: () => void;
+    onOpenAuditModal?: () => void;
+    conflictCount?: number;
+    physicallyBuiltCount?: number;
 }
 
 export function MyDecksToolbar({
@@ -32,10 +37,13 @@ export function MyDecksToolbar({
     onSearchChange,
     sort,
     navigate,
-    activeCount,
+    _activeCount,
     user,
     onOpenCreateModal,
     onOpenImportModal,
+    onOpenAuditModal,
+    conflictCount = 0,
+    physicallyBuiltCount = 0,
 }: MyDecksToolbarProps) {
     return (
         <Paper
@@ -110,6 +118,38 @@ export function MyDecksToolbar({
                         Import
                     </Button>
 
+                    {onOpenAuditModal && (
+                        <Button
+                            variant="light"
+                            color={conflictCount > 0 ? 'amber' : 'blue'}
+                            radius="md"
+                            size="sm"
+                            leftSection={<IconLayersIntersect size={16} />}
+                            rightSection={
+                                physicallyBuiltCount > 0 ? (
+                                    <Badge
+                                        size="xs"
+                                        variant="filled"
+                                        color={
+                                            conflictCount > 0
+                                                ? 'amber.8'
+                                                : 'teal.8'
+                                        }
+                                    >
+                                        {conflictCount > 0 ? (
+                                            `${conflictCount} Conflict${conflictCount === 1 ? '' : 's'}`
+                                        ) : (
+                                            <IconCheck size={10} />
+                                        )}
+                                    </Badge>
+                                ) : undefined
+                            }
+                            onClick={onOpenAuditModal}
+                        >
+                            Deck Audit
+                        </Button>
+                    )}
+
                     <Select
                         leftSection={
                             <IconArrowsSort size={15} color="#c084fc" />
@@ -141,20 +181,6 @@ export function MyDecksToolbar({
                         radius="md"
                         style={{ width: 175 }}
                     />
-
-                    <Badge
-                        size="md"
-                        variant="light"
-                        color="violet"
-                        style={{
-                            height: 36,
-                            padding: '0 10px',
-                            borderRadius: 8,
-                            fontWeight: 600,
-                        }}
-                    >
-                        {activeCount} {activeCount === 1 ? 'Deck' : 'Decks'}
-                    </Badge>
                 </Group>
             </Group>
         </Paper>

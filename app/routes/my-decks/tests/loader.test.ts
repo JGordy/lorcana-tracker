@@ -30,7 +30,9 @@ describe('MyDecks Loader', () => {
             'deck-1',
         ] as any);
         vi.mocked(dbService.getCollection).mockResolvedValue(['card-1'] as any);
-        vi.mocked(dbService.getUserInventory).mockResolvedValue(['inv-1'] as any);
+        vi.mocked(dbService.getUserInventory).mockResolvedValue([
+            'inv-1',
+        ] as any);
 
         const request = new Request('http://localhost:3000/my-decks?sort=name');
         const result = await loader({ request } as any);

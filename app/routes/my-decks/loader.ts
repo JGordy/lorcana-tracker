@@ -15,7 +15,9 @@ export async function loader({ request }: Route.LoaderArgs) {
             ? dbService.getUserDecksWithProgress(userId, sort, request)
             : Promise.resolve([]),
         dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], request),
-        userId ? dbService.getUserInventory(userId, request) : Promise.resolve([]),
+        userId
+            ? dbService.getUserInventory(userId, request)
+            : Promise.resolve([]),
     ]);
 
     return { decks, cards, userCollection, user, sort };

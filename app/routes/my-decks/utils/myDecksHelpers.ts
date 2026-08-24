@@ -17,7 +17,13 @@ export function serializeDeckMetadata(
     coverCardId?: string,
     is_active?: boolean,
 ): string {
-    return JSON.stringify({ format, inks, description, coverCardId, is_active });
+    return JSON.stringify({
+        format,
+        inks,
+        description,
+        coverCardId,
+        is_active,
+    });
 }
 
 export function processMyDecks(

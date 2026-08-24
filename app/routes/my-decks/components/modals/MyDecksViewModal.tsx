@@ -586,39 +586,6 @@ export function MyDecksViewModal({
                                                         </Box>
                                                     )}
 
-                                                    {/* Floating Remove Button */}
-                                                    <Tooltip
-                                                        label="Remove from deck"
-                                                        position="bottom"
-                                                    >
-                                                        <ActionIcon
-                                                            size="xs"
-                                                            variant="filled"
-                                                            color="dark"
-                                                            onClick={() =>
-                                                                onRemoveCard(
-                                                                    activeDeck,
-                                                                    card,
-                                                                    requiredQty,
-                                                                )
-                                                            }
-                                                            style={{
-                                                                position:
-                                                                    'absolute',
-                                                                top: 6,
-                                                                left: 6,
-                                                                backgroundColor:
-                                                                    'rgba(15, 23, 42, 0.85)',
-                                                                border: '1px solid rgba(255, 255, 255, 0.1)',
-                                                            }}
-                                                        >
-                                                            <IconTrash
-                                                                size={12}
-                                                                color="#f87171"
-                                                            />
-                                                        </ActionIcon>
-                                                    </Tooltip>
-
                                                     {/* Floating Status Badge */}
                                                     <Badge
                                                         size="sm"
@@ -648,7 +615,7 @@ export function MyDecksViewModal({
                                                     </Badge>
                                                 </Box>
 
-                                                {/* Bottom: Card Name, Deck Stepper, Ownership, & Quick Add */}
+                                                {/* Bottom: Card Name, Deck Stepper & Remove, Ownership & Quick Add */}
                                                 <Stack
                                                     gap={8}
                                                     mt="xs"
@@ -672,9 +639,9 @@ export function MyDecksViewModal({
                                                         align="center"
                                                         wrap="nowrap"
                                                     >
-                                                        {/* Deck Stepper (1-4) */}
+                                                        {/* Deck Stepper (1-4) & Remove Button */}
                                                         <Group
-                                                            gap={4}
+                                                            gap={3}
                                                             align="center"
                                                             wrap="nowrap"
                                                         >
@@ -698,7 +665,7 @@ export function MyDecksViewModal({
                                                                 size="xs"
                                                                 fw={800}
                                                                 style={{
-                                                                    width: 16,
+                                                                    width: 14,
                                                                     textAlign:
                                                                         'center',
                                                                 }}
@@ -725,6 +692,31 @@ export function MyDecksViewModal({
                                                                     size={11}
                                                                 />
                                                             </ActionIcon>
+
+                                                            <Tooltip
+                                                                label="Remove from deck"
+                                                                position="top"
+                                                                withArrow
+                                                            >
+                                                                <ActionIcon
+                                                                    size="xs"
+                                                                    variant="subtle"
+                                                                    color="red"
+                                                                    onClick={() =>
+                                                                        onRemoveCard(
+                                                                            activeDeck,
+                                                                            card,
+                                                                            requiredQty,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <IconTrash
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                </ActionIcon>
+                                                            </Tooltip>
                                                         </Group>
 
                                                         {/* Ownership & Quick Add */}

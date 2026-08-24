@@ -28,7 +28,13 @@ export { loader } from './loader';
 export { action } from './action';
 
 export default function MyDecks({ loaderData }: Route.ComponentProps) {
-    const { decks: serverDecks, cards, userCollection = [], user, sort } = loaderData;
+    const {
+        decks: serverDecks,
+        cards,
+        userCollection = [],
+        user,
+        sort,
+    } = loaderData;
     const submit = useSubmit();
     const fetcher = useFetcher();
     const navigate = useNavigate();
