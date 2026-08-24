@@ -10,12 +10,15 @@ export async function loader({ request }: Route.LoaderArgs) {
     const user = await authService.getSessionUser(request);
     const userId = user ? user.$id : null;
 
-    const [decks, cards] = await Promise.all([
+    const [decks, cards, userCollection] = await Promise.all([
         userId
             ? dbService.getUserDecksWithProgress(userId, sort, request)
             : Promise.resolve([]),
         dbService.getCollection<LorcanaCard>(COLLECTIONS.CARDS, [], request),
+        userId
+            ? dbService.getUserInventory(userId, request)
+            : Promise.resolve([]),
     ]);
 
-    return { decks, cards, user, sort };
+    return { decks, cards, userCollection, user, sort };
 }

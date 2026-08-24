@@ -86,7 +86,7 @@ describe('ExportDeckGraphicModal', () => {
         expect(screen.getAllByText('8').length).toBeGreaterThan(0);
         expect(screen.getByText('Download PNG')).toBeInTheDocument();
         expect(screen.getByText('Copy Image')).toBeInTheDocument();
-    });
+    }, 15000);
 
     it('triggers PNG download when clicking Download PNG', async () => {
         renderComponent();

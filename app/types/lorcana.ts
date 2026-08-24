@@ -2,6 +2,7 @@ import {
     type UserCollectionItem,
     type DeckCard,
     type ProgressResult,
+    type DeckMetadata,
 } from '../utils/deck';
 
 // Lorcana Inks Configuration Constant
@@ -67,6 +68,8 @@ export interface DeckWithProgress extends Deck {
     views?: number;
     creator_name?: string;
     is_trending?: boolean;
+    is_active?: boolean;
+    meta?: DeckMetadata;
 }
 
 export { COLLECTIONS, SET_INDEX_MAP } from '../constants';

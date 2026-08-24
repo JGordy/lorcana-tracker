@@ -134,50 +134,75 @@ describe('MyDeckCardItem', () => {
         expect(onOpenViewModal).toHaveBeenCalledWith('deck-1');
     });
 
-    it('calls onOpenEditModal when the edit icon button is clicked', () => {
+    it('calls onOpenEditModal when the edit menu item is clicked', async () => {
         const onOpenEditModal = vi.fn();
         renderCard({ onOpenEditModal });
-        // Mantine Tooltip labels are accessible names for the wrapped button
-        fireEvent.click(screen.getByRole('button', { name: /edit title/i }));
+        fireEvent.click(
+            screen.getByRole('button', { name: /more deck options/i }),
+        );
+        const item = await screen.findByText('Edit Title / Cover Art');
+        fireEvent.click(item);
         expect(onOpenEditModal).toHaveBeenCalledWith(mockDeck);
     });
 
-    it('calls onOpenDeleteModal when the delete icon button is clicked', () => {
+    it('calls onOpenDeleteModal when the delete menu item is clicked', async () => {
         const onOpenDeleteModal = vi.fn();
         renderCard({ onOpenDeleteModal });
-        fireEvent.click(screen.getByRole('button', { name: /delete deck/i }));
+        fireEvent.click(
+            screen.getByRole('button', { name: /more deck options/i }),
+        );
+        const item = await screen.findByText('Delete Deck');
+        fireEvent.click(item);
         expect(onOpenDeleteModal).toHaveBeenCalledWith(mockDeck);
     });
 
-    it('calls onExportDeck when the export icon button is clicked', () => {
+    it('calls onExportDeck when the export menu item is clicked', async () => {
         const onExportDeck = vi.fn();
         renderCard({ onExportDeck });
         fireEvent.click(
-            screen.getByRole('button', { name: /export decklist/i }),
+            screen.getByRole('button', { name: /more deck options/i }),
         );
+        const item = await screen.findByText('Export Decklist');
+        fireEvent.click(item);
         expect(onExportDeck).toHaveBeenCalledWith(mockDeck);
     });
 
-    it('calls onOpenAddCardsModal when the add cards icon button is clicked', () => {
+    it('calls onOpenAddCardsModal when the add cards menu item is clicked', async () => {
         const onOpenAddCardsModal = vi.fn();
         renderCard({ onOpenAddCardsModal });
-        fireEvent.click(screen.getByRole('button', { name: /add cards/i }));
+        fireEvent.click(
+            screen.getByRole('button', { name: /more deck options/i }),
+        );
+        const item = await screen.findByText('Add Cards');
+        fireEvent.click(item);
         expect(onOpenAddCardsModal).toHaveBeenCalledWith(mockDeck);
     });
 
     it('calls onOpenPlaytest when the playtest action icon button is clicked', () => {
         const onOpenPlaytest = vi.fn();
         renderCard({ onOpenPlaytest });
-        fireEvent.click(screen.getByRole('button', { name: /playtest/i }));
+        fireEvent.click(screen.getByRole('button', { name: /playtest hand/i }));
         expect(onOpenPlaytest).toHaveBeenCalledWith(mockDeck);
     });
 
-    it('shows copyFeedback check state without crashing', () => {
-        // When copyFeedback matches deck id the copy button switches to a check icon
+    it('shows copyFeedback check state without crashing', async () => {
         renderCard({ copyFeedback: 'deck-1' });
-        // The export button wrapper is still rendered (just with a different icon inside)
-        expect(
-            screen.getByRole('button', { name: /export decklist/i }),
-        ).toBeInTheDocument();
+        fireEvent.click(
+            screen.getByRole('button', { name: /more deck options/i }),
+        );
+        expect(await screen.findByText('Export Decklist')).toBeInTheDocument();
+    });
+
+    it('triggers onToggleActive when physically built menu item is clicked', async () => {
+        const onToggleActive = vi.fn();
+        const activeDeck = { ...mockDeck, is_active: true };
+        renderCard({ deck: activeDeck, onToggleActive });
+
+        fireEvent.click(
+            screen.getByRole('button', { name: /more deck options/i }),
+        );
+        const item = await screen.findByText(/physically built/i);
+        fireEvent.click(item);
+        expect(onToggleActive).toHaveBeenCalledWith(activeDeck);
     });
 });

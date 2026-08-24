@@ -18,6 +18,7 @@ vi.mock('../services/appwrite.server', () => ({
     dbService: {
         getCollection: vi.fn().mockResolvedValue([]),
         getUserDecksWithProgress: vi.fn().mockResolvedValue([]),
+        getUserInventory: vi.fn().mockResolvedValue([]),
         createDeck: vi.fn().mockResolvedValue({
             deck: { $id: 'deck-123', title: 'Test Deck' },
             deckCards: [],

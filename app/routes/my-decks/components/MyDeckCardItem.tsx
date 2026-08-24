@@ -9,6 +9,7 @@ import {
     Button,
     ActionIcon,
     Tooltip,
+    Menu,
 } from '@mantine/core';
 import {
     IconCards,
@@ -18,6 +19,8 @@ import {
     IconCopy,
     IconCheck,
     IconDice,
+    IconLayersIntersect,
+    IconDotsVertical,
 } from '@tabler/icons-react';
 import {
     getFeaturedDeckCard,
@@ -35,6 +38,7 @@ interface MyDeckCardItemProps {
     onExportDeck: (deck: any) => void;
     onOpenAddCardsModal?: (deck: any) => void;
     onOpenPlaytest?: (deck: any) => void;
+    onToggleActive?: (deck: any) => void;
 }
 
 export function MyDeckCardItem({
@@ -46,6 +50,7 @@ export function MyDeckCardItem({
     onExportDeck,
     onOpenAddCardsModal,
     onOpenPlaytest,
+    onToggleActive,
 }: MyDeckCardItemProps) {
     const { percentage, ownedCount, totalCount } = deck.progress;
     const featuredCard = getFeaturedDeckCard(deck.cards, deck.meta.coverCardId);
@@ -372,58 +377,82 @@ export function MyDeckCardItem({
                         </Tooltip>
                     )}
 
-                    <Tooltip label="Add Cards" withArrow>
-                        <ActionIcon
-                            size="sm"
-                            variant="subtle"
-                            color="gray"
-                            aria-label="Add Cards"
-                            onClick={() =>
-                                onOpenAddCardsModal
-                                    ? onOpenAddCardsModal(deck)
-                                    : onOpenViewModal(deck.$id)
-                            }
-                        >
-                            <IconPlus size={16} />
-                        </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Edit Title / Cover Art" withArrow>
-                        <ActionIcon
-                            size="sm"
-                            variant="subtle"
-                            color="gray"
-                            aria-label="Edit Title / Cover Art"
-                            onClick={() => onOpenEditModal(deck)}
-                        >
-                            <IconEdit size={16} />
-                        </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Export Decklist" withArrow>
-                        <ActionIcon
-                            size="sm"
-                            variant="subtle"
-                            color="gray"
-                            aria-label="Export Decklist"
-                            onClick={() => onExportDeck(deck)}
-                        >
-                            {copyFeedback === deck.$id ? (
-                                <IconCheck size={16} color="#2ecc71" />
-                            ) : (
-                                <IconCopy size={16} />
+                    <Menu
+                        position="bottom-end"
+                        shadow="md"
+                        width={210}
+                        withinPortal={false}
+                    >
+                        <Menu.Target>
+                            <Tooltip label="More options" withArrow>
+                                <ActionIcon
+                                    size="sm"
+                                    variant="subtle"
+                                    color="gray"
+                                    aria-label="More deck options"
+                                >
+                                    <IconDotsVertical size={16} />
+                                </ActionIcon>
+                            </Tooltip>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                            {onToggleActive && (
+                                <Menu.Item
+                                    leftSection={
+                                        deck.is_active ? (
+                                            <IconCheck
+                                                size={14}
+                                                color="#2ecc71"
+                                            />
+                                        ) : (
+                                            <IconLayersIntersect size={14} />
+                                        )
+                                    }
+                                    onClick={() => onToggleActive(deck)}
+                                >
+                                    {deck.is_active
+                                        ? 'Physically Built (Marked)'
+                                        : 'Mark as Physically Built'}
+                                </Menu.Item>
                             )}
-                        </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Delete Deck" withArrow>
-                        <ActionIcon
-                            size="sm"
-                            variant="subtle"
-                            color="red"
-                            aria-label="Delete Deck"
-                            onClick={() => onOpenDeleteModal(deck)}
-                        >
-                            <IconTrash size={16} />
-                        </ActionIcon>
-                    </Tooltip>
+                            <Menu.Item
+                                leftSection={<IconPlus size={14} />}
+                                onClick={() =>
+                                    onOpenAddCardsModal
+                                        ? onOpenAddCardsModal(deck)
+                                        : onOpenViewModal(deck.$id)
+                                }
+                            >
+                                Add Cards
+                            </Menu.Item>
+                            <Menu.Item
+                                leftSection={<IconEdit size={14} />}
+                                onClick={() => onOpenEditModal(deck)}
+                            >
+                                Edit Title / Cover Art
+                            </Menu.Item>
+                            <Menu.Item
+                                leftSection={
+                                    copyFeedback === deck.$id ? (
+                                        <IconCheck size={14} color="#2ecc71" />
+                                    ) : (
+                                        <IconCopy size={14} />
+                                    )
+                                }
+                                onClick={() => onExportDeck(deck)}
+                            >
+                                Export Decklist
+                            </Menu.Item>
+                            <Menu.Divider />
+                            <Menu.Item
+                                color="red"
+                                leftSection={<IconTrash size={14} />}
+                                onClick={() => onOpenDeleteModal(deck)}
+                            >
+                                Delete Deck
+                            </Menu.Item>
+                        </Menu.Dropdown>
+                    </Menu>
                 </Group>
             </Group>
         </Card>

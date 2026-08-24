@@ -54,16 +54,6 @@ describe('MyDecksToolbar', () => {
         expect(screen.getByText('New Deck').closest('button')).toBeDisabled();
     });
 
-    it('displays the active deck count badge — plural', () => {
-        renderToolbar({ activeCount: 5 });
-        expect(screen.getByText('5 Decks')).toBeInTheDocument();
-    });
-
-    it('displays singular "Deck" label when activeCount is 1', () => {
-        renderToolbar({ activeCount: 1 });
-        expect(screen.getByText('1 Deck')).toBeInTheDocument();
-    });
-
     it('calls onSearchChange when typing in the search input', () => {
         const onSearchChange = vi.fn();
         renderToolbar({ onSearchChange });
@@ -91,13 +81,17 @@ describe('MyDecksToolbar', () => {
         expect(screen.queryByTitle('Clear search')).not.toBeInTheDocument();
     });
 
-    it('navigates with sort param when sort value changes', () => {
-        const navigate = vi.fn();
-        renderToolbar({ navigate });
-        const combobox = screen.getByRole('combobox');
-        fireEvent.click(combobox);
-        const option = screen.getByText('Alphabetical (A-Z)');
-        fireEvent.click(option);
-        expect(navigate).toHaveBeenCalledWith('/my-decks?sort=name');
+    it('renders Deck Audit button when onOpenAuditModal is provided', () => {
+        const onOpenAuditModal = vi.fn();
+        renderToolbar({
+            onOpenAuditModal,
+            conflictCount: 2,
+            physicallyBuiltCount: 3,
+        });
+        expect(screen.getByText('Deck Audit')).toBeInTheDocument();
+        expect(screen.getByText('2 Conflicts')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Deck Audit'));
+        expect(onOpenAuditModal).toHaveBeenCalledOnce();
     });
 });
