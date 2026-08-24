@@ -5,6 +5,7 @@ import type {
     Card as LorcanaCard,
 } from '../../../types/lorcana';
 import { serializeDeckMetadata } from '../utils/myDecksHelpers';
+import { parseDeckMetadata } from '../../../utils/deck';
 
 interface UseMyDecksActionsProps {
     decks: DeckWithProgress[];
@@ -21,9 +22,58 @@ export function useMyDecksActions({
     submit,
     fetcher,
 }: UseMyDecksActionsProps) {
-    const [localDecks, setLocalDecks] = useState<DeckWithProgress[]>(decks);
+    const updateDeckActiveState = (
+        d: DeckWithProgress,
+        isActive: boolean,
+    ): DeckWithProgress => {
+        const meta = d.meta || parseDeckMetadata(d.description);
+        return {
+            ...d,
+            is_active: isActive,
+            meta: {
+                ...meta,
+                is_active: isActive,
+            },
+        };
+    };
+
+    const [localDecks, setLocalDecks] = useState<DeckWithProgress[]>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('lorcana_active_deck_ids');
+                if (stored) {
+                    const activeIds: string[] = JSON.parse(stored);
+                    const activeSet = new Set(activeIds);
+                    return decks.map((d) =>
+                        activeSet.has(d.$id) || d.is_active
+                            ? updateDeckActiveState(d, true)
+                            : d,
+                    );
+                }
+            } catch {
+                // Ignore parsing errors
+            }
+        }
+        return decks;
+    });
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('lorcana_active_deck_ids');
+                const activeSet = new Set(stored ? JSON.parse(stored) : []);
+                setLocalDecks(
+                    decks.map((d) =>
+                        activeSet.has(d.$id) || d.is_active
+                            ? updateDeckActiveState(d, true)
+                            : d,
+                    ),
+                );
+                return;
+            } catch {
+                // Fallthrough to standard decks
+            }
+        }
         setLocalDecks(decks);
     }, [decks]);
 
@@ -42,6 +92,55 @@ export function useMyDecksActions({
     } | null>(null);
 
     const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+    const handleToggleDeckActive = (deck: DeckWithProgress) => {
+        const nextIsActive = !deck.is_active;
+
+        setLocalDecks((prev) =>
+            prev.map((d) => {
+                if (d.$id !== deck.$id) return d;
+                return updateDeckActiveState(d, nextIsActive);
+            }),
+        );
+
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('lorcana_active_deck_ids');
+                let activeIds: string[] = stored ? JSON.parse(stored) : [];
+                if (nextIsActive) {
+                    if (!activeIds.includes(deck.$id)) activeIds.push(deck.$id);
+                } else {
+                    activeIds = activeIds.filter((id) => id !== deck.$id);
+                }
+                localStorage.setItem(
+                    'lorcana_active_deck_ids',
+                    JSON.stringify(activeIds),
+                );
+            } catch {
+                // Ignore localStorage errors
+            }
+        }
+
+        const meta = deck.meta || parseDeckMetadata(deck.description);
+        const metaDesc = serializeDeckMetadata(
+            meta.format,
+            meta.inks,
+            meta.description,
+            meta.coverCardId,
+            nextIsActive,
+        );
+
+        fetcher.submit(
+            {
+                intent: 'update-deck-details',
+                deckId: deck.$id,
+                userId: user ? user.$id : 'guest-user',
+                title: deck.title,
+                description: metaDesc,
+            },
+            { method: 'post' },
+        );
+    };
 
     const applyDeckCardsOptimistic = useCallback(
         (
@@ -488,6 +587,7 @@ export function useMyDecksActions({
         copyFeedback,
         handleCreateDeck,
         handleSaveDeckDetails,
+        handleToggleDeckActive,
         handleAdjustQuantity,
         handleRemoveCard,
         handleUndo,

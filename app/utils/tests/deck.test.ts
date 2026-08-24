@@ -4,6 +4,7 @@ import {
     getFeaturedDeckCard,
     getKeyDeckCards,
     calculateDeckStats,
+    parseDeckMetadata,
 } from '../deck';
 
 describe('deck utils', () => {
@@ -52,6 +53,65 @@ describe('deck utils', () => {
             expect(res.missingCards).toHaveLength(1);
             expect(res.missingCards[0].cardId).toBe('c1');
             expect(res.missingCards[0].missing).toBe(2);
+        });
+    });
+
+    describe('parseDeckMetadata', () => {
+        it('should return default metadata for empty or undefined input', () => {
+            expect(parseDeckMetadata(undefined)).toEqual({
+                format: 'core',
+                inks: [],
+                description: '',
+                is_active: false,
+            });
+            expect(parseDeckMetadata('')).toEqual({
+                format: 'core',
+                inks: [],
+                description: '',
+                is_active: false,
+            });
+        });
+
+        it('should correctly parse valid JSON payload with format, inks, description, and coverCardId', () => {
+            const payload = JSON.stringify({
+                format: 'infinity',
+                inks: ['Amber', 'Ruby'],
+                description: 'Hyper aggressive Amber Ruby deck',
+                coverCardId: 'sid-phillips-toy-surgeon',
+            });
+
+            const result = parseDeckMetadata(payload);
+            expect(result).toEqual({
+                format: 'infinity',
+                inks: ['Amber', 'Ruby'],
+                description: 'Hyper aggressive Amber Ruby deck',
+                coverCardId: 'sid-phillips-toy-surgeon',
+                is_active: false,
+            });
+        });
+
+        it('should handle partial JSON payloads gracefully', () => {
+            const payload = JSON.stringify({
+                inks: ['Amethyst'],
+            });
+
+            const result = parseDeckMetadata(payload);
+            expect(result.format).toBe('core');
+            expect(result.inks).toEqual(['Amethyst']);
+            expect(result.description).toBe('');
+            expect(result.is_active).toBe(false);
+        });
+
+        it('should fallback to plain text description for non-JSON strings', () => {
+            const plainText =
+                'This is just a regular legacy description string.';
+            const result = parseDeckMetadata(plainText);
+            expect(result).toEqual({
+                format: 'core',
+                inks: [],
+                description: plainText,
+                is_active: false,
+            });
         });
     });
 

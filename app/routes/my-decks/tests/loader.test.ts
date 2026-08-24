@@ -9,6 +9,7 @@ vi.mock('../../../services/appwrite.server', () => ({
     dbService: {
         getUserDecksWithProgress: vi.fn(),
         getCollection: vi.fn(),
+        getUserInventory: vi.fn(),
     },
     COLLECTIONS: {
         CARDS: 'cards',
@@ -29,6 +30,7 @@ describe('MyDecks Loader', () => {
             'deck-1',
         ] as any);
         vi.mocked(dbService.getCollection).mockResolvedValue(['card-1'] as any);
+        vi.mocked(dbService.getUserInventory).mockResolvedValue(['inv-1'] as any);
 
         const request = new Request('http://localhost:3000/my-decks?sort=name');
         const result = await loader({ request } as any);
@@ -42,6 +44,7 @@ describe('MyDecks Loader', () => {
             user: mockUser,
             decks: ['deck-1'],
             cards: ['card-1'],
+            userCollection: ['inv-1'],
             sort: 'name',
         });
     });

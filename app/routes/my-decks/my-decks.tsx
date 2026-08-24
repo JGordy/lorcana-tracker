@@ -8,6 +8,7 @@ import { useMyDecksActions } from './hooks/useMyDecksActions';
 import { useMyDecksImport } from './hooks/useMyDecksImport';
 import { processMyDecks } from './utils/myDecksHelpers';
 import { buildCardsLookup } from '../../utils/deck';
+import { calculatePhysicalDeckAudit } from '../../utils/deckAudit';
 
 import { MyDecksHero } from './components/MyDecksHero';
 import { MyDecksToolbar } from './components/MyDecksToolbar';
@@ -19,6 +20,7 @@ import { MyDecksImportModal } from './components/modals/MyDecksImportModal';
 import { MyDecksViewModal } from './components/modals/MyDecksViewModal';
 import { MyDecksAddCardsModal } from './components/modals/MyDecksAddCardsModal';
 import { MyDecksDeleteModal } from './components/modals/MyDecksDeleteModal';
+import { PhysicalDeckAuditModal } from './components/modals/PhysicalDeckAuditModal';
 import { ShoppingListModal } from '../../components/ShoppingListModal';
 import { PlaytestModal } from '../../components/PlaytestModal';
 
@@ -26,7 +28,7 @@ export { loader } from './loader';
 export { action } from './action';
 
 export default function MyDecks({ loaderData }: Route.ComponentProps) {
-    const { decks: serverDecks, cards, user, sort } = loaderData;
+    const { decks: serverDecks, cards, userCollection = [], user, sort } = loaderData;
     const submit = useSubmit();
     const fetcher = useFetcher();
     const navigate = useNavigate();
@@ -47,6 +49,8 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
     const [deckModalSearch, setDeckModalSearch] = useState('');
     const [deckModalInkFilter, setDeckModalInkFilter] = useState('all');
+
+    const [auditModalOpen, setAuditModalOpen] = useState(false);
 
     const [shoppingListModalOpen, setShoppingListModalOpen] = useState(false);
     const [shoppingListDeck, setShoppingListDeck] = useState<any>(null);
@@ -84,6 +88,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
         copyFeedback,
         handleCreateDeck,
         handleSaveDeckDetails,
+        handleToggleDeckActive,
         handleAdjustQuantity,
         handleRemoveCard,
         handleUndo,
@@ -104,6 +109,17 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const processedDecks = useMemo(
         () => processMyDecks(localDecks, searchQuery, cardsLookup),
         [localDecks, searchQuery, cardsLookup],
+    );
+
+    // Active (Physically Built) decks and conflict detection audit calculation
+    const activeDecks = useMemo(
+        () => processedDecks.filter((d) => d.is_active),
+        [processedDecks],
+    );
+
+    const auditResult = useMemo(
+        () => calculatePhysicalDeckAudit(activeDecks, userCollection, cards),
+        [activeDecks, userCollection, cards],
     );
 
     // Custom import hook
@@ -237,6 +253,9 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 user={user}
                 onOpenCreateModal={() => setCreateModalOpen(true)}
                 onOpenImportModal={() => setImportModalOpen(true)}
+                onOpenAuditModal={() => setAuditModalOpen(true)}
+                conflictCount={auditResult.totalConflictCardsCount}
+                physicallyBuiltCount={activeDecks.length}
             />
 
             {/* Main Cards Grid */}
@@ -268,6 +287,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setAddCardsModalOpen(true);
                 }}
                 onOpenPlaytest={handleOpenPlaytest}
+                onToggleActive={handleToggleDeckActive}
             />
 
             {/* 1. Create Deck Modal */}
@@ -445,6 +465,16 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setPlaytestDeck(null);
                 }}
                 deck={playtestDeck}
+            />
+
+            {/* 9. Multi-Deck Physical Collection Audit Modal */}
+            <PhysicalDeckAuditModal
+                opened={auditModalOpen}
+                onClose={() => setAuditModalOpen(false)}
+                auditResult={auditResult}
+                activeDecks={activeDecks}
+                user={user}
+                onQuickAdd={handleQuickAdd}
             />
         </Container>
     );

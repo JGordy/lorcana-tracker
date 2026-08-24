@@ -15,8 +15,9 @@ export function serializeDeckMetadata(
     inks: string[],
     description: string,
     coverCardId?: string,
+    is_active?: boolean,
 ): string {
-    return JSON.stringify({ format, inks, description, coverCardId });
+    return JSON.stringify({ format, inks, description, coverCardId, is_active });
 }
 
 export function processMyDecks(
@@ -96,6 +97,7 @@ export function processMyDecks(
                 ...deck,
                 cards: resolvedCards,
                 meta,
+                is_active: Boolean(meta.is_active),
                 displayInks,
                 isCoreLegal,
                 totalCardsCount: totalCards,

@@ -197,6 +197,7 @@ export interface DeckMetadata {
     inks: string[];
     description: string;
     coverCardId?: string;
+    is_active?: boolean;
 }
 
 export const RARITY_RANK: Record<string, number> = {
@@ -213,7 +214,8 @@ export const RARITY_RANK: Record<string, number> = {
 export { RARITY_COLOR, INK_HEX_MAP } from '../constants';
 
 export function parseDeckMetadata(desc: string | undefined): DeckMetadata {
-    if (!desc) return { format: 'core', inks: [], description: '' };
+    if (!desc)
+        return { format: 'core', inks: [], description: '', is_active: false };
     try {
         const parsed = JSON.parse(desc);
         if (
@@ -222,19 +224,21 @@ export function parseDeckMetadata(desc: string | undefined): DeckMetadata {
             ('format' in parsed ||
                 'inks' in parsed ||
                 'description' in parsed ||
-                'coverCardId' in parsed)
+                'coverCardId' in parsed ||
+                'is_active' in parsed)
         ) {
             return {
                 format: parsed.format === 'infinity' ? 'infinity' : 'core',
                 inks: Array.isArray(parsed.inks) ? parsed.inks : [],
                 description: parsed.description || '',
                 coverCardId: parsed.coverCardId,
+                is_active: Boolean(parsed.is_active),
             };
         }
     } catch {
         // Not a JSON payload, treat whole string as plain text description
     }
-    return { format: 'core', inks: [], description: desc };
+    return { format: 'core', inks: [], description: desc, is_active: false };
 }
 
 export function getFeaturedDeckCard<
