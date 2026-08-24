@@ -37,7 +37,7 @@ export function MyDecksToolbar({
     onSearchChange,
     sort,
     navigate,
-    _activeCount,
+    activeCount: _activeCount,
     user,
     onOpenCreateModal,
     onOpenImportModal,
