@@ -10,4 +10,5 @@ if command -v nvm >/dev/null; then
 fi
 
 npm run lint
+npm run typecheck
 npm run test
