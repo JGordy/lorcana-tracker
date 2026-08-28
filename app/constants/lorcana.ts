@@ -97,3 +97,21 @@ export const INK_HEX_MAP: Record<string, string> = {
     sapphire: '#5DADE2',
     steel: '#A6ACAF',
 };
+
+/**
+ * Core Format Legality Config & Display Labels
+ * Standard Core Construction format (currently Sets 9–13 legal).
+ * Centralized constant to easily update upon future format rotations (e.g. 2027).
+ */
+export const CORE_FORMAT_SET_RANGE_LABEL = 'Sets 9–13 Standard';
+
+export const DECK_FORMAT_OPTIONS = [
+    {
+        value: 'core',
+        label: `Core Legal (${CORE_FORMAT_SET_RANGE_LABEL})`,
+    },
+    {
+        value: 'infinity',
+        label: 'Infinity (All Sets & Promos)',
+    },
+] as const;

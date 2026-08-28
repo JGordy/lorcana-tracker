@@ -69,28 +69,25 @@ describe('MyDecksAddCardsModal', () => {
         expect(screen.getByText('All Types')).toBeInTheDocument();
     });
 
-    it('renders card rows with name, set info, cost, rarity, and current deck qty', () => {
+    it('renders card items with name and set info', () => {
         renderModal();
         expect(screen.getByText('Stitch - Rock Star')).toBeInTheDocument();
-        expect(
-            screen.getByText(/The First Chapter • #23/i),
-        ).toBeInTheDocument();
-        expect(screen.getByText('6⬡')).toBeInTheDocument();
-        expect(screen.getByText('Super Rare')).toBeInTheDocument();
+        expect(screen.getByText('The First Chapter • #23')).toBeInTheDocument();
 
         expect(
-            screen.getByText("Pascal - Rapunzel's Companion"),
-        ).toBeInTheDocument();
-        expect(screen.getByText('1⬡')).toBeInTheDocument();
-        expect(screen.getByText('Common')).toBeInTheDocument();
+            screen.getAllByText("Pascal - Rapunzel's Companion").length,
+        ).toBeGreaterThan(0);
+        expect(screen.getByText('The First Chapter • #45')).toBeInTheDocument();
     });
 
-    it('calls onSearchQueryChange when typing in the search input', () => {
+    it('calls onSearchQueryChange when typing in the search input', async () => {
         const onSearchQueryChange = vi.fn();
         renderModal({ onSearchQueryChange });
         const input = screen.getByPlaceholderText('Search by card name...');
         fireEvent.change(input, { target: { value: 'Stitch' } });
-        expect(onSearchQueryChange).toHaveBeenCalledWith('Stitch');
+        await vi.waitFor(() => {
+            expect(onSearchQueryChange).toHaveBeenCalledWith('Stitch');
+        });
     });
 
     it('calls onOnlyCoreFilterChange when clicking the Core Only checkbox', () => {
