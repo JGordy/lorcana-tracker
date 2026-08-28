@@ -85,9 +85,12 @@ describe('MyDecksAddCardsModal', () => {
         renderModal({ onSearchQueryChange });
         const input = screen.getByPlaceholderText('Search by card name...');
         fireEvent.change(input, { target: { value: 'Stitch' } });
-        await vi.waitFor(() => {
-            expect(onSearchQueryChange).toHaveBeenCalledWith('Stitch');
-        });
+        await vi.waitFor(
+            () => {
+                expect(onSearchQueryChange).toHaveBeenCalledWith('Stitch');
+            },
+            { timeout: 1000 },
+        );
     });
 
     it('calls onOnlyCoreFilterChange when clicking the Core Only checkbox', () => {
