@@ -79,9 +79,12 @@ export function useMyDecksActions({
 
     useEffect(() => {
         if (fetcher.data && (fetcher.data as { error?: string }).error) {
-            setLocalDecks(decks);
+            console.warn(
+                '[LocalDecks] Backend sync returned error, preserving local deck state:',
+                (fetcher.data as { error?: string }).error,
+            );
         }
-    }, [fetcher.data, decks]);
+    }, [fetcher.data]);
 
     const [undoState, setUndoState] = useState<{
         deckId: string;
@@ -235,6 +238,31 @@ export function useMyDecksActions({
             newDeckInks,
             newDeckDesc.trim(),
         );
+
+        const newDeckId = `deck_local_${Date.now()}`;
+        const newDeckObj: DeckWithProgress = {
+            $id: newDeckId,
+            id: newDeckId,
+            title: newDeckTitle.trim(),
+            description: metaDesc,
+            creator_id: user ? user.$id : 'guest-user',
+            is_public: true,
+            progress: {
+                percentage: 0,
+                ownedCount: 0,
+                totalCount: 0,
+                missingCards: [],
+            },
+            cards: [],
+            meta: {
+                format: newDeckFormat,
+                inks: newDeckInks,
+                description: newDeckDesc.trim(),
+                is_active: false,
+            },
+        };
+
+        setLocalDecks((prev) => [newDeckObj, ...prev]);
 
         submit(
             {

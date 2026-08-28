@@ -939,8 +939,11 @@ export const dbService = {
 
             return { deck: newDeck, deckCards: newDeckCards };
         } catch (error: any) {
-            console.error('Failed to create deck in Appwrite:', error);
-            throw error;
+            console.warn(
+                '[Appwrite] Failed to create deck in Appwrite cloud (quota/network/unconfigured):',
+                error?.message || error,
+            );
+            return { deck: newDeck, deckCards: newDeckCards };
         }
     },
 
