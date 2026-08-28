@@ -112,9 +112,48 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
 
     // Lookups & Processed Decks
     const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
+
+    const inventoryMap = useMemo(() => {
+        const map = new Map<string, number>();
+        if (userCollection && userCollection.length > 0) {
+            for (const item of userCollection) {
+                if (item.card_id) {
+                    map.set(
+                        item.card_id,
+                        (map.get(item.card_id) || 0) + (item.quantity || 0),
+                    );
+                }
+            }
+        }
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('lorcana_user_inventory');
+                if (stored) {
+                    const parsed: Array<{ card_id: string; quantity: number }> =
+                        JSON.parse(stored);
+                    for (const item of parsed) {
+                        if (item.card_id) {
+                            map.set(
+                                item.card_id,
+                                Math.max(
+                                    map.get(item.card_id) || 0,
+                                    item.quantity || 0,
+                                ),
+                            );
+                        }
+                    }
+                }
+            } catch {
+                // Ignore
+            }
+        }
+        return map;
+    }, [userCollection]);
+
     const processedDecks = useMemo(
-        () => processMyDecks(localDecks, searchQuery, cardsLookup),
-        [localDecks, searchQuery, cardsLookup],
+        () =>
+            processMyDecks(localDecks, searchQuery, cardsLookup, inventoryMap),
+        [localDecks, searchQuery, cardsLookup, inventoryMap],
     );
 
     // Active (Physically Built) decks and conflict detection audit calculation

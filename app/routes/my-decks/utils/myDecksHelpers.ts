@@ -30,6 +30,7 @@ export function processMyDecks(
     localDecks: any[],
     searchQuery: string,
     cardsLookup: { get: (id: string) => LorcanaCard | undefined },
+    inventoryMap?: Map<string, number>,
 ) {
     return localDecks
         .filter((deck) => {
@@ -44,12 +45,17 @@ export function processMyDecks(
 
             // Resolve any cards that fell back to Unknown Card
             const resolvedCards = (deck.cards || []).map((dc: any) => {
+                const cardId = dc.card?.id || dc.card?.$id;
+                const invQty =
+                    inventoryMap && cardId ? inventoryMap.get(cardId) || 0 : 0;
+                const ownedQty = Math.max(dc.ownedQty || 0, invQty);
+
                 if (
                     dc.card &&
                     dc.card.name !== 'Unknown Card' &&
                     dc.card.image_url
                 ) {
-                    return dc;
+                    return { ...dc, ownedQty };
                 }
                 const resolved =
                     cardsLookup.get(dc.card?.id) ||
@@ -58,6 +64,7 @@ export function processMyDecks(
                 return {
                     ...dc,
                     card: resolved,
+                    ownedQty,
                 };
             });
 

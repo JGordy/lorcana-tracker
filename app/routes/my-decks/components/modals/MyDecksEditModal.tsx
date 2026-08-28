@@ -177,6 +177,7 @@ export function MyDecksEditModal({
                         onFormatChange((val as 'core' | 'infinity') || 'core')
                     }
                     data={DECK_FORMAT_OPTIONS as any}
+                    comboboxProps={{ zIndex: 1000 }}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.7)',
@@ -314,6 +315,7 @@ export function MyDecksEditModal({
                     value={coverCardId}
                     onChange={(val) => onCoverCardIdChange(val || 'auto')}
                     data={coverCardOptions}
+                    comboboxProps={{ zIndex: 1000 }}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.7)',

@@ -91,4 +91,33 @@ describe('myDecksHelpers', () => {
             ],
         });
     });
+
+    it('uses inventoryMap to dynamically override owned quantities', () => {
+        const mockDecks = [
+            {
+                $id: 'd3',
+                title: 'Toy Graveyard',
+                description: '',
+                cards: [
+                    {
+                        card: { id: 'woody-jungle-guide', name: 'Woody' },
+                        requiredQty: 4,
+                        ownedQty: 0,
+                    },
+                ],
+            },
+        ];
+
+        const lookup = new Map();
+        const inventoryMap = new Map([['woody-jungle-guide', 4]]);
+        const processed = processMyDecks(mockDecks, '', lookup, inventoryMap);
+
+        expect(processed[0].progress).toEqual({
+            percentage: 100,
+            ownedCount: 4,
+            totalCount: 4,
+            missingCards: [],
+        });
+        expect(processed[0].cards[0].ownedQty).toBe(4);
+    });
 });

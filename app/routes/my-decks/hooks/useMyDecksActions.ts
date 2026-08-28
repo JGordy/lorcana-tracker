@@ -449,6 +449,35 @@ export function useMyDecksActions({
             editCoverCardId !== 'auto' ? editCoverCardId : undefined,
         );
 
+        const updatedMeta = parseDeckMetadata(metaDesc);
+
+        setLocalDecks((prev) => {
+            const nextDecks = prev.map((d) => {
+                if (d.$id === editingDeck.$id || d.id === editingDeck.id) {
+                    return {
+                        ...d,
+                        title: editTitle.trim(),
+                        description: metaDesc,
+                        meta: updatedMeta,
+                    };
+                }
+                return d;
+            });
+
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.setItem(
+                        'lorcana_user_decks_store',
+                        JSON.stringify(nextDecks),
+                    );
+                } catch {
+                    // Ignore localStorage errors
+                }
+            }
+
+            return nextDecks;
+        });
+
         submit(
             {
                 intent: 'update-deck-details',
