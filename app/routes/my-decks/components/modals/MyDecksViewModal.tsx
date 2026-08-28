@@ -511,7 +511,7 @@ export function MyDecksViewModal({
                                         return (
                                             <Card
                                                 key={card.id}
-                                                padding={10}
+                                                padding={0}
                                                 radius="md"
                                                 withBorder
                                                 style={{
@@ -524,19 +524,19 @@ export function MyDecksViewModal({
                                                     flexDirection: 'column',
                                                     justifyContent:
                                                         'space-between',
+                                                    overflow: 'hidden',
                                                     transition:
                                                         'transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
                                                 }}
                                             >
-                                                {/* Top: Card Image with floating status badge & remove button */}
-                                                <Box
+                                                {/* Top: Full-Width Card Artwork */}
+                                                <Card.Section
                                                     style={{
                                                         position: 'relative',
-                                                        borderRadius: 6,
-                                                        overflow: 'hidden',
                                                         backgroundColor:
                                                             'rgba(0, 0, 0, 0.3)',
                                                         aspectRatio: '5/7',
+                                                        overflow: 'hidden',
                                                     }}
                                                 >
                                                     {card.image_url ? (
@@ -606,12 +606,12 @@ export function MyDecksViewModal({
                                                             Need {missingCount}
                                                         </Badge>
                                                     )}
-                                                </Box>
+                                                </Card.Section>
 
                                                 {/* Bottom Info & Clean 2-Row Controls */}
                                                 <Stack
                                                     gap={6}
-                                                    mt="xs"
+                                                    p="xs"
                                                     justify="space-between"
                                                     style={{ flex: 1 }}
                                                 >
