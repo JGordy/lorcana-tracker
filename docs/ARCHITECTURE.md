@@ -81,6 +81,62 @@ When a user views community decks or their own custom decks:
 
 ---
 
-## 5. Additional Documentation
+## 5. Hybrid Local-First & Appwrite Synchronization Architecture
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant UI as React UI (Mantine + Tailwind)
+    participant Memory as React State & Catalog
+    participant IDB as IndexedDB (idb-keyval)
+    participant Sync as Debounced Sync Worker (5s)
+    participant Appwrite as Appwrite Database (1 Doc/User)
+
+    Note over User, Appwrite: 1. User Adjusts Quantity (+1 / -1)
+    User->>UI: Click +1 on Card
+    UI->>Memory: Update React State (0ms Instant UX)
+    UI->>IDB: Write to local key 'lorcana_user_collection' (0ms)
+    UI->>Sync: Trigger Debounced Flush (5s timer reset)
+
+    Note over User, Appwrite: 2. Background Cloud Synchronization
+    Sync-->>Appwrite: Upsert single aggregate doc 'USER_COLLECTIONS'
+    alt Sync Success
+        Appwrite-->>Sync: 200 OK (inventory_data updated)
+        Sync-->>UI: Update Status to 'Saved & Synced' 🟢
+    else Network Offline / Service Unavailable
+        Appwrite--xSync: Timeout / 503 / Offline
+        Sync-->>UI: Update Status to 'Saved to Device' 🔵
+        Note over Sync, IDB: Mutation preserved locally in IndexedDB until online event
+    end
+
+    Note over User, Appwrite: 3. Reconnection & Auto-Recovery
+    window-->>Sync: Event 'online'
+    Sync->>IDB: Read latest local collection map
+    Sync->>Appwrite: Flush pending aggregate payload to cloud
+```
+
+### Data Storage Specifications
+
+1. **Client-Side Storage (`IndexedDB`):**
+    - Key: `lorcana_user_collection`
+    - Payload: `UserCollectionMap` (`Record<CardId, { normal: number; foil: number }>`)
+2. **Cloud Storage (`Appwrite`):**
+    - Collection: `user_collections` (1 aggregate document per user)
+    - Attributes:
+        - `user_id` (string)
+        - `inventory_data` (JSON string of `UserCollectionMap`)
+        - `updated_at` (ISO timestamp)
+        - `version` (number)
+
+### Debugging Guide for Local & Cloud State
+
+- **Verifying Local Storage:** Open Browser DevTools → Application → IndexedDB → `keyval-store` → inspect `lorcana_user_collection`.
+- **Verifying Cloud Document:** In Appwrite Console, navigate to `user_collections` and locate the document with `user_id = <userId>`. The `inventory_data` column contains the stringified JSON collection map.
+- **Auto-Migration:** If a user accesses the app with legacy multi-row records (1 document per card row), `getUserInventoryAggregate()` automatically consolidates them into the single aggregate document format and deletes legacy rows in the background.
+
+---
+
+## 6. Additional Documentation
 
 - See [`docs/DATA_SOURCES.md`](./DATA_SOURCES.md) for details on external APIs, CDN links, and third-party tools.
