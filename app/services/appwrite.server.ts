@@ -328,7 +328,7 @@ export const dbService = {
 
         if (databases) {
             const deleteTasks = rawLegacyDocs
-                .filter((d) => !d.inventory_data)
+                .filter((d: any) => !d.inventory_data)
                 .map((doc) =>
                     databases
                         .deleteDocument(

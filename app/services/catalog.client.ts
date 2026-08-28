@@ -3,7 +3,8 @@ import { buildCardsLookup } from '../utils/deck';
 
 export class CardCatalogService {
     private static cards: Card[] | null = null;
-    private static lookupMap: ReturnType<typeof buildCardsLookup> | null = null;
+    private static lookupMap: ReturnType<typeof buildCardsLookup<Card>> | null =
+        null;
     private static fetchPromise: Promise<Card[]> | null = null;
 
     /**
