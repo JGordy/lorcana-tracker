@@ -37,19 +37,53 @@ export function useMyDecksActions({
         };
     };
 
+    const saveLocalDecksStore = useCallback((allDecks: DeckWithProgress[]) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const localOnly = allDecks.filter(
+                (d) =>
+                    d.$id.startsWith('deck_local_') ||
+                    d.id.startsWith('deck_local_'),
+            );
+            localStorage.setItem(
+                'lorcana_user_decks_store',
+                JSON.stringify(localOnly),
+            );
+        } catch (e) {
+            console.warn('[LocalDecks] Failed to save local decks store:', e);
+        }
+    }, []);
+
     const [localDecks, setLocalDecks] = useState<DeckWithProgress[]>(() => {
         if (typeof window !== 'undefined') {
             try {
-                const stored = localStorage.getItem('lorcana_active_deck_ids');
-                if (stored) {
-                    const activeIds: string[] = JSON.parse(stored);
-                    const activeSet = new Set(activeIds);
-                    return decks.map((d) =>
-                        activeSet.has(d.$id) || d.is_active
-                            ? updateDeckActiveState(d, true)
-                            : d,
-                    );
+                const storedActive = localStorage.getItem(
+                    'lorcana_active_deck_ids',
+                );
+                const activeSet = new Set(
+                    storedActive ? JSON.parse(storedActive) : [],
+                );
+
+                const storedCustom = localStorage.getItem(
+                    'lorcana_user_decks_store',
+                );
+                const customDecks: DeckWithProgress[] = storedCustom
+                    ? JSON.parse(storedCustom)
+                    : [];
+
+                const map = new Map<string, DeckWithProgress>();
+                for (const d of decks) {
+                    map.set(d.$id || d.id, d);
                 }
+                for (const d of customDecks) {
+                    map.set(d.$id || d.id, d);
+                }
+
+                return Array.from(map.values()).map((d) =>
+                    activeSet.has(d.$id) || activeSet.has(d.id) || d.is_active
+                        ? updateDeckActiveState(d, true)
+                        : d,
+                );
             } catch {
                 // Ignore parsing errors
             }
@@ -60,11 +94,33 @@ export function useMyDecksActions({
     useEffect(() => {
         if (typeof window !== 'undefined') {
             try {
-                const stored = localStorage.getItem('lorcana_active_deck_ids');
-                const activeSet = new Set(stored ? JSON.parse(stored) : []);
+                const storedActive = localStorage.getItem(
+                    'lorcana_active_deck_ids',
+                );
+                const activeSet = new Set(
+                    storedActive ? JSON.parse(storedActive) : [],
+                );
+
+                const storedCustom = localStorage.getItem(
+                    'lorcana_user_decks_store',
+                );
+                const customDecks: DeckWithProgress[] = storedCustom
+                    ? JSON.parse(storedCustom)
+                    : [];
+
+                const map = new Map<string, DeckWithProgress>();
+                for (const d of decks) {
+                    map.set(d.$id || d.id, d);
+                }
+                for (const d of customDecks) {
+                    map.set(d.$id || d.id, d);
+                }
+
                 setLocalDecks(
-                    decks.map((d) =>
-                        activeSet.has(d.$id) || d.is_active
+                    Array.from(map.values()).map((d) =>
+                        activeSet.has(d.$id) ||
+                        activeSet.has(d.id) ||
+                        d.is_active
                             ? updateDeckActiveState(d, true)
                             : d,
                     ),
@@ -154,8 +210,8 @@ export function useMyDecksActions({
                 ownedQty?: number;
             }>,
         ) => {
-            setLocalDecks((prevDecks) =>
-                prevDecks.map((d) => {
+            setLocalDecks((prevDecks) => {
+                const next = prevDecks.map((d) => {
                     if (d.$id !== deckId) return d;
 
                     const newDeckCards = updatedCardEntries.filter(
@@ -219,10 +275,12 @@ export function useMyDecksActions({
                             missingCards,
                         },
                     };
-                }),
-            );
+                });
+                saveLocalDecksStore(next);
+                return next;
+            });
         },
-        [],
+        [saveLocalDecksStore],
     );
 
     const handleCreateDeck = (
@@ -262,7 +320,11 @@ export function useMyDecksActions({
             },
         };
 
-        setLocalDecks((prev) => [newDeckObj, ...prev]);
+        setLocalDecks((prev) => {
+            const next = [newDeckObj, ...prev];
+            saveLocalDecksStore(next);
+            return next;
+        });
 
         submit(
             {
