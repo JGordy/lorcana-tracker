@@ -17,6 +17,7 @@ export function MyDecksDeleteModal({
         <Modal
             opened={opened}
             onClose={onClose}
+            zIndex={400}
             title="Delete Custom Deck"
             size="sm"
             radius="lg"

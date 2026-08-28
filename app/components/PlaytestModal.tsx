@@ -245,6 +245,7 @@ export function PlaytestModal({ opened, onClose, deck }: PlaytestModalProps) {
         <Modal
             opened={opened}
             onClose={onClose}
+            zIndex={400}
             title={
                 <Group
                     justify="space-between"

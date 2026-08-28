@@ -48,7 +48,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const [createFormat, setCreateFormat] = useState<'core' | 'infinity'>(
         'core',
     );
-    const [createInks, setCreateInks] = useState<string[]>(['amber', 'ruby']);
+    const [createInks, setCreateInks] = useState<string[]>([]);
     const [createDesc, setCreateDesc] = useState('');
 
     const [viewModalOpen, setViewModalOpen] = useState(false);
