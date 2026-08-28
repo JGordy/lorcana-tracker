@@ -52,6 +52,33 @@ export interface Deck {
     is_public: boolean;
 }
 
+// ---------------------------------------------------------
+// Single-Document Aggregate Schemas
+// ---------------------------------------------------------
+export type UserCollectionMap = Record<
+    string,
+    { normal: number; foil: number }
+>;
+
+export interface UserCollectionAggregateDoc {
+    $id: string;
+    user_id: string;
+    updated_at: string;
+    inventory_data: string; // JSON string of UserCollectionMap
+    version: number;
+}
+
+export interface DeckDoc {
+    $id: string;
+    user_id: string;
+    title: string;
+    description?: string;
+    is_public: boolean;
+    cards: string; // JSON string of Array<{ card_id: string; quantity: number }>
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface DeckCardDoc extends DeckCard {
     $id: string;
 }

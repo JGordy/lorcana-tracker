@@ -29,6 +29,12 @@ export const links: Route.LinksFunction = () => [
         crossOrigin: 'anonymous',
     },
     {
+        rel: 'preload',
+        href: '/cards.json',
+        as: 'fetch',
+        crossOrigin: 'anonymous',
+    },
+    {
         rel: 'stylesheet',
         href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Cinzel+Decorative:wght@400;700;900&display=swap',
     },
