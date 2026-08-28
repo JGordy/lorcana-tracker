@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
     Modal,
     Stack,
@@ -57,6 +58,33 @@ export function MyDecksEditModal({
             onInksChange([...inks, inkId]);
         }
     };
+
+    const coverCardOptions = useMemo(() => {
+        const uniqueCards = new Map<string, string>();
+        (deckCards || []).forEach(({ card }: any) => {
+            if (!card) return;
+            const id = card.id || card.$id;
+            if (id && !uniqueCards.has(id)) {
+                const label = card.set
+                    ? `${card.name} (${card.set})`
+                    : card.name;
+                uniqueCards.set(id, label);
+            }
+        });
+
+        const options = [
+            {
+                value: 'auto',
+                label: 'Auto (First Legendary/Super Rare)',
+            },
+        ];
+
+        uniqueCards.forEach((label, value) => {
+            options.push({ value, label });
+        });
+
+        return options;
+    }, [deckCards]);
 
     return (
         <Modal
@@ -285,16 +313,7 @@ export function MyDecksEditModal({
                     label="Cover Card Image"
                     value={coverCardId}
                     onChange={(val) => onCoverCardIdChange(val || 'auto')}
-                    data={[
-                        {
-                            value: 'auto',
-                            label: 'Auto (First Legendary/Super Rare)',
-                        },
-                        ...deckCards.map(({ card }) => ({
-                            value: card.id || card.$id,
-                            label: `${card.name} (${card.set || ''})`,
-                        })),
-                    ]}
+                    data={coverCardOptions}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.7)',
