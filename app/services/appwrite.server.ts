@@ -12,6 +12,7 @@ import {
 import {
     type Card,
     type UserCollectionItemDoc,
+    type UserCollectionMap,
     type Deck,
     type DeckCardDoc,
     type DeckWithProgress,
@@ -193,18 +194,126 @@ export const dbService = {
         }
     },
 
-    async getUserInventory(
+    async getUserInventoryAggregate(
         userId: string,
         request?: Request,
-    ): Promise<UserCollectionItemDoc[]> {
-        const rawDocs = await this.getCollection<UserCollectionItemDoc>(
+    ): Promise<UserCollectionMap> {
+        if (!appwriteConfig.isConfigured || !userId) {
+            return {};
+        }
+
+        try {
+            const { databases } = request
+                ? createSessionClient(request)
+                : createAdminClient();
+
+            const docs = await databases.listDocuments(
+                appwriteConfig.databaseId,
+                COLLECTIONS.USER_COLLECTIONS,
+                [Query.equal('user_id', userId), Query.limit(1)],
+            );
+
+            if (
+                docs?.documents?.length > 0 &&
+                docs.documents[0].inventory_data
+            ) {
+                try {
+                    return JSON.parse(docs.documents[0].inventory_data);
+                } catch (e) {
+                    console.error(
+                        '[Appwrite] Error parsing aggregate inventory JSON:',
+                        e,
+                    );
+                }
+            }
+
+            return await this.migrateLegacyUserRows(userId, request);
+        } catch (err: any) {
+            console.warn(
+                `[Appwrite] getUserInventoryAggregate error: ${err.message}`,
+            );
+            return {};
+        }
+    },
+
+    async saveUserInventoryAggregate(
+        userId: string,
+        inventory: UserCollectionMap,
+        request?: Request,
+    ): Promise<void> {
+        if (!appwriteConfig.isConfigured || !userId) return;
+
+        let databases = request
+            ? createSessionClient(request).databases
+            : createAdminClient().databases;
+
+        if (appwriteConfig.apiKey) {
+            databases = createAdminClient().databases;
+        }
+
+        const payload = {
+            user_id: userId,
+            inventory_data: JSON.stringify(inventory),
+            updated_at: new Date().toISOString(),
+            version: 1,
+        };
+
+        try {
+            const docs = await databases.listDocuments(
+                appwriteConfig.databaseId,
+                COLLECTIONS.USER_COLLECTIONS,
+                [Query.equal('user_id', userId), Query.limit(1)],
+            );
+
+            if (docs?.documents?.length > 0) {
+                await databases.updateDocument(
+                    appwriteConfig.databaseId,
+                    COLLECTIONS.USER_COLLECTIONS,
+                    docs.documents[0].$id,
+                    payload,
+                );
+            } else {
+                await databases.createDocument(
+                    appwriteConfig.databaseId,
+                    COLLECTIONS.USER_COLLECTIONS,
+                    ID.unique(),
+                    payload,
+                );
+            }
+        } catch (err: any) {
+            console.error(
+                '[Appwrite] Error saving user inventory aggregate:',
+                err,
+            );
+        }
+    },
+
+    async migrateLegacyUserRows(
+        userId: string,
+        request?: Request,
+    ): Promise<UserCollectionMap> {
+        const rawLegacyDocs = await this.getCollection<UserCollectionItemDoc>(
             COLLECTIONS.USER_COLLECTIONS,
             [Query.equal('user_id', userId)],
             request,
         );
 
-        const cards = await getCardsCatalog();
-        const cardsLookup = buildCardsLookup(cards);
+        if (!rawLegacyDocs || rawLegacyDocs.length === 0) return {};
+
+        const inventoryMap: UserCollectionMap = {};
+        for (const doc of rawLegacyDocs) {
+            if (!doc.card_id) continue;
+            if (!inventoryMap[doc.card_id]) {
+                inventoryMap[doc.card_id] = { normal: 0, foil: 0 };
+            }
+            if (doc.is_foil) {
+                inventoryMap[doc.card_id].foil += doc.quantity || 0;
+            } else {
+                inventoryMap[doc.card_id].normal += doc.quantity || 0;
+            }
+        }
+
+        await this.saveUserInventoryAggregate(userId, inventoryMap, request);
 
         let databases: any = null;
         try {
@@ -217,76 +326,56 @@ export const dbService = {
             databases = null;
         }
 
-        // Consolidate legacy card IDs to canonical card IDs & write-back standardize in Appwrite
-        const consolidatedMap = new Map<string, UserCollectionItemDoc>();
-        const writeBackTasks: Array<Promise<any>> = [];
+        if (databases) {
+            const deleteTasks = rawLegacyDocs
+                .filter((d) => !d.inventory_data)
+                .map((doc) =>
+                    databases
+                        .deleteDocument(
+                            appwriteConfig.databaseId,
+                            COLLECTIONS.USER_COLLECTIONS,
+                            doc.$id,
+                        )
+                        .catch(() => null),
+                );
+            Promise.all(deleteTasks).catch(() => null);
+        }
 
-        for (const doc of rawDocs) {
-            const resolvedCard = cardsLookup.get(doc.card_id);
-            const canonicalId = resolvedCard ? resolvedCard.id : doc.card_id;
-            const key = `${canonicalId}_${doc.is_foil ? 'foil' : 'normal'}`;
+        return inventoryMap;
+    },
 
-            if (consolidatedMap.has(key)) {
-                const existing = consolidatedMap.get(key)!;
-                const chosenQty =
-                    doc.card_id === canonicalId
-                        ? doc.quantity
-                        : existing.card_id === canonicalId
-                          ? existing.quantity
-                          : Math.max(existing.quantity, doc.quantity);
-                consolidatedMap.set(key, {
-                    ...existing,
-                    card_id: canonicalId,
-                    quantity: chosenQty,
+    async getUserInventory(
+        userId: string,
+        request?: Request,
+    ): Promise<UserCollectionItemDoc[]> {
+        const aggregateMap = await this.getUserInventoryAggregate(
+            userId,
+            request,
+        );
+        const result: UserCollectionItemDoc[] = [];
+
+        for (const [cardId, entry] of Object.entries(aggregateMap)) {
+            if (entry.normal > 0) {
+                result.push({
+                    $id: `${userId}_${cardId}_normal`,
+                    user_id: userId,
+                    card_id: cardId,
+                    quantity: entry.normal,
+                    is_foil: false,
                 });
-
-                if (databases) {
-                    writeBackTasks.push(
-                        databases
-                            .updateDocument(
-                                appwriteConfig.databaseId,
-                                COLLECTIONS.USER_COLLECTIONS,
-                                existing.$id,
-                                { card_id: canonicalId, quantity: chosenQty },
-                            )
-                            .catch(() => null),
-                    );
-                    writeBackTasks.push(
-                        databases
-                            .deleteDocument(
-                                appwriteConfig.databaseId,
-                                COLLECTIONS.USER_COLLECTIONS,
-                                doc.$id,
-                            )
-                            .catch(() => null),
-                    );
-                }
-            } else {
-                consolidatedMap.set(key, {
-                    ...doc,
-                    card_id: canonicalId,
+            }
+            if (entry.foil > 0) {
+                result.push({
+                    $id: `${userId}_${cardId}_foil`,
+                    user_id: userId,
+                    card_id: cardId,
+                    quantity: entry.foil,
+                    is_foil: true,
                 });
-
-                if (doc.card_id !== canonicalId && databases) {
-                    writeBackTasks.push(
-                        databases
-                            .updateDocument(
-                                appwriteConfig.databaseId,
-                                COLLECTIONS.USER_COLLECTIONS,
-                                doc.$id,
-                                { card_id: canonicalId },
-                            )
-                            .catch(() => null),
-                    );
-                }
             }
         }
 
-        if (writeBackTasks.length > 0) {
-            Promise.all(writeBackTasks).catch(() => null);
-        }
-
-        return Array.from(consolidatedMap.values());
+        return result;
     },
 
     async updateInventory(
@@ -300,7 +389,6 @@ export const dbService = {
             ? createSessionClient(request).databases
             : createAdminClient().databases;
 
-        // If admin client is available, prefer admin client for robust mutation permissions
         if (appwriteConfig.apiKey) {
             databases = createAdminClient().databases;
         }
@@ -311,7 +399,6 @@ export const dbService = {
             const resolvedCard = cardsLookup.get(cardId);
             const canonicalCardId = resolvedCard ? resolvedCard.id : cardId;
 
-            // Find all existing user collection documents by user_id and is_foil
             const allUserDocs = await this.getCollection<UserCollectionItemDoc>(
                 COLLECTIONS.USER_COLLECTIONS,
                 [
@@ -362,7 +449,6 @@ export const dbService = {
                     (d) => d.$id !== primaryDoc.$id,
                 );
 
-                // Clean up any extraneous duplicate documents in parallel
                 if (duplicates.length > 0) {
                     await Promise.all(
                         duplicates.map((doc) =>
