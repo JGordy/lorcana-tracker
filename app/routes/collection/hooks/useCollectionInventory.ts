@@ -37,28 +37,15 @@ export function useCollectionInventory({
     });
 
     useEffect(() => {
-        setUserCollection((prev) => {
-            if (serverCollection && serverCollection.length > 0) {
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem(
-                        'lorcana_user_inventory',
-                        JSON.stringify(serverCollection),
-                    );
-                }
-                return serverCollection;
-            }
+        if (serverCollection && serverCollection.length > 0) {
+            setUserCollection(serverCollection);
             if (typeof window !== 'undefined') {
-                try {
-                    const stored = localStorage.getItem(
-                        'lorcana_user_inventory',
-                    );
-                    return stored ? JSON.parse(stored) : prev;
-                } catch {
-                    // Fallthrough to prev
-                }
+                localStorage.setItem(
+                    'lorcana_user_inventory',
+                    JSON.stringify(serverCollection),
+                );
             }
-            return prev;
-        });
+        }
     }, [serverCollection]);
 
     const inventoryMap = useMemo(() => {
