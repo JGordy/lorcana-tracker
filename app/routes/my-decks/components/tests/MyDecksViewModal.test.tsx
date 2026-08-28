@@ -143,21 +143,22 @@ describe('MyDecksViewModal', () => {
         expect(screen.getByLabelText('Copied List!')).toBeInTheDocument();
     });
 
-    it('renders table rows for cards in deck with ownership status', () => {
+    it('renders card items with ownership status ratio', () => {
         renderModal();
         expect(screen.getAllByText('Merlin - Goat')[0]).toBeInTheDocument();
-        expect(screen.getByText('✓ Owned')).toBeInTheDocument();
+        expect(screen.getByText('4/4')).toBeInTheDocument();
 
         expect(screen.getAllByText('Madam Mim - Fox')[0]).toBeInTheDocument();
         expect(screen.getByText('Need 2')).toBeInTheDocument();
-        expect(screen.getByText('+1 Coll')).toBeInTheDocument();
+        expect(screen.getByText('2/4')).toBeInTheDocument();
     });
 
-    it('calls onQuickAdd when clicking "+1 Coll" button on a missing card', () => {
+    it('calls onQuickAdd when clicking increase owned quantity button', () => {
         const onQuickAdd = vi.fn();
         renderModal({ onQuickAdd });
-        fireEvent.click(screen.getByText('+1 Coll'));
-        expect(onQuickAdd).toHaveBeenCalledWith('card-2', 2);
+        const incButtons = screen.getAllByLabelText(/Increase owned quantity/i);
+        fireEvent.click(incButtons[0]);
+        expect(onQuickAdd).toHaveBeenCalledWith('card-1', 5);
     });
 
     it('calls onOpenShoppingList when "Shopping List" button is clicked', () => {
