@@ -106,4 +106,30 @@ describe('useCollectionInventory', () => {
         );
         expect(result.current.totals.totalCardsOwned).toBe(3);
     });
+
+    it('initializes from local storage inventory when server collection is empty', () => {
+        localStorage.setItem(
+            'lorcana_user_inventory',
+            JSON.stringify([
+                {
+                    $id: 'inv-local',
+                    user_id: 'user-1',
+                    card_id: 'card-1',
+                    quantity: 4,
+                    is_foil: false,
+                },
+            ]),
+        );
+
+        const { result } = renderHook(() =>
+            useCollectionInventory({
+                serverCollection: [],
+                user: { $id: 'user-1' },
+                fetcher: mockFetcher,
+                cardsLookup: mockCardsLookup,
+            }),
+        );
+
+        expect(result.current.totals.totalCardsOwned).toBe(4);
+    });
 });

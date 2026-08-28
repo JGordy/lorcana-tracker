@@ -19,17 +19,46 @@ export function useCollectionInventory({
     fetcher,
     cardsLookup,
 }: UseCollectionInventoryOptions) {
-    const [userCollection, setUserCollection] =
-        useState<UserCollectionItemDoc[]>(serverCollection);
+    const [userCollection, setUserCollection] = useState<
+        UserCollectionItemDoc[]
+    >(() => {
+        if (serverCollection && serverCollection.length > 0) {
+            return serverCollection;
+        }
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('lorcana_user_inventory');
+                return stored ? JSON.parse(stored) : serverCollection;
+            } catch {
+                // Fallthrough to serverCollection
+            }
+        }
+        return serverCollection;
+    });
 
     useEffect(() => {
-        setUserCollection(serverCollection);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(
-                'lorcana_user_inventory',
-                JSON.stringify(serverCollection),
-            );
-        }
+        setUserCollection((prev) => {
+            if (serverCollection && serverCollection.length > 0) {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem(
+                        'lorcana_user_inventory',
+                        JSON.stringify(serverCollection),
+                    );
+                }
+                return serverCollection;
+            }
+            if (typeof window !== 'undefined') {
+                try {
+                    const stored = localStorage.getItem(
+                        'lorcana_user_inventory',
+                    );
+                    return stored ? JSON.parse(stored) : prev;
+                } catch {
+                    // Fallthrough to prev
+                }
+            }
+            return prev;
+        });
     }, [serverCollection]);
 
     const inventoryMap = useMemo(() => {

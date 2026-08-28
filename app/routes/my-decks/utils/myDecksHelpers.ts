@@ -94,14 +94,48 @@ export function processMyDecks(
                         dc.card?.formats?.includes('core'),
                     ));
 
-            const totalCards = resolvedCards.reduce(
-                (sum: number, c: any) => sum + c.requiredQty,
-                0,
-            );
+            let ownedCount = 0;
+            let totalCards = 0;
+            const missingCards: Array<{
+                cardId: string;
+                required: number;
+                owned: number;
+                missing: number;
+            }> = [];
+
+            resolvedCards.forEach((dc: any) => {
+                const req = dc.requiredQty || 0;
+                const own = dc.ownedQty || 0;
+                totalCards += req;
+                const matched = Math.min(req, own);
+                ownedCount += matched;
+
+                if (own < req) {
+                    missingCards.push({
+                        cardId: dc.card?.id || dc.card?.$id || 'unknown',
+                        required: req,
+                        owned: own,
+                        missing: req - own,
+                    });
+                }
+            });
+
+            const percentage =
+                totalCards === 0
+                    ? 0
+                    : Math.round((ownedCount / totalCards) * 100);
+
+            const progress = {
+                percentage,
+                ownedCount,
+                totalCount: totalCards,
+                missingCards,
+            };
 
             return {
                 ...deck,
                 cards: resolvedCards,
+                progress,
                 meta,
                 is_active: Boolean(meta.is_active),
                 displayInks,

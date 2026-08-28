@@ -62,4 +62,43 @@ describe('useMyDecksActions', () => {
             { method: 'post' },
         );
     });
+
+    it('updates local state, syncs localStorage inventory, and submits quick-add on handleQuickAdd', () => {
+        const { result } = renderHook(() =>
+            useMyDecksActions({
+                decks: mockDecks,
+                cards: mockCards,
+                user: { $id: 'u1' },
+                submit: mockSubmit,
+                fetcher: mockFetcher,
+            }),
+        );
+
+        act(() => {
+            result.current.handleQuickAdd('c1', 4);
+        });
+
+        expect(mockFetcher.submit).toHaveBeenCalledWith(
+            {
+                intent: 'quick-add',
+                userId: 'u1',
+                cardId: 'c1',
+                quantity: '4',
+                isFoil: 'false',
+            },
+            { method: 'post' },
+        );
+
+        const storedInv = localStorage.getItem('lorcana_user_inventory');
+        expect(storedInv).toBeTruthy();
+        const parsedInv = JSON.parse(storedInv!);
+        expect(parsedInv).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    card_id: 'c1',
+                    quantity: 4,
+                }),
+            ]),
+        );
+    });
 });

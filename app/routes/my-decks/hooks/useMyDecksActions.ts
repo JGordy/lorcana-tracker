@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { useFetcher, useSubmit } from 'react-router';
 import type {
     DeckWithProgress,
@@ -108,23 +108,65 @@ export function useMyDecksActions({
                     ? JSON.parse(storedCustom)
                     : [];
 
-                const map = new Map<string, DeckWithProgress>();
-                for (const d of decks) {
-                    map.set(d.$id || d.id, d);
-                }
-                for (const d of customDecks) {
-                    map.set(d.$id || d.id, d);
-                }
+                setLocalDecks((prevLocalDecks) => {
+                    const prevMap = new Map<string, DeckWithProgress>();
+                    for (const pd of prevLocalDecks) {
+                        prevMap.set(pd.$id || pd.id, pd);
+                    }
 
-                setLocalDecks(
-                    Array.from(map.values()).map((d) =>
+                    const map = new Map<string, DeckWithProgress>();
+                    for (const d of decks) {
+                        const prevDeck = prevMap.get(d.$id || d.id);
+                        if (prevDeck) {
+                            const mergedCards = d.cards.map((c) => {
+                                const prevCard = prevDeck.cards.find(
+                                    (pc) => pc.card.id === c.card.id,
+                                );
+                                const ownedQty = Math.max(
+                                    c.ownedQty || 0,
+                                    prevCard?.ownedQty || 0,
+                                );
+                                return { ...c, ownedQty };
+                            });
+                            map.set(d.$id || d.id, {
+                                ...d,
+                                cards: mergedCards,
+                            });
+                        } else {
+                            map.set(d.$id || d.id, d);
+                        }
+                    }
+
+                    for (const d of customDecks) {
+                        const prevDeck = prevMap.get(d.$id || d.id);
+                        if (prevDeck) {
+                            const mergedCards = d.cards.map((c) => {
+                                const prevCard = prevDeck.cards.find(
+                                    (pc) => pc.card.id === c.card.id,
+                                );
+                                const ownedQty = Math.max(
+                                    c.ownedQty || 0,
+                                    prevCard?.ownedQty || 0,
+                                );
+                                return { ...c, ownedQty };
+                            });
+                            map.set(d.$id || d.id, {
+                                ...d,
+                                cards: mergedCards,
+                            });
+                        } else {
+                            map.set(d.$id || d.id, d);
+                        }
+                    }
+
+                    return Array.from(map.values()).map((d) =>
                         activeSet.has(d.$id) ||
                         activeSet.has(d.id) ||
                         d.is_active
                             ? updateDeckActiveState(d, true)
                             : d,
-                    ),
-                );
+                    );
+                });
                 return;
             } catch {
                 // Fallthrough to standard decks
@@ -283,6 +325,58 @@ export function useMyDecksActions({
         [saveLocalDecksStore],
     );
 
+    const cardUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingPayloadRef = useRef<{
+        deckId: string;
+        userId: string;
+        payload: Array<{ cardId: string; quantity: number }>;
+    } | null>(null);
+
+    const flushDeckCardsUpdate = useCallback(() => {
+        if (cardUpdateTimerRef.current) {
+            clearTimeout(cardUpdateTimerRef.current);
+            cardUpdateTimerRef.current = null;
+        }
+        if (pendingPayloadRef.current) {
+            const { deckId, userId, payload } = pendingPayloadRef.current;
+            fetcher.submit(
+                {
+                    intent: 'update-deck-cards',
+                    deckId,
+                    userId,
+                    cards: JSON.stringify(payload),
+                },
+                { method: 'post' },
+            );
+            pendingPayloadRef.current = null;
+        }
+    }, [fetcher]);
+
+    const debouncedSubmitDeckCards = useCallback(
+        (
+            deckId: string,
+            userId: string,
+            payload: Array<{ cardId: string; quantity: number }>,
+        ) => {
+            pendingPayloadRef.current = { deckId, userId, payload };
+
+            if (cardUpdateTimerRef.current) {
+                clearTimeout(cardUpdateTimerRef.current);
+            }
+
+            cardUpdateTimerRef.current = setTimeout(() => {
+                flushDeckCardsUpdate();
+            }, 400);
+        },
+        [flushDeckCardsUpdate],
+    );
+
+    useEffect(() => {
+        return () => {
+            flushDeckCardsUpdate();
+        };
+    }, [flushDeckCardsUpdate]);
+
     const handleCreateDeck = (
         newDeckTitle: string,
         newDeckFormat: 'core' | 'infinity',
@@ -419,15 +513,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: deck.$id,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(deck.$id, user.$id, payload);
     };
 
     const handleRemoveCard = (
@@ -454,15 +540,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: deck.$id,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(deck.$id, user.$id, payload);
     };
 
     const handleUndo = () => {
@@ -511,15 +589,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: undoState.deckId,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(undoState.deckId, user.$id, payload);
 
         setUndoState(null);
     };
@@ -561,15 +631,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: activeDeckId,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(activeDeckId, user.$id, payload);
     };
 
     const handleDeleteDeck = (deckToDelete: DeckWithProgress) => {
@@ -598,11 +660,13 @@ export function useMyDecksActions({
         });
     };
 
-    const handleQuickAdd = (cardId: string, currentOwned: number) => {
+    const handleQuickAdd = (cardId: string, newQuantity: number) => {
         if (!user) {
             alert('Please sign in to update your inventory.');
             return;
         }
+
+        const clampedQuantity = Math.max(0, newQuantity);
 
         setLocalDecks((prevDecks) =>
             prevDecks.map((d) => {
@@ -620,7 +684,7 @@ export function useMyDecksActions({
 
                 const mappedCards = d.cards.map((c) => {
                     const ownedQty =
-                        c.card.id === cardId ? currentOwned + 1 : c.ownedQty;
+                        c.card.id === cardId ? clampedQuantity : c.ownedQty;
                     totalCount += c.requiredQty;
                     const matched = Math.min(c.requiredQty, ownedQty);
                     ownedCount += matched;
@@ -658,12 +722,39 @@ export function useMyDecksActions({
             }),
         );
 
+        if (typeof window !== 'undefined') {
+            try {
+                const storedInv = localStorage.getItem(
+                    'lorcana_user_inventory',
+                );
+                let inv: any[] = storedInv ? JSON.parse(storedInv) : [];
+                inv = inv.filter(
+                    (item: any) => !(item.card_id === cardId && !item.is_foil),
+                );
+                if (clampedQuantity > 0) {
+                    inv.push({
+                        $id: `inv_${Date.now()}`,
+                        user_id: user.$id,
+                        card_id: cardId,
+                        quantity: clampedQuantity,
+                        is_foil: false,
+                    });
+                }
+                localStorage.setItem(
+                    'lorcana_user_inventory',
+                    JSON.stringify(inv),
+                );
+            } catch {
+                // Ignore localStorage errors
+            }
+        }
+
         fetcher.submit(
             {
                 intent: 'quick-add',
                 userId: user.$id,
                 cardId,
-                quantity: (currentOwned + 1).toString(),
+                quantity: clampedQuantity.toString(),
                 isFoil: 'false',
             },
             { method: 'post' },

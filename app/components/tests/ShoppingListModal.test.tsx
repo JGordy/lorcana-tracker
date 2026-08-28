@@ -163,6 +163,6 @@ describe('ShoppingListModal', () => {
         renderComponent();
         const quickAddBtn = screen.getByText('+1 Coll');
         fireEvent.click(quickAddBtn);
-        expect(mockOnQuickAdd).toHaveBeenCalledWith('c1', 2);
+        expect(mockOnQuickAdd).toHaveBeenCalledWith('c1', 3);
     });
 });

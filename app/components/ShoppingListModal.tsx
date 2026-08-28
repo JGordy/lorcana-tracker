@@ -105,6 +105,7 @@ export function ShoppingListModal({
         <Modal
             opened={opened}
             onClose={onClose}
+            zIndex={400}
             title={
                 <Group
                     justify="space-between"
@@ -605,7 +606,8 @@ export function ShoppingListModal({
                                                                                     item
                                                                                         .card
                                                                                         .id,
-                                                                                    item.ownedQty,
+                                                                                    item.ownedQty +
+                                                                                        1,
                                                                                 )
                                                                             }
                                                                             style={{
