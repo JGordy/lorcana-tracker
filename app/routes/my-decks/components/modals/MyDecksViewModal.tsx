@@ -83,6 +83,7 @@ export function MyDecksViewModal({
         <Modal
             opened={opened}
             onClose={onClose}
+            zIndex={200}
             title={
                 <Group
                     justify="space-between"
@@ -510,7 +511,7 @@ export function MyDecksViewModal({
                                         return (
                                             <Card
                                                 key={card.id}
-                                                padding={10}
+                                                padding={0}
                                                 radius="md"
                                                 withBorder
                                                 style={{
@@ -523,19 +524,19 @@ export function MyDecksViewModal({
                                                     flexDirection: 'column',
                                                     justifyContent:
                                                         'space-between',
+                                                    overflow: 'hidden',
                                                     transition:
                                                         'transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
                                                 }}
                                             >
-                                                {/* Top: Card Image with floating status badge & remove button */}
-                                                <Box
+                                                {/* Top: Full-Width Card Artwork */}
+                                                <Card.Section
                                                     style={{
                                                         position: 'relative',
-                                                        borderRadius: 6,
-                                                        overflow: 'hidden',
                                                         backgroundColor:
                                                             'rgba(0, 0, 0, 0.3)',
                                                         aspectRatio: '5/7',
+                                                        overflow: 'hidden',
                                                     }}
                                                 >
                                                     {card.image_url ? (
@@ -586,197 +587,270 @@ export function MyDecksViewModal({
                                                         </Box>
                                                     )}
 
-                                                    {/* Floating Status Badge */}
-                                                    <Badge
-                                                        size="sm"
-                                                        color={
-                                                            isMissing
-                                                                ? 'red'
-                                                                : 'teal'
-                                                        }
-                                                        variant={
-                                                            isMissing
-                                                                ? 'filled'
-                                                                : 'light'
-                                                        }
-                                                        style={{
-                                                            position:
-                                                                'absolute',
-                                                            top: 6,
-                                                            right: 6,
-                                                            fontWeight: 900,
-                                                            boxShadow:
-                                                                '0 2px 8px rgba(0, 0, 0, 0.75)',
-                                                        }}
-                                                    >
-                                                        {isMissing
-                                                            ? `Need ${missingCount}`
-                                                            : '✓ Owned'}
-                                                    </Badge>
-                                                </Box>
+                                                    {/* Floating Status Badge (Top Right - Only shown when cards are missing) */}
+                                                    {isMissing && (
+                                                        <Badge
+                                                            size="sm"
+                                                            color="red"
+                                                            variant="filled"
+                                                            style={{
+                                                                position:
+                                                                    'absolute',
+                                                                top: 6,
+                                                                right: 6,
+                                                                fontWeight: 900,
+                                                                boxShadow:
+                                                                    '0 2px 8px rgba(0, 0, 0, 0.75)',
+                                                            }}
+                                                        >
+                                                            Need {missingCount}
+                                                        </Badge>
+                                                    )}
+                                                </Card.Section>
 
-                                                {/* Bottom: Card Name, Deck Stepper & Remove, Ownership & Quick Add */}
+                                                {/* Bottom Info & Clean 2-Row Controls */}
                                                 <Stack
-                                                    gap={8}
-                                                    mt="xs"
+                                                    gap={6}
+                                                    p="xs"
                                                     justify="space-between"
                                                     style={{ flex: 1 }}
                                                 >
                                                     <Text
                                                         size="xs"
-                                                        fw={700}
-                                                        c="gray.2"
-                                                        lh={1.3}
-                                                        style={{
-                                                            minHeight: '2.6em',
-                                                        }}
+                                                        fw={800}
+                                                        c="gray.1"
+                                                        lineClamp={1}
+                                                        title={card.name}
                                                     >
                                                         {card.name}
                                                     </Text>
 
+                                                    {/* Row 1: Deck In-Use Quantity Stepper & Separate Delete Button */}
                                                     <Group
                                                         justify="space-between"
                                                         align="center"
                                                         wrap="nowrap"
+                                                        gap="xs"
                                                     >
-                                                        {/* Deck Stepper (1-4) & Remove Button */}
                                                         <Group
-                                                            gap={3}
+                                                            justify="space-between"
                                                             align="center"
-                                                            wrap="nowrap"
+                                                            style={{
+                                                                flex: 1,
+                                                                background:
+                                                                    'rgba(168, 85, 247, 0.12)',
+                                                                padding:
+                                                                    '2px 8px',
+                                                                borderRadius:
+                                                                    '16px',
+                                                                border: '1px solid rgba(168, 85, 247, 0.3)',
+                                                            }}
+                                                        >
+                                                            <Text
+                                                                size="11px"
+                                                                c="gray.4"
+                                                                fw={600}
+                                                            >
+                                                                Deck
+                                                            </Text>
+                                                            <Group
+                                                                gap={2}
+                                                                align="center"
+                                                            >
+                                                                <ActionIcon
+                                                                    size="xs"
+                                                                    radius="xl"
+                                                                    variant="subtle"
+                                                                    color="violet"
+                                                                    aria-label={`Decrease ${card.name}`}
+                                                                    onClick={() =>
+                                                                        onUpdateCardQty(
+                                                                            activeDeck,
+                                                                            card.id,
+                                                                            -1,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <IconMinus
+                                                                        size={
+                                                                            10
+                                                                        }
+                                                                    />
+                                                                </ActionIcon>
+                                                                <Text
+                                                                    size="xs"
+                                                                    fw={800}
+                                                                    c="violet.2"
+                                                                    style={{
+                                                                        width: 14,
+                                                                        textAlign:
+                                                                            'center',
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        requiredQty
+                                                                    }
+                                                                </Text>
+                                                                <ActionIcon
+                                                                    size="xs"
+                                                                    radius="xl"
+                                                                    variant="subtle"
+                                                                    color="violet"
+                                                                    aria-label={`Increase ${card.name}`}
+                                                                    disabled={
+                                                                        requiredQty >=
+                                                                        4
+                                                                    }
+                                                                    onClick={() =>
+                                                                        onUpdateCardQty(
+                                                                            activeDeck,
+                                                                            card.id,
+                                                                            1,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <IconPlus
+                                                                        size={
+                                                                            10
+                                                                        }
+                                                                    />
+                                                                </ActionIcon>
+                                                            </Group>
+                                                        </Group>
+
+                                                        {/* Separate Delete Button Outside Purple Capsule */}
+                                                        <Tooltip
+                                                            label="Remove from deck"
+                                                            position="top"
+                                                            withArrow
                                                         >
                                                             <ActionIcon
-                                                                size="xs"
-                                                                variant="light"
-                                                                color="violet"
+                                                                size="sm"
+                                                                radius="md"
+                                                                variant="subtle"
+                                                                color="red"
+                                                                aria-label={`Remove ${card.name} from deck`}
                                                                 onClick={() =>
-                                                                    onUpdateCardQty(
+                                                                    onRemoveCard(
                                                                         activeDeck,
-                                                                        card.id,
-                                                                        -1,
+                                                                        card,
+                                                                        requiredQty,
                                                                     )
                                                                 }
-                                                            >
-                                                                <IconMinus
-                                                                    size={11}
-                                                                />
-                                                            </ActionIcon>
-                                                            <Text
-                                                                size="xs"
-                                                                fw={800}
                                                                 style={{
-                                                                    width: 14,
-                                                                    textAlign:
-                                                                        'center',
+                                                                    backgroundColor:
+                                                                        'rgba(239, 68, 68, 0.12)',
+                                                                    border: '1px solid rgba(239, 68, 68, 0.25)',
                                                                 }}
                                                             >
-                                                                {requiredQty}
-                                                            </Text>
-                                                            <ActionIcon
-                                                                size="xs"
-                                                                variant="light"
-                                                                color="violet"
-                                                                disabled={
-                                                                    requiredQty >=
-                                                                    4
-                                                                }
-                                                                onClick={() =>
-                                                                    onUpdateCardQty(
-                                                                        activeDeck,
-                                                                        card.id,
-                                                                        1,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <IconPlus
-                                                                    size={11}
+                                                                <IconTrash
+                                                                    size={12}
                                                                 />
                                                             </ActionIcon>
+                                                        </Tooltip>
+                                                    </Group>
 
+                                                    {/* Row 2: Personal Collection Ownership Stepper */}
+                                                    <Group
+                                                        justify="space-between"
+                                                        align="center"
+                                                        style={{
+                                                            background:
+                                                                'rgba(15, 23, 42, 0.6)',
+                                                            padding: '2px 8px',
+                                                            borderRadius:
+                                                                '12px',
+                                                            border: isMissing
+                                                                ? '1px solid rgba(239, 68, 68, 0.2)'
+                                                                : '1px solid rgba(46, 204, 113, 0.2)',
+                                                        }}
+                                                    >
+                                                        <Text
+                                                            size="11px"
+                                                            c="gray.4"
+                                                            fw={600}
+                                                        >
+                                                            Owned{' '}
+                                                            <Text
+                                                                component="span"
+                                                                fw={800}
+                                                                c={
+                                                                    isMissing
+                                                                        ? ownedQty >
+                                                                          0
+                                                                            ? 'orange.4'
+                                                                            : 'red.4'
+                                                                        : 'teal.4'
+                                                                }
+                                                            >
+                                                                {ownedQty}/
+                                                                {requiredQty}
+                                                            </Text>
+                                                        </Text>
+
+                                                        <Group
+                                                            gap={2}
+                                                            align="center"
+                                                        >
                                                             <Tooltip
-                                                                label="Remove from deck"
+                                                                label="Remove 1 copy from collection"
                                                                 position="top"
                                                                 withArrow
                                                             >
                                                                 <ActionIcon
                                                                     size="xs"
+                                                                    radius="xl"
                                                                     variant="subtle"
-                                                                    color="red"
+                                                                    color="violet"
+                                                                    aria-label={`Decrease owned quantity for ${card.name}`}
+                                                                    disabled={
+                                                                        ownedQty <=
+                                                                        0
+                                                                    }
                                                                     onClick={() =>
-                                                                        onRemoveCard(
-                                                                            activeDeck,
-                                                                            card,
-                                                                            requiredQty,
+                                                                        onQuickAdd(
+                                                                            card.id,
+                                                                            Math.max(
+                                                                                0,
+                                                                                ownedQty -
+                                                                                    1,
+                                                                            ),
                                                                         )
                                                                     }
                                                                 >
-                                                                    <IconTrash
+                                                                    <IconMinus
                                                                         size={
-                                                                            12
+                                                                            10
                                                                         }
                                                                     />
                                                                 </ActionIcon>
                                                             </Tooltip>
-                                                        </Group>
-
-                                                        {/* Ownership & Quick Add */}
-                                                        <Group
-                                                            gap={4}
-                                                            wrap="nowrap"
-                                                        >
-                                                            <Text
-                                                                size="11px"
-                                                                c="dimmed"
+                                                            <Tooltip
+                                                                label="Add 1 copy to collection"
+                                                                position="top"
+                                                                withArrow
                                                             >
-                                                                Own{' '}
-                                                                <Text
-                                                                    component="span"
-                                                                    fw={700}
-                                                                    c={
-                                                                        isMissing
-                                                                            ? ownedQty >
-                                                                              0
-                                                                                ? 'orange.4'
-                                                                                : 'red.4'
-                                                                            : 'teal.4'
+                                                                <ActionIcon
+                                                                    size="xs"
+                                                                    radius="xl"
+                                                                    variant="subtle"
+                                                                    color="violet"
+                                                                    aria-label={`Increase owned quantity for ${card.name}`}
+                                                                    onClick={() =>
+                                                                        onQuickAdd(
+                                                                            card.id,
+                                                                            ownedQty +
+                                                                                1,
+                                                                        )
                                                                     }
                                                                 >
-                                                                    {ownedQty}
-                                                                </Text>
-                                                            </Text>
-
-                                                            {isMissing && (
-                                                                <Tooltip
-                                                                    label="Add 1 copy to your collection"
-                                                                    position="top"
-                                                                >
-                                                                    <Button
-                                                                        size="compact-xs"
-                                                                        variant="light"
-                                                                        color="violet"
-                                                                        leftSection={
-                                                                            <IconPlus
-                                                                                size={
-                                                                                    11
-                                                                                }
-                                                                            />
+                                                                    <IconPlus
+                                                                        size={
+                                                                            10
                                                                         }
-                                                                        onClick={() =>
-                                                                            onQuickAdd(
-                                                                                card.id,
-                                                                                ownedQty,
-                                                                            )
-                                                                        }
-                                                                        style={{
-                                                                            paddingLeft: 4,
-                                                                            paddingRight: 6,
-                                                                            fontSize: 10,
-                                                                        }}
-                                                                    >
-                                                                        +1 Coll
-                                                                    </Button>
-                                                                </Tooltip>
-                                                            )}
+                                                                    />
+                                                                </ActionIcon>
+                                                            </Tooltip>
                                                         </Group>
                                                     </Group>
                                                 </Stack>

@@ -50,5 +50,74 @@ describe('myDecksHelpers', () => {
         expect(processed[0].displayInks).toContain('amber');
         expect(processed[0].isCoreLegal).toBe(true);
         expect(processed[0].totalCardsCount).toBe(4);
+        expect(processed[0].progress).toEqual({
+            percentage: 100,
+            ownedCount: 4,
+            totalCount: 4,
+            missingCards: [],
+        });
+    });
+
+    it('calculates dynamic progress correctly when cards are missing', () => {
+        const mockDecks = [
+            {
+                $id: 'd2',
+                title: 'Control Deck',
+                description: '',
+                cards: [
+                    {
+                        card: { id: 'c1', name: 'Maleficent' },
+                        requiredQty: 4,
+                        ownedQty: 2,
+                    },
+                ],
+            },
+        ];
+
+        const lookup = new Map();
+        const processed = processMyDecks(mockDecks, '', lookup);
+
+        expect(processed[0].progress).toEqual({
+            percentage: 50,
+            ownedCount: 2,
+            totalCount: 4,
+            missingCards: [
+                {
+                    cardId: 'c1',
+                    required: 4,
+                    owned: 2,
+                    missing: 2,
+                },
+            ],
+        });
+    });
+
+    it('uses inventoryMap to dynamically override owned quantities', () => {
+        const mockDecks = [
+            {
+                $id: 'd3',
+                title: 'Toy Graveyard',
+                description: '',
+                cards: [
+                    {
+                        card: { id: 'woody-jungle-guide', name: 'Woody' },
+                        requiredQty: 4,
+                        ownedQty: 0,
+                    },
+                ],
+            },
+        ];
+
+        const lookup = new Map();
+        const inventoryMap = new Map([['woody-jungle-guide', 4]]);
+        const processed = processMyDecks(mockDecks, '', lookup, inventoryMap);
+
+        expect(processed[0].progress).toEqual({
+            percentage: 100,
+            ownedCount: 4,
+            totalCount: 4,
+            missingCards: [],
+        });
+        expect(processed[0].cards[0].ownedQty).toBe(4);
     });
 });

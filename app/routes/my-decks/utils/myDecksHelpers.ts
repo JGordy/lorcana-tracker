@@ -30,6 +30,7 @@ export function processMyDecks(
     localDecks: any[],
     searchQuery: string,
     cardsLookup: { get: (id: string) => LorcanaCard | undefined },
+    inventoryMap?: Map<string, number>,
 ) {
     return localDecks
         .filter((deck) => {
@@ -44,12 +45,17 @@ export function processMyDecks(
 
             // Resolve any cards that fell back to Unknown Card
             const resolvedCards = (deck.cards || []).map((dc: any) => {
+                const cardId = dc.card?.id || dc.card?.$id;
+                const invQty =
+                    inventoryMap && cardId ? inventoryMap.get(cardId) || 0 : 0;
+                const ownedQty = Math.max(dc.ownedQty || 0, invQty);
+
                 if (
                     dc.card &&
                     dc.card.name !== 'Unknown Card' &&
                     dc.card.image_url
                 ) {
-                    return dc;
+                    return { ...dc, ownedQty };
                 }
                 const resolved =
                     cardsLookup.get(dc.card?.id) ||
@@ -58,6 +64,7 @@ export function processMyDecks(
                 return {
                     ...dc,
                     card: resolved,
+                    ownedQty,
                 };
             });
 
@@ -94,14 +101,48 @@ export function processMyDecks(
                         dc.card?.formats?.includes('core'),
                     ));
 
-            const totalCards = resolvedCards.reduce(
-                (sum: number, c: any) => sum + c.requiredQty,
-                0,
-            );
+            let ownedCount = 0;
+            let totalCards = 0;
+            const missingCards: Array<{
+                cardId: string;
+                required: number;
+                owned: number;
+                missing: number;
+            }> = [];
+
+            resolvedCards.forEach((dc: any) => {
+                const req = dc.requiredQty || 0;
+                const own = dc.ownedQty || 0;
+                totalCards += req;
+                const matched = Math.min(req, own);
+                ownedCount += matched;
+
+                if (own < req) {
+                    missingCards.push({
+                        cardId: dc.card?.id || dc.card?.$id || 'unknown',
+                        required: req,
+                        owned: own,
+                        missing: req - own,
+                    });
+                }
+            });
+
+            const percentage =
+                totalCards === 0
+                    ? 0
+                    : Math.round((ownedCount / totalCards) * 100);
+
+            const progress = {
+                percentage,
+                ownedCount,
+                totalCount: totalCards,
+                missingCards,
+            };
 
             return {
                 ...deck,
                 cards: resolvedCards,
+                progress,
                 meta,
                 is_active: Boolean(meta.is_active),
                 displayInks,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { useFetcher, useSubmit } from 'react-router';
 import type {
     DeckWithProgress,
@@ -37,19 +37,53 @@ export function useMyDecksActions({
         };
     };
 
+    const saveLocalDecksStore = useCallback((allDecks: DeckWithProgress[]) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const localOnly = allDecks.filter(
+                (d) =>
+                    d.$id.startsWith('deck_local_') ||
+                    d.id.startsWith('deck_local_'),
+            );
+            localStorage.setItem(
+                'lorcana_user_decks_store',
+                JSON.stringify(localOnly),
+            );
+        } catch (e) {
+            console.warn('[LocalDecks] Failed to save local decks store:', e);
+        }
+    }, []);
+
     const [localDecks, setLocalDecks] = useState<DeckWithProgress[]>(() => {
         if (typeof window !== 'undefined') {
             try {
-                const stored = localStorage.getItem('lorcana_active_deck_ids');
-                if (stored) {
-                    const activeIds: string[] = JSON.parse(stored);
-                    const activeSet = new Set(activeIds);
-                    return decks.map((d) =>
-                        activeSet.has(d.$id) || d.is_active
-                            ? updateDeckActiveState(d, true)
-                            : d,
-                    );
+                const storedActive = localStorage.getItem(
+                    'lorcana_active_deck_ids',
+                );
+                const activeSet = new Set(
+                    storedActive ? JSON.parse(storedActive) : [],
+                );
+
+                const storedCustom = localStorage.getItem(
+                    'lorcana_user_decks_store',
+                );
+                const customDecks: DeckWithProgress[] = storedCustom
+                    ? JSON.parse(storedCustom)
+                    : [];
+
+                const map = new Map<string, DeckWithProgress>();
+                for (const d of decks) {
+                    map.set(d.$id || d.id, d);
                 }
+                for (const d of customDecks) {
+                    map.set(d.$id || d.id, d);
+                }
+
+                return Array.from(map.values()).map((d) =>
+                    activeSet.has(d.$id) || activeSet.has(d.id) || d.is_active
+                        ? updateDeckActiveState(d, true)
+                        : d,
+                );
             } catch {
                 // Ignore parsing errors
             }
@@ -60,15 +94,79 @@ export function useMyDecksActions({
     useEffect(() => {
         if (typeof window !== 'undefined') {
             try {
-                const stored = localStorage.getItem('lorcana_active_deck_ids');
-                const activeSet = new Set(stored ? JSON.parse(stored) : []);
-                setLocalDecks(
-                    decks.map((d) =>
-                        activeSet.has(d.$id) || d.is_active
+                const storedActive = localStorage.getItem(
+                    'lorcana_active_deck_ids',
+                );
+                const activeSet = new Set(
+                    storedActive ? JSON.parse(storedActive) : [],
+                );
+
+                const storedCustom = localStorage.getItem(
+                    'lorcana_user_decks_store',
+                );
+                const customDecks: DeckWithProgress[] = storedCustom
+                    ? JSON.parse(storedCustom)
+                    : [];
+
+                setLocalDecks((prevLocalDecks) => {
+                    const prevMap = new Map<string, DeckWithProgress>();
+                    for (const pd of prevLocalDecks) {
+                        prevMap.set(pd.$id || pd.id, pd);
+                    }
+
+                    const map = new Map<string, DeckWithProgress>();
+                    for (const d of decks) {
+                        const prevDeck = prevMap.get(d.$id || d.id);
+                        if (prevDeck) {
+                            const mergedCards = d.cards.map((c) => {
+                                const prevCard = prevDeck.cards.find(
+                                    (pc) => pc.card.id === c.card.id,
+                                );
+                                const ownedQty = Math.max(
+                                    c.ownedQty || 0,
+                                    prevCard?.ownedQty || 0,
+                                );
+                                return { ...c, ownedQty };
+                            });
+                            map.set(d.$id || d.id, {
+                                ...d,
+                                cards: mergedCards,
+                            });
+                        } else {
+                            map.set(d.$id || d.id, d);
+                        }
+                    }
+
+                    for (const d of customDecks) {
+                        const prevDeck = prevMap.get(d.$id || d.id);
+                        if (prevDeck) {
+                            const mergedCards = d.cards.map((c) => {
+                                const prevCard = prevDeck.cards.find(
+                                    (pc) => pc.card.id === c.card.id,
+                                );
+                                const ownedQty = Math.max(
+                                    c.ownedQty || 0,
+                                    prevCard?.ownedQty || 0,
+                                );
+                                return { ...c, ownedQty };
+                            });
+                            map.set(d.$id || d.id, {
+                                ...d,
+                                cards: mergedCards,
+                            });
+                        } else {
+                            map.set(d.$id || d.id, d);
+                        }
+                    }
+
+                    return Array.from(map.values()).map((d) =>
+                        activeSet.has(d.$id) ||
+                        activeSet.has(d.id) ||
+                        d.is_active
                             ? updateDeckActiveState(d, true)
                             : d,
-                    ),
-                );
+                    );
+                });
                 return;
             } catch {
                 // Fallthrough to standard decks
@@ -79,9 +177,12 @@ export function useMyDecksActions({
 
     useEffect(() => {
         if (fetcher.data && (fetcher.data as { error?: string }).error) {
-            setLocalDecks(decks);
+            console.warn(
+                '[LocalDecks] Backend sync returned error, preserving local deck state:',
+                (fetcher.data as { error?: string }).error,
+            );
         }
-    }, [fetcher.data, decks]);
+    }, [fetcher.data]);
 
     const [undoState, setUndoState] = useState<{
         deckId: string;
@@ -151,8 +252,8 @@ export function useMyDecksActions({
                 ownedQty?: number;
             }>,
         ) => {
-            setLocalDecks((prevDecks) =>
-                prevDecks.map((d) => {
+            setLocalDecks((prevDecks) => {
+                const next = prevDecks.map((d) => {
                     if (d.$id !== deckId) return d;
 
                     const newDeckCards = updatedCardEntries.filter(
@@ -216,11 +317,65 @@ export function useMyDecksActions({
                             missingCards,
                         },
                     };
-                }),
-            );
+                });
+                saveLocalDecksStore(next);
+                return next;
+            });
         },
-        [],
+        [saveLocalDecksStore],
     );
+
+    const cardUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingPayloadRef = useRef<{
+        deckId: string;
+        userId: string;
+        payload: Array<{ cardId: string; quantity: number }>;
+    } | null>(null);
+
+    const flushDeckCardsUpdate = useCallback(() => {
+        if (cardUpdateTimerRef.current) {
+            clearTimeout(cardUpdateTimerRef.current);
+            cardUpdateTimerRef.current = null;
+        }
+        if (pendingPayloadRef.current) {
+            const { deckId, userId, payload } = pendingPayloadRef.current;
+            fetcher.submit(
+                {
+                    intent: 'update-deck-cards',
+                    deckId,
+                    userId,
+                    cards: JSON.stringify(payload),
+                },
+                { method: 'post' },
+            );
+            pendingPayloadRef.current = null;
+        }
+    }, [fetcher]);
+
+    const debouncedSubmitDeckCards = useCallback(
+        (
+            deckId: string,
+            userId: string,
+            payload: Array<{ cardId: string; quantity: number }>,
+        ) => {
+            pendingPayloadRef.current = { deckId, userId, payload };
+
+            if (cardUpdateTimerRef.current) {
+                clearTimeout(cardUpdateTimerRef.current);
+            }
+
+            cardUpdateTimerRef.current = setTimeout(() => {
+                flushDeckCardsUpdate();
+            }, 400);
+        },
+        [flushDeckCardsUpdate],
+    );
+
+    useEffect(() => {
+        return () => {
+            flushDeckCardsUpdate();
+        };
+    }, [flushDeckCardsUpdate]);
 
     const handleCreateDeck = (
         newDeckTitle: string,
@@ -235,6 +390,35 @@ export function useMyDecksActions({
             newDeckInks,
             newDeckDesc.trim(),
         );
+
+        const newDeckId = `deck_local_${Date.now()}`;
+        const newDeckObj: DeckWithProgress = {
+            $id: newDeckId,
+            id: newDeckId,
+            title: newDeckTitle.trim(),
+            description: metaDesc,
+            creator_id: user ? user.$id : 'guest-user',
+            is_public: true,
+            progress: {
+                percentage: 0,
+                ownedCount: 0,
+                totalCount: 0,
+                missingCards: [],
+            },
+            cards: [],
+            meta: {
+                format: newDeckFormat,
+                inks: newDeckInks,
+                description: newDeckDesc.trim(),
+                is_active: false,
+            },
+        };
+
+        setLocalDecks((prev) => {
+            const next = [newDeckObj, ...prev];
+            saveLocalDecksStore(next);
+            return next;
+        });
 
         submit(
             {
@@ -264,6 +448,35 @@ export function useMyDecksActions({
             editDesc.trim(),
             editCoverCardId !== 'auto' ? editCoverCardId : undefined,
         );
+
+        const updatedMeta = parseDeckMetadata(metaDesc);
+
+        setLocalDecks((prev) => {
+            const nextDecks = prev.map((d) => {
+                if (d.$id === editingDeck.$id || d.id === editingDeck.id) {
+                    return {
+                        ...d,
+                        title: editTitle.trim(),
+                        description: metaDesc,
+                        meta: updatedMeta,
+                    };
+                }
+                return d;
+            });
+
+            if (typeof window !== 'undefined') {
+                try {
+                    localStorage.setItem(
+                        'lorcana_user_decks_store',
+                        JSON.stringify(nextDecks),
+                    );
+                } catch {
+                    // Ignore localStorage errors
+                }
+            }
+
+            return nextDecks;
+        });
 
         submit(
             {
@@ -329,15 +542,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: deck.$id,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(deck.$id, user.$id, payload);
     };
 
     const handleRemoveCard = (
@@ -364,15 +569,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: deck.$id,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(deck.$id, user.$id, payload);
     };
 
     const handleUndo = () => {
@@ -421,15 +618,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: undoState.deckId,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(undoState.deckId, user.$id, payload);
 
         setUndoState(null);
     };
@@ -471,15 +660,7 @@ export function useMyDecksActions({
             quantity: c.requiredQty,
         }));
 
-        fetcher.submit(
-            {
-                intent: 'update-deck-cards',
-                deckId: activeDeckId,
-                userId: user.$id,
-                cards: JSON.stringify(payload),
-            },
-            { method: 'post' },
-        );
+        debouncedSubmitDeckCards(activeDeckId, user.$id, payload);
     };
 
     const handleDeleteDeck = (deckToDelete: DeckWithProgress) => {
@@ -508,11 +689,13 @@ export function useMyDecksActions({
         });
     };
 
-    const handleQuickAdd = (cardId: string, currentOwned: number) => {
+    const handleQuickAdd = (cardId: string, newQuantity: number) => {
         if (!user) {
             alert('Please sign in to update your inventory.');
             return;
         }
+
+        const clampedQuantity = Math.max(0, newQuantity);
 
         setLocalDecks((prevDecks) =>
             prevDecks.map((d) => {
@@ -530,7 +713,7 @@ export function useMyDecksActions({
 
                 const mappedCards = d.cards.map((c) => {
                     const ownedQty =
-                        c.card.id === cardId ? currentOwned + 1 : c.ownedQty;
+                        c.card.id === cardId ? clampedQuantity : c.ownedQty;
                     totalCount += c.requiredQty;
                     const matched = Math.min(c.requiredQty, ownedQty);
                     ownedCount += matched;
@@ -568,12 +751,39 @@ export function useMyDecksActions({
             }),
         );
 
+        if (typeof window !== 'undefined') {
+            try {
+                const storedInv = localStorage.getItem(
+                    'lorcana_user_inventory',
+                );
+                let inv: any[] = storedInv ? JSON.parse(storedInv) : [];
+                inv = inv.filter(
+                    (item: any) => !(item.card_id === cardId && !item.is_foil),
+                );
+                if (clampedQuantity > 0) {
+                    inv.push({
+                        $id: `inv_${Date.now()}`,
+                        user_id: user.$id,
+                        card_id: cardId,
+                        quantity: clampedQuantity,
+                        is_foil: false,
+                    });
+                }
+                localStorage.setItem(
+                    'lorcana_user_inventory',
+                    JSON.stringify(inv),
+                );
+            } catch {
+                // Ignore localStorage errors
+            }
+        }
+
         fetcher.submit(
             {
                 intent: 'quick-add',
                 userId: user.$id,
                 cardId,
-                quantity: (currentOwned + 1).toString(),
+                quantity: clampedQuantity.toString(),
                 isFoil: 'false',
             },
             { method: 'post' },
