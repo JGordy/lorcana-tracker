@@ -1,21 +1,8 @@
-import {
-    Card,
-    Box,
-    Text,
-    Stack,
-    Group,
-    SimpleGrid,
-    ActionIcon,
-} from '@mantine/core';
-import {
-    IconCards,
-    IconSparkles,
-    IconMinus,
-    IconPlus,
-} from '@tabler/icons-react';
+import { Box, Text, Stack, Group, SimpleGrid, ActionIcon } from '@mantine/core';
+import { IconSparkles, IconMinus, IconPlus } from '@tabler/icons-react';
 import type { Card as LorcanaCard } from '../../../types/lorcana';
 import { getInkBadgeStyle } from '../utils/collectionHelpers';
-import { ShinyCardImage } from './ShinyCardImage';
+import { LorcanaCardTile } from '../../../components/LorcanaCardTile';
 
 export interface CollectionCardItemProps {
     card: LorcanaCard;
@@ -43,59 +30,13 @@ export function CollectionCardItem({
         card.rarity === 'Iconic';
 
     return (
-        <Card
-            key={card.$id}
-            className={`lorcana-card${card.rarity === 'Enchanted' ? ' shiny-enchanted-glow' : card.rarity === 'Epic' ? ' shiny-epic-glow' : card.rarity === 'Iconic' ? ' shiny-iconic-glow' : ''}`}
-            padding="xs"
-            radius="md"
-            withBorder
-            style={
-                {
-                    backgroundColor: 'var(--mantine-color-dark-8)',
-                    backgroundImage: `linear-gradient(180deg, rgba(37,38,43,0.98) 55%, ${badgeStyle.color}1E 100%)`,
-                    borderColor: `${badgeStyle.color}45`,
-                    overflow: 'hidden',
-                    '--hover-color': badgeStyle.color,
-                    '--hover-shadow-color': `0 8px 24px ${badgeStyle.color}40`,
-                } as React.CSSProperties
-            }
+        <LorcanaCardTile
+            card={card}
+            badgeColor={badgeStyle.color}
+            useShinyImage
         >
-            {/* Top portion: Card Image */}
-            <Card.Section
-                style={{
-                    position: 'relative',
-                    overflow: 'hidden',
-                }}
-            >
-                {card.image_url ? (
-                    <ShinyCardImage card={card} />
-                ) : (
-                    <Box
-                        style={{
-                            aspectRatio: '3/4',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: 'rgba(255,255,255,0.02)',
-                        }}
-                    >
-                        <IconCards
-                            size={32}
-                            style={{
-                                opacity: 0.2,
-                                marginBottom: 8,
-                            }}
-                        />
-                        <Text size="xs" c="dimmed" ta="center" px="xs">
-                            {card.name}
-                        </Text>
-                    </Box>
-                )}
-            </Card.Section>
-
             {/* Bottom portion: Card Info & Inventory Controls */}
-            <Stack gap="xs" mt="xs">
+            <Stack gap="xs" p="xs">
                 <Box style={{ minHeight: 38 }}>
                     <Text
                         fw={800}
@@ -378,6 +319,6 @@ export function CollectionCardItem({
                     </SimpleGrid>
                 )}
             </Stack>
-        </Card>
+        </LorcanaCardTile>
     );
 }
