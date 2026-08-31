@@ -1,10 +1,8 @@
 import { describe, it, expect } from 'vitest';
 // @ts-expect-error sync-cards is a CommonJS script without type definitions
-import {
-    getCardSlug,
-    buildLorcastLookups,
-    normalizeCard,
-} from '../sync-cards.js';
+import * as syncCards from '../sync-cards.js';
+
+const { getCardSlug, buildLorcastLookups, normalizeCard } = syncCards;
 
 describe('sync-cards.js', () => {
     describe('getCardSlug', () => {
