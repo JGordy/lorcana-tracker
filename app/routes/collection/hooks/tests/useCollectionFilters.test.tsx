@@ -23,6 +23,7 @@ describe('useCollectionFilters', () => {
             willpower: 5,
             lore: 4,
             formats: ['core'],
+            prices: { usd: 15.0, usd_foil: 35.0 },
         } as any,
         {
             id: 'c2',
@@ -40,6 +41,7 @@ describe('useCollectionFilters', () => {
             willpower: 6,
             lore: 3,
             formats: ['core'],
+            prices: { usd: 80.0, usd_foil: 120.0 },
         } as any,
     ];
 
@@ -106,5 +108,41 @@ describe('useCollectionFilters', () => {
         expect(result.current.hasActiveFilters).toBe(false);
         expect(result.current.searchQuery).toBe('');
         expect(result.current.selectedCost).toBe('All');
+    });
+
+    it('filters cards by price range', () => {
+        const { result } = renderHook(
+            () =>
+                useCollectionFilters({
+                    cards: mockCards,
+                    getCardQuantity: () => 0,
+                }),
+            { wrapper },
+        );
+
+        act(() => {
+            result.current.setSelectedPriceRange('100_plus');
+        });
+
+        expect(result.current.filteredCards).toHaveLength(1);
+        expect(result.current.filteredCards[0].id).toBe('c2');
+    });
+
+    it('sorts cards by price descending', () => {
+        const { result } = renderHook(
+            () =>
+                useCollectionFilters({
+                    cards: mockCards,
+                    getCardQuantity: () => 0,
+                }),
+            { wrapper },
+        );
+
+        act(() => {
+            result.current.setSelectedSort('price_desc');
+        });
+
+        expect(result.current.sortedFilteredCards[0].id).toBe('c2');
+        expect(result.current.sortedFilteredCards[1].id).toBe('c1');
     });
 });

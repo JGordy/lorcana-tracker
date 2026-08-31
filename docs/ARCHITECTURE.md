@@ -8,16 +8,24 @@ This document provides a technical overview of the Lorcana Tracker & Deck Builde
 
 ```mermaid
 graph TD
-    A[LorcanaJSON / great-illuminary] -->|npm run sync:cards| B[public/cards.json]
-    B -->|getCardsCatalog| C[In-Memory Card Catalog on Server]
+    subgraph Ingestion Pipeline
+        A[LorcanaJSON / great-illuminary] -->|Card Catalog Metadata| SYNC[scripts/sync-cards.js]
+        B[Lorcast Bulk API] -->|Market Pricing & TCG Links| SYNC
+        SYNC -->|Unified Sync| C[public/cards.json]
+    end
 
-    D[api-lorcana.com] -->|Trending Decks API| E[appwrite.server.ts]
-    F[Appwrite Cloud / Self-Hosted] <-->|Auth & DB Queries| E
+    subgraph Server & Database Layer
+        C -->|getCardsCatalog| D[In-Memory Card Catalog Cache]
+        E[Appwrite DB / Cookies] <-->|Auth & DB Queries| F[appwrite.server.ts]
+        D --> F
+    end
 
-    E -->|SSR Data Loader| G[React Router v8 Routes]
-    G --> H[Collection View]
-    G --> I[Deck Builder & Community Decks]
-    G --> J[User Custom Decks & Import]
+    subgraph Client Application
+        F -->|SSR Data Loader| G[React Router v8 Routes]
+        G --> H[Collection View & Crown Jewels]
+        G --> I[Deck Builder & Market Cost Calculations]
+        G --> J[User Custom Decks & Shopping List]
+    end
 ```
 
 ---

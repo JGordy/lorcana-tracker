@@ -28,6 +28,10 @@ export interface CollectionFiltersSidebarProps {
     setSelectedDefense: (val: string) => void;
     selectedLore: string;
     setSelectedLore: (val: string) => void;
+    selectedSort?: string;
+    setSelectedSort?: (val: string) => void;
+    selectedPriceRange?: string;
+    setSelectedPriceRange?: (val: string) => void;
     hasActiveFilters: boolean;
     handleResetFilters: () => void;
 }
@@ -60,6 +64,10 @@ export function CollectionFiltersSidebar({
     setSelectedDefense,
     selectedLore,
     setSelectedLore,
+    selectedSort = 'default',
+    setSelectedSort,
+    selectedPriceRange = 'All',
+    setSelectedPriceRange,
     hasActiveFilters,
     handleResetFilters,
 }: CollectionFiltersSidebarProps) {
@@ -102,6 +110,80 @@ export function CollectionFiltersSidebar({
                 </Group>
 
                 <Stack gap="sm" mt="xs">
+                    {/* Sort Order */}
+                    {setSelectedSort && (
+                        <Box>
+                            <Text size="11px" fw={600} c="gray.4" mb={4}>
+                                Sort Order
+                            </Text>
+                            <Select
+                                placeholder="Default (Set #)"
+                                data={[
+                                    {
+                                        value: 'default',
+                                        label: 'Default (Set & Number)',
+                                    },
+                                    {
+                                        value: 'price_desc',
+                                        label: 'Price: High to Low ($$$)',
+                                    },
+                                    {
+                                        value: 'price_asc',
+                                        label: 'Price: Low to High ($)',
+                                    },
+                                    {
+                                        value: 'cost_asc',
+                                        label: 'Ink Cost: Low to High',
+                                    },
+                                    {
+                                        value: 'cost_desc',
+                                        label: 'Ink Cost: High to Low',
+                                    },
+                                    {
+                                        value: 'name_asc',
+                                        label: 'Alphabetical (A-Z)',
+                                    },
+                                ]}
+                                value={selectedSort}
+                                onChange={(val) =>
+                                    setSelectedSort(val || 'default')
+                                }
+                                allowDeselect={false}
+                                size="xs"
+                            />
+                        </Box>
+                    )}
+
+                    {/* Market Price Range */}
+                    {setSelectedPriceRange && (
+                        <Box>
+                            <Text size="11px" fw={600} c="gray.4" mb={4}>
+                                Market Price Range
+                            </Text>
+                            <Select
+                                placeholder="All Prices"
+                                data={[
+                                    { value: 'All', label: 'All Prices' },
+                                    { value: 'under_1', label: 'Under $1.00' },
+                                    { value: '1_to_5', label: '$1.00 – $5.00' },
+                                    {
+                                        value: '5_to_20',
+                                        label: '$5.00 – $20.00',
+                                    },
+                                    { value: '20_plus', label: '$20.00+' },
+                                    { value: '50_plus', label: '$50.00+' },
+                                    { value: '100_plus', label: '$100.00+' },
+                                ]}
+                                value={selectedPriceRange}
+                                onChange={(val) =>
+                                    setSelectedPriceRange(val || 'All')
+                                }
+                                allowDeselect={false}
+                                size="xs"
+                            />
+                        </Box>
+                    )}
+
                     {/* 0. Ownership Status */}
                     <Box>
                         <Text size="11px" fw={600} c="gray.4" mb={4}>

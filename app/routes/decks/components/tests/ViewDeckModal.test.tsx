@@ -24,6 +24,8 @@ describe('ViewDeckModal', () => {
                     ink_color: 'Amber',
                     rarity: 'Super Rare',
                     cost: 6,
+                    prices: { usd: 10.0, usd_foil: 20.0 },
+                    tcgplayer_url: 'https://tcgplayer.com/stitch',
                 },
                 requiredQty: 4,
                 ownedQty: 2,
@@ -59,11 +61,13 @@ describe('ViewDeckModal', () => {
         );
     };
 
-    it('renders deck title, cards table, and Shopping List button', () => {
+    it('renders deck title, cards table, valuation badges, and Shopping List button', () => {
         renderComponent();
         expect(screen.getByText('Amber Ruby Aggro')).toBeInTheDocument();
         expect(screen.getAllByText('Stitch')[0]).toBeInTheDocument();
         expect(screen.getByText('+1 Coll')).toBeInTheDocument();
+        expect(screen.getByText('Est. Value: $40.00')).toBeInTheDocument();
+        expect(screen.getByText('Need: $20.00')).toBeInTheDocument();
         expect(
             screen.getByLabelText('Shopping List (Missing Cards)'),
         ).toBeInTheDocument();

@@ -18,6 +18,11 @@ export const ALL_INKS = [
 // ---------------------------------------------------------
 // TypeScript Schema Types
 // ---------------------------------------------------------
+export interface CardPrices {
+    usd: number | null;
+    usd_foil: number | null;
+}
+
 export interface Card {
     $id: string;
     id: string; // card unique slug ID, e.g. "mickey-mouse-brave-little-tailor"
@@ -35,6 +40,9 @@ export interface Card {
     rarity: string;
     image_url: string;
     formats: string[]; // e.g. ["core", "infinity"]
+    prices?: CardPrices;
+    tcgplayer_url?: string;
+    cardmarket_url?: string;
 }
 
 export interface UserCollectionItemDoc extends UserCollectionItem {

@@ -1,4 +1,4 @@
-import { useFetcher } from 'react-router';
+import { useFetcher, type ShouldRevalidateFunctionArgs } from 'react-router';
 import { useMemo } from 'react';
 import { Container, Grid } from '@mantine/core';
 
@@ -15,13 +15,23 @@ import type { Route } from './+types/collection';
 export { loader } from './loader';
 export { action } from './action';
 
+export function shouldRevalidate({
+    formData,
+    defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+    if (formData?.get('intent') === 'update-quantity') {
+        return false;
+    }
+    return defaultShouldRevalidate;
+}
+
 export default function Collection({ loaderData }: Route.ComponentProps) {
     const { cards, userCollection: serverCollection, user } = loaderData;
     const fetcher = useFetcher();
 
     const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
 
-    const { getCardQuantity, handleAdjustQuantity, totals } =
+    const { getCardQuantity, handleAdjustQuantity, totals, valuation } =
         useCollectionInventory({
             serverCollection,
             user,
@@ -52,6 +62,7 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
             {/* Banner Dashboard Header */}
             <CollectionHeader
                 totals={totals}
+                valuation={valuation}
                 totalCatalogCards={cards.length}
             />
 
@@ -77,6 +88,8 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
                         setSearchQuery={setSearchQuery}
                         selectedInks={selectedInks}
                         setSelectedInks={setSelectedInks}
+                        selectedSort={sidebarFilterProps.selectedSort}
+                        setSelectedSort={sidebarFilterProps.setSelectedSort}
                     />
 
                     <CollectionCardGrid

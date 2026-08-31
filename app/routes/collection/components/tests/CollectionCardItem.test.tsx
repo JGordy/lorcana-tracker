@@ -59,4 +59,29 @@ describe('CollectionCardItem', () => {
             -1,
         );
     });
+
+    it('renders market prices and tcgplayer external link when pricing is present', () => {
+        const pricedCard = {
+            ...mockCard,
+            prices: { usd: 4.5, usd_foil: 12.0 },
+            tcgplayer_url: 'https://tcgplayer.com/product/12345',
+        };
+
+        render(
+            <MantineProvider>
+                <CollectionCardItem
+                    card={pricedCard as any}
+                    getCardQuantity={mockGetCardQuantity}
+                    handleAdjustQuantity={mockHandleAdjustQuantity}
+                />
+            </MantineProvider>,
+        );
+
+        expect(screen.getByText('$4.50')).toBeInTheDocument();
+        expect(screen.getByText('$12.00')).toBeInTheDocument();
+        expect(screen.getByLabelText('View on TCGPlayer')).toHaveAttribute(
+            'href',
+            'https://tcgplayer.com/product/12345',
+        );
+    });
 });

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router';
 import type { Card as LorcanaCard } from '../../../types/lorcana';
 import { getCardFranchise } from '../../../utils/franchise';
 import { sortSets, sortCards } from '../utils/collectionHelpers';
+import { getCardBestPrice } from '../../../utils/valuation';
 
 export interface UseCollectionFiltersOptions {
     cards: LorcanaCard[];
@@ -56,6 +57,12 @@ export function useCollectionFilters({
     const [selectedLore, setSelectedLore] = useState<string>(
         () => searchParams.get('lore') || 'All',
     );
+    const [selectedSort, setSelectedSort] = useState<string>(
+        () => searchParams.get('sort') || 'default',
+    );
+    const [selectedPriceRange, setSelectedPriceRange] = useState<string>(
+        () => searchParams.get('price') || 'All',
+    );
 
     useEffect(() => {
         const params = new URLSearchParams();
@@ -76,6 +83,9 @@ export function useCollectionFilters({
         if (selectedAttack !== 'All') params.set('attack', selectedAttack);
         if (selectedDefense !== 'All') params.set('defense', selectedDefense);
         if (selectedLore !== 'All') params.set('lore', selectedLore);
+        if (selectedSort !== 'default') params.set('sort', selectedSort);
+        if (selectedPriceRange !== 'All')
+            params.set('price', selectedPriceRange);
 
         if (params.toString() !== searchParams.toString()) {
             setSearchParams(params, { replace: true });
@@ -95,6 +105,8 @@ export function useCollectionFilters({
         selectedAttack,
         selectedDefense,
         selectedLore,
+        selectedSort,
+        selectedPriceRange,
         searchParams,
         setSearchParams,
     ]);
@@ -135,7 +147,9 @@ export function useCollectionFilters({
         selectedFranchise !== 'All' ||
         selectedAttack !== 'All' ||
         selectedDefense !== 'All' ||
-        selectedLore !== 'All';
+        selectedLore !== 'All' ||
+        selectedSort !== 'default' ||
+        selectedPriceRange !== 'All';
 
     const handleResetFilters = () => {
         setSelectedOwnership('all');
@@ -152,9 +166,13 @@ export function useCollectionFilters({
         setSelectedAttack('All');
         setSelectedDefense('All');
         setSelectedLore('All');
+        setSelectedSort('default');
+        setSelectedPriceRange('All');
     };
 
-    const filteredCards = useMemo(() => {
+    // 1. Filter catalog based strictly on static card metadata (search, set, rarity, inks, price, stats)
+    // This only recomputes when filter controls change, NOT on every card quantity change.
+    const baseFilteredCards = useMemo(() => {
         return cards.filter((card) => {
             const matchesSearch = card.name
                 .toLowerCase()
@@ -256,25 +274,27 @@ export function useCollectionFilters({
                 }
             }
 
-            let matchesOwnership = true;
-            if (selectedOwnership !== 'all') {
-                const qtyNormal = getCardQuantity(card, false);
-                const qtyFoil = getCardQuantity(card, true);
-                const totalQty = qtyNormal + qtyFoil;
-
-                if (selectedOwnership === 'owned') {
-                    matchesOwnership = totalQty > 0;
-                } else if (selectedOwnership === 'missing') {
-                    matchesOwnership = totalQty === 0;
-                } else if (selectedOwnership === 'foil') {
-                    matchesOwnership = qtyFoil > 0;
-                } else if (selectedOwnership === 'non_foil') {
-                    matchesOwnership = qtyNormal > 0;
+            let matchesPrice = true;
+            if (selectedPriceRange !== 'All') {
+                const bestPrice = getCardBestPrice(card);
+                if (bestPrice == null) {
+                    matchesPrice = false;
+                } else if (selectedPriceRange === 'under_1') {
+                    matchesPrice = bestPrice < 1.0;
+                } else if (selectedPriceRange === '1_to_5') {
+                    matchesPrice = bestPrice >= 1.0 && bestPrice <= 5.0;
+                } else if (selectedPriceRange === '5_to_20') {
+                    matchesPrice = bestPrice >= 5.0 && bestPrice <= 20.0;
+                } else if (selectedPriceRange === '20_plus') {
+                    matchesPrice = bestPrice >= 20.0;
+                } else if (selectedPriceRange === '50_plus') {
+                    matchesPrice = bestPrice >= 50.0;
+                } else if (selectedPriceRange === '100_plus') {
+                    matchesPrice = bestPrice >= 100.0;
                 }
             }
 
             return (
-                matchesOwnership &&
                 matchesSearch &&
                 matchesInk &&
                 matchesSet &&
@@ -287,7 +307,8 @@ export function useCollectionFilters({
                 matchesFranchise &&
                 matchesAttack &&
                 matchesDefense &&
-                matchesLore
+                matchesLore &&
+                matchesPrice
             );
         });
     }, [
@@ -305,15 +326,41 @@ export function useCollectionFilters({
         selectedAttack,
         selectedDefense,
         selectedLore,
-        selectedOwnership,
-        getCardQuantity,
+        selectedPriceRange,
     ]);
 
-    const sortedFilteredCards = useMemo(() => {
-        return sortCards(filteredCards);
-    }, [filteredCards]);
+    // 2. Filter base set by ownership status (only re-filters if selectedOwnership !== 'all')
+    const filteredCards = useMemo(() => {
+        if (selectedOwnership === 'all') {
+            return baseFilteredCards;
+        }
 
-    const filterResetKey = `${selectedOwnership}_${searchQuery}_${selectedInks.join(',')}_${selectedSet}_${selectedRarity}_${selectedCost}_${selectedInkable}_${selectedFormat}_${selectedType}_${selectedClassification}_${selectedFranchise}_${selectedAttack}_${selectedDefense}_${selectedLore}`;
+        return baseFilteredCards.filter((card) => {
+            const qtyNormal = getCardQuantity(card, false);
+            const qtyFoil = getCardQuantity(card, true);
+            const totalQty = qtyNormal + qtyFoil;
+
+            if (selectedOwnership === 'owned') {
+                return totalQty > 0;
+            } else if (selectedOwnership === 'missing') {
+                return totalQty === 0;
+            } else if (selectedOwnership === 'foil') {
+                return qtyFoil > 0;
+            } else if (selectedOwnership === 'non_foil') {
+                return qtyNormal > 0;
+            }
+            return true;
+        });
+    }, [baseFilteredCards, selectedOwnership, getCardQuantity]);
+
+    const sortedFilteredCards = useMemo(() => {
+        return sortCards(filteredCards, selectedSort, {
+            selectedOwnership,
+            getCardQuantity,
+        });
+    }, [filteredCards, selectedSort, selectedOwnership, getCardQuantity]);
+
+    const filterResetKey = `${selectedOwnership}_${searchQuery}_${selectedInks.join(',')}_${selectedSet}_${selectedRarity}_${selectedCost}_${selectedInkable}_${selectedFormat}_${selectedType}_${selectedClassification}_${selectedFranchise}_${selectedAttack}_${selectedDefense}_${selectedLore}_${selectedSort}_${selectedPriceRange}`;
 
     return {
         selectedOwnership,
@@ -344,6 +391,10 @@ export function useCollectionFilters({
         setSelectedDefense,
         selectedLore,
         setSelectedLore,
+        selectedSort,
+        setSelectedSort,
+        selectedPriceRange,
+        setSelectedPriceRange,
         allClassifications,
         allFranchises,
         sets,

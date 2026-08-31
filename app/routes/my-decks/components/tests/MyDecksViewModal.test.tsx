@@ -17,9 +17,11 @@ const mockDeck = {
                 name: 'Merlin - Goat',
                 cost: 4,
                 inkwell: true,
+                prices: { usd: 3.0, usd_foil: 8.0 },
+                tcgplayer_url: 'https://tcgplayer.com/merlin',
             },
             requiredQty: 4,
-            ownedQty: 4,
+            ownedQty: 2,
         },
     ],
     progress: {
@@ -95,11 +97,13 @@ describe('MyDecksViewModal', () => {
         ).not.toBeInTheDocument();
     });
 
-    it('renders modal header with deck title, legality, and completion progress', () => {
+    it('renders modal header with deck title, legality, completion progress, and valuation badges', () => {
         renderModal();
         expect(screen.getByText('Emerald Steel Bounce')).toBeInTheDocument();
         expect(screen.getByText('CORE LEGAL')).toBeInTheDocument();
         expect(screen.getByText('48/60 (80%)')).toBeInTheDocument();
+        expect(screen.getByText('Est. Value: $12.00')).toBeInTheDocument();
+        expect(screen.getByText('Need: $6.00')).toBeInTheDocument();
     });
 
     it('renders "INFINITY" badge for non-core-legal deck', () => {

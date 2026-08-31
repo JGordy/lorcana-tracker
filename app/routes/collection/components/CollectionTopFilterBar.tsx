@@ -6,8 +6,9 @@ import {
     ActionIcon,
     Tooltip,
     Box,
+    Select,
 } from '@mantine/core';
-import { IconSearch, IconX } from '@tabler/icons-react';
+import { IconSearch, IconX, IconArrowsSort } from '@tabler/icons-react';
 
 export interface CollectionTopFilterBarProps {
     selectedOwnership: string;
@@ -16,6 +17,8 @@ export interface CollectionTopFilterBarProps {
     setSearchQuery: (val: string) => void;
     selectedInks: string[];
     setSelectedInks: React.Dispatch<React.SetStateAction<string[]>>;
+    selectedSort?: string;
+    setSelectedSort?: (val: string) => void;
 }
 
 const INK_LIST = [
@@ -34,6 +37,8 @@ export function CollectionTopFilterBar({
     setSearchQuery,
     selectedInks,
     setSelectedInks,
+    selectedSort = 'default',
+    setSelectedSort,
 }: CollectionTopFilterBarProps) {
     return (
         <Paper
@@ -120,7 +125,7 @@ export function CollectionTopFilterBar({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     size="xs"
-                    style={{ flex: 1, minWidth: 160 }}
+                    style={{ flex: 1, minWidth: 140 }}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.6)',
@@ -130,6 +135,53 @@ export function CollectionTopFilterBar({
                         },
                     }}
                 />
+
+                {/* Sort Order Selector */}
+                {setSelectedSort && (
+                    <Select
+                        size="xs"
+                        value={selectedSort}
+                        onChange={(val) => setSelectedSort(val || 'default')}
+                        data={[
+                            {
+                                value: 'default',
+                                label: 'Sort: Default (Set #)',
+                            },
+                            {
+                                value: 'price_desc',
+                                label: 'Sort: Price (High to Low)',
+                            },
+                            {
+                                value: 'price_asc',
+                                label: 'Sort: Price (Low to High)',
+                            },
+                            {
+                                value: 'cost_asc',
+                                label: 'Sort: Ink Cost (Low to High)',
+                            },
+                            {
+                                value: 'cost_desc',
+                                label: 'Sort: Ink Cost (High to Low)',
+                            },
+                            { value: 'name_asc', label: 'Sort: Name (A-Z)' },
+                        ]}
+                        allowDeselect={false}
+                        leftSection={
+                            <IconArrowsSort size={14} color="#a855f7" />
+                        }
+                        styles={{
+                            input: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                                borderColor: 'rgba(168, 85, 247, 0.2)',
+                                color: '#f8fafc',
+                                height: 36,
+                                fontSize: 11,
+                                fontWeight: 600,
+                            },
+                        }}
+                        style={{ width: 175, flexShrink: 0 }}
+                    />
+                )}
 
                 {/* Ink Colors Filter */}
                 <Group

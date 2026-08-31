@@ -40,6 +40,7 @@ describe('ShoppingListModal', () => {
                     rarity: 'Super Rare',
                     image_url: '',
                     formats: ['core', 'infinity'],
+                    prices: { usd: 10.0, usd_foil: 20.0 },
                 },
                 requiredQty: 4,
                 ownedQty: 2,
@@ -119,6 +120,11 @@ describe('ShoppingListModal', () => {
             screen.getAllByText('Stitch - Rock Star')[0],
         ).toBeInTheDocument();
         expect(screen.getByText('Need 2')).toBeInTheDocument();
+        expect(
+            screen.getByText('Est. Missing Cost: $20.00'),
+        ).toBeInTheDocument();
+        expect(screen.getByText('$10.00')).toBeInTheDocument();
+        expect(screen.getByText('($20.00 total)')).toBeInTheDocument();
         expect(screen.getByText('Copy List')).toBeInTheDocument();
         expect(screen.getByText('Buy on TCGPlayer')).toBeInTheDocument();
     });

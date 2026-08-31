@@ -1,12 +1,31 @@
-import { Box, Text, Stack, Group, SimpleGrid, ActionIcon } from '@mantine/core';
-import { IconSparkles, IconMinus, IconPlus } from '@tabler/icons-react';
+import React, { memo } from 'react';
+import {
+    Box,
+    Text,
+    Stack,
+    Group,
+    SimpleGrid,
+    ActionIcon,
+    Tooltip,
+    Badge,
+} from '@mantine/core';
+import {
+    IconSparkles,
+    IconMinus,
+    IconPlus,
+    IconExternalLink,
+} from '@tabler/icons-react';
 import type { Card as LorcanaCard } from '../../../types/lorcana';
 import { getInkBadgeStyle } from '../utils/collectionHelpers';
 import { LorcanaCardTile } from '../../../components/LorcanaCardTile';
+import { formatCurrency } from '../../../utils/valuation';
+import { getTcgPlayerCardSearchUrl } from '../../../utils/shoppingList';
 
 export interface CollectionCardItemProps {
     card: LorcanaCard;
-    getCardQuantity: (card: LorcanaCard, isFoil: boolean) => number;
+    qtyNormal?: number;
+    qtyFoil?: number;
+    getCardQuantity?: (card: LorcanaCard, isFoil: boolean) => number;
     handleAdjustQuantity: (
         cardId: string,
         isFoil: boolean,
@@ -15,19 +34,25 @@ export interface CollectionCardItemProps {
     ) => void;
 }
 
-export function CollectionCardItem({
+export const CollectionCardItem = memo(function CollectionCardItem({
     card,
+    qtyNormal: propQtyNormal,
+    qtyFoil: propQtyFoil,
     getCardQuantity,
     handleAdjustQuantity,
 }: CollectionCardItemProps) {
     const cardId = card.id || card.$id;
-    const qtyNormal = getCardQuantity(card, false);
-    const qtyFoil = getCardQuantity(card, true);
+    const qtyNormal =
+        propQtyNormal ?? (getCardQuantity ? getCardQuantity(card, false) : 0);
+    const qtyFoil =
+        propQtyFoil ?? (getCardQuantity ? getCardQuantity(card, true) : 0);
     const badgeStyle = getInkBadgeStyle(card.ink_color);
     const isFoilOnly =
         card.rarity === 'Enchanted' ||
         card.rarity === 'Epic' ||
         card.rarity === 'Iconic';
+
+    const tcgUrl = card.tcgplayer_url || getTcgPlayerCardSearchUrl(card.name);
 
     return (
         <LorcanaCardTile
@@ -37,19 +62,89 @@ export function CollectionCardItem({
         >
             {/* Bottom portion: Card Info & Inventory Controls */}
             <Stack gap="xs" p="xs">
-                <Box style={{ minHeight: 38 }}>
-                    <Text
-                        fw={800}
-                        size="sm"
-                        lineClamp={2}
-                        c="gray.1"
-                        style={{ lineHeight: 1.2 }}
+                <Box style={{ minHeight: 48 }}>
+                    <Group
+                        justify="space-between"
+                        align="flex-start"
+                        wrap="nowrap"
+                        gap={4}
                     >
-                        {card.name}
-                    </Text>
-                    <Text size="10px" c="dimmed" mt={4}>
+                        <Text
+                            fw={800}
+                            size="sm"
+                            lineClamp={2}
+                            c="gray.1"
+                            style={{ lineHeight: 1.2, flex: 1 }}
+                        >
+                            {card.name}
+                        </Text>
+                        <Tooltip
+                            label="View on TCGPlayer"
+                            position="top"
+                            withArrow
+                        >
+                            <ActionIcon
+                                component="a"
+                                href={tcgUrl}
+                                aria-label="View on TCGPlayer"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                size="xs"
+                                variant="subtle"
+                                color="blue"
+                                style={{ opacity: 0.7, marginTop: -2 }}
+                            >
+                                <IconExternalLink size={13} />
+                            </ActionIcon>
+                        </Tooltip>
+                    </Group>
+
+                    <Text size="10px" c="dimmed" mt={3} lineClamp={1}>
                         {card.set} • #{card.number}
                     </Text>
+
+                    {(card.prices?.usd != null ||
+                        card.prices?.usd_foil != null) && (
+                        <Group gap={6} align="center" mt={4} wrap="wrap">
+                            {card.prices?.usd != null && (
+                                <Badge
+                                    size="xs"
+                                    variant="subtle"
+                                    color="gray"
+                                    style={{
+                                        fontSize: 10,
+                                        height: 18,
+                                        padding: '0 6px',
+                                        backgroundColor:
+                                            'rgba(255, 255, 255, 0.06)',
+                                        color: '#cbd5e1',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {formatCurrency(card.prices.usd)}
+                                </Badge>
+                            )}
+                            {card.prices?.usd_foil != null && (
+                                <Badge
+                                    size="xs"
+                                    variant="subtle"
+                                    color="pink"
+                                    leftSection={<IconSparkles size={9} />}
+                                    style={{
+                                        fontSize: 10,
+                                        height: 18,
+                                        padding: '0 6px',
+                                        backgroundColor:
+                                            'rgba(236, 72, 153, 0.14)',
+                                        color: '#f472b6',
+                                        fontWeight: 700,
+                                    }}
+                                >
+                                    {formatCurrency(card.prices.usd_foil)}
+                                </Badge>
+                            )}
+                        </Group>
+                    )}
                 </Box>
 
                 {isFoilOnly ? (
@@ -321,4 +416,4 @@ export function CollectionCardItem({
             </Stack>
         </LorcanaCardTile>
     );
-}
+});
