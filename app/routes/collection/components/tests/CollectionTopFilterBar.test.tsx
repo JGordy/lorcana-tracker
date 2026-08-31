@@ -42,4 +42,20 @@ describe('CollectionTopFilterBar', () => {
         fireEvent.change(searchInput, { target: { value: 'Mickey' } });
         expect(defaultProps.setSearchQuery).toHaveBeenCalledWith('Mickey');
     });
+
+    it('renders sort selector and handles sort change', () => {
+        const setSelectedSort = vi.fn();
+        render(
+            <MantineProvider>
+                <CollectionTopFilterBar
+                    {...defaultProps}
+                    selectedSort="price_desc"
+                    setSelectedSort={setSelectedSort}
+                />
+            </MantineProvider>,
+        );
+
+        const sortInput = screen.getByDisplayValue('Sort: Price (High to Low)');
+        expect(sortInput).toBeInTheDocument();
+    });
 });

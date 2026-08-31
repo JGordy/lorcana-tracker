@@ -133,8 +133,10 @@ export function CollectionCardGrid({
             >
                 {slicedCards.map((card) => (
                     <CollectionCardItem
-                        key={card.$id}
+                        key={card.$id || card.id}
                         card={card}
+                        qtyNormal={getCardQuantity(card, false)}
+                        qtyFoil={getCardQuantity(card, true)}
                         getCardQuantity={getCardQuantity}
                         handleAdjustQuantity={handleAdjustQuantity}
                     />

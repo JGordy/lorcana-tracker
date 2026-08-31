@@ -32,6 +32,10 @@ describe('CollectionFiltersSidebar', () => {
         setSelectedDefense: vi.fn(),
         selectedLore: 'All',
         setSelectedLore: vi.fn(),
+        selectedSort: 'default',
+        setSelectedSort: vi.fn(),
+        selectedPriceRange: 'All',
+        setSelectedPriceRange: vi.fn(),
         hasActiveFilters: false,
         handleResetFilters: vi.fn(),
     };
@@ -46,6 +50,8 @@ describe('CollectionFiltersSidebar', () => {
         expect(screen.getByText('Filters')).toBeDefined();
         expect(screen.getByText('Ownership')).toBeDefined();
         expect(screen.getByText('Card Set')).toBeDefined();
+        expect(screen.getByText('Sort Order')).toBeDefined();
+        expect(screen.getByText('Market Price Range')).toBeDefined();
     });
 
     it('renders Reset All button when active filters exist and triggers handleResetFilters', () => {
