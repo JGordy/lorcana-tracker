@@ -34,14 +34,18 @@ export function processMyDecks(
 ) {
     return localDecks
         .filter((deck) => {
-            const meta = parseDeckMetadata(deck.description);
-            const desc = meta.description.toLowerCase();
-            const title = deck.title.toLowerCase();
+            const meta = deck.meta || parseDeckMetadata(deck.description);
+            const desc = (meta.description || '').toLowerCase();
+            const title = (deck.title || '').toLowerCase();
             const q = searchQuery.toLowerCase();
             return title.includes(q) || desc.includes(q);
         })
         .map((deck) => {
-            const meta = parseDeckMetadata(deck.description);
+            const meta = deck.meta || parseDeckMetadata(deck.description);
+            const is_active =
+                deck.is_active !== undefined
+                    ? Boolean(deck.is_active)
+                    : Boolean(meta.is_active);
 
             // Resolve any cards that fell back to Unknown Card
             const resolvedCards = (deck.cards || []).map((dc: any) => {
@@ -143,8 +147,11 @@ export function processMyDecks(
                 ...deck,
                 cards: resolvedCards,
                 progress,
-                meta,
-                is_active: Boolean(meta.is_active),
+                meta: {
+                    ...meta,
+                    is_active,
+                },
+                is_active,
                 displayInks,
                 isCoreLegal,
                 totalCardsCount: totalCards,

@@ -120,4 +120,41 @@ describe('myDecksHelpers', () => {
         });
         expect(processed[0].cards[0].ownedQty).toBe(4);
     });
+
+    it('preserves is_active state when processing decks', () => {
+        const mockDecks = [
+            {
+                $id: 'd4',
+                title: 'Active Deck',
+                description: JSON.stringify({
+                    format: 'core',
+                    inks: ['amber', 'ruby'],
+                    description: 'Active test deck',
+                    is_active: true,
+                }),
+                is_active: true,
+                cards: [],
+            },
+            {
+                $id: 'd5',
+                title: 'Inactive Deck',
+                description: JSON.stringify({
+                    format: 'core',
+                    inks: ['amethyst', 'steel'],
+                    description: 'Inactive test deck',
+                    is_active: false,
+                }),
+                is_active: false,
+                cards: [],
+            },
+        ];
+
+        const lookup = new Map();
+        const processed = processMyDecks(mockDecks, '', lookup);
+
+        expect(processed[0].is_active).toBe(true);
+        expect(processed[0].meta.is_active).toBe(true);
+        expect(processed[1].is_active).toBe(false);
+        expect(processed[1].meta.is_active).toBe(false);
+    });
 });

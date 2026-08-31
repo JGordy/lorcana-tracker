@@ -27,13 +27,22 @@ export function useMyDecksActions({
         isActive: boolean,
     ): DeckWithProgress => {
         const meta = d.meta || parseDeckMetadata(d.description);
+        const updatedMeta = {
+            ...meta,
+            is_active: isActive,
+        };
+        const updatedDescription = serializeDeckMetadata(
+            updatedMeta.format,
+            updatedMeta.inks,
+            updatedMeta.description,
+            updatedMeta.coverCardId,
+            isActive,
+        );
         return {
             ...d,
             is_active: isActive,
-            meta: {
-                ...meta,
-                is_active: isActive,
-            },
+            description: updatedDescription,
+            meta: updatedMeta,
         };
     };
 
@@ -79,11 +88,15 @@ export function useMyDecksActions({
                     map.set(d.$id || d.id, d);
                 }
 
-                return Array.from(map.values()).map((d) =>
-                    activeSet.has(d.$id) || activeSet.has(d.id) || d.is_active
-                        ? updateDeckActiveState(d, true)
-                        : d,
-                );
+                return Array.from(map.values()).map((d) => {
+                    const deckId = d.$id || d.id;
+                    const meta = d.meta || parseDeckMetadata(d.description);
+                    const isActive =
+                        activeSet.has(deckId) ||
+                        Boolean(meta.is_active) ||
+                        Boolean(d.is_active);
+                    return updateDeckActiveState(d, isActive);
+                });
             } catch {
                 // Ignore parsing errors
             }
@@ -159,13 +172,18 @@ export function useMyDecksActions({
                         }
                     }
 
-                    return Array.from(map.values()).map((d) =>
-                        activeSet.has(d.$id) ||
-                        activeSet.has(d.id) ||
-                        d.is_active
-                            ? updateDeckActiveState(d, true)
-                            : d,
-                    );
+                    return Array.from(map.values()).map((d) => {
+                        const deckId = d.$id || d.id;
+                        const prevDeck = prevMap.get(deckId);
+                        const meta = d.meta || parseDeckMetadata(d.description);
+                        const isActive =
+                            activeSet.has(deckId) ||
+                            (prevDeck !== undefined
+                                ? Boolean(prevDeck.is_active)
+                                : Boolean(meta.is_active) ||
+                                  Boolean(d.is_active));
+                        return updateDeckActiveState(d, isActive);
+                    });
                 });
                 return;
             } catch {
@@ -195,23 +213,27 @@ export function useMyDecksActions({
     const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
     const handleToggleDeckActive = (deck: DeckWithProgress) => {
+        const deckId = deck.$id || deck.id;
         const nextIsActive = !deck.is_active;
 
-        setLocalDecks((prev) =>
-            prev.map((d) => {
-                if (d.$id !== deck.$id) return d;
+        setLocalDecks((prev) => {
+            const updated = prev.map((d) => {
+                const currentId = d.$id || d.id;
+                if (currentId !== deckId) return d;
                 return updateDeckActiveState(d, nextIsActive);
-            }),
-        );
+            });
+            saveLocalDecksStore(updated);
+            return updated;
+        });
 
         if (typeof window !== 'undefined') {
             try {
                 const stored = localStorage.getItem('lorcana_active_deck_ids');
                 let activeIds: string[] = stored ? JSON.parse(stored) : [];
                 if (nextIsActive) {
-                    if (!activeIds.includes(deck.$id)) activeIds.push(deck.$id);
+                    if (!activeIds.includes(deckId)) activeIds.push(deckId);
                 } else {
-                    activeIds = activeIds.filter((id) => id !== deck.$id);
+                    activeIds = activeIds.filter((id) => id !== deckId);
                 }
                 localStorage.setItem(
                     'lorcana_active_deck_ids',
@@ -234,7 +256,7 @@ export function useMyDecksActions({
         fetcher.submit(
             {
                 intent: 'update-deck-details',
-                deckId: deck.$id,
+                deckId: deckId,
                 userId: user ? user.$id : 'guest-user',
                 title: deck.title,
                 description: metaDesc,
