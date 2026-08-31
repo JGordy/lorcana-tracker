@@ -70,6 +70,19 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
         setPlaytestModalOpen(true);
     };
 
+    const handleOpenAddCardsModal = (deck: any) => {
+        setActiveDeckId(deck.$id);
+        setCardSearchQuery('');
+        setCardTypeFilter('all');
+        const deckInks =
+            deck.displayInks && deck.displayInks.length > 0
+                ? deck.displayInks
+                : deck.meta?.inks || [];
+        setCardInkFilter(deckInks.length > 0 ? 'deck' : 'all');
+        setOnlyCoreFilter(deck.meta?.format !== 'infinity');
+        setAddCardsModalOpen(true);
+    };
+
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editingDeck, setEditingDeck] = useState<any>(null);
     const [editTitle, setEditTitle] = useState('');
@@ -226,7 +239,28 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
             const q = cardSearchQuery.toLowerCase().trim();
             list = list.filter((c) => c.name.toLowerCase().includes(q));
         }
-        if (cardInkFilter !== 'all') {
+        if (cardInkFilter === 'deck') {
+            const deckInks =
+                activeDeckForView?.displayInks &&
+                activeDeckForView.displayInks.length > 0
+                    ? activeDeckForView.displayInks
+                    : activeDeckForView?.meta?.inks || [];
+            if (deckInks.length > 0) {
+                const normalizedInks = deckInks.map((i: string) =>
+                    i.toLowerCase().trim(),
+                );
+                list = list.filter((c) => {
+                    const cardInk = c.ink_color?.toLowerCase().trim();
+                    if (!cardInk) return false;
+                    const cInks = cardInk
+                        .split('/')
+                        .map((s: string) => s.trim());
+                    return cInks.some((ci: string) =>
+                        normalizedInks.includes(ci),
+                    );
+                });
+            }
+        } else if (cardInkFilter !== 'all') {
             list = list.filter(
                 (c) => c.ink_color?.toLowerCase().trim() === cardInkFilter,
             );
@@ -238,7 +272,14 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
             list = list.filter((c) => c.formats?.includes('core'));
         }
         return list;
-    }, [cards, cardSearchQuery, cardInkFilter, cardTypeFilter, onlyCoreFilter]);
+    }, [
+        cards,
+        cardSearchQuery,
+        cardInkFilter,
+        cardTypeFilter,
+        onlyCoreFilter,
+        activeDeckForView,
+    ]);
 
     const activeDeckCardsMap = useMemo(() => {
         const map = new Map<string, number>();
@@ -327,10 +368,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setDeleteModalOpen(true);
                 }}
                 onExportDeck={handleExportDeck}
-                onOpenAddCardsModal={(deck) => {
-                    setActiveDeckId(deck.$id);
-                    setAddCardsModalOpen(true);
-                }}
+                onOpenAddCardsModal={handleOpenAddCardsModal}
                 onOpenPlaytest={handleOpenPlaytest}
                 onToggleActive={handleToggleDeckActive}
             />
@@ -414,7 +452,13 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 onInkFilterChange={setDeckModalInkFilter}
                 filteredCards={filteredDeckCardsForView}
                 copyFeedback={copyFeedback}
-                onOpenAddCardsModal={() => setAddCardsModalOpen(true)}
+                onOpenAddCardsModal={() => {
+                    if (activeDeckForView) {
+                        handleOpenAddCardsModal(activeDeckForView);
+                    } else {
+                        setAddCardsModalOpen(true);
+                    }
+                }}
                 onOpenEditModal={(deck) => {
                     setEditingDeck(deck);
                     setEditTitle(deck.title);
@@ -457,6 +501,12 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 onOnlyCoreFilterChange={setOnlyCoreFilter}
                 filteredCards={filteredCatalogCards}
                 activeDeckCardsMap={activeDeckCardsMap}
+                deckInks={
+                    activeDeckForView?.displayInks &&
+                    activeDeckForView.displayInks.length > 0
+                        ? activeDeckForView.displayInks
+                        : activeDeckForView?.meta?.inks || []
+                }
                 onUpdateCardQty={(cardId, delta) => {
                     if (!activeDeckForView) return;
                     const card = cards.find(

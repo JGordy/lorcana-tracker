@@ -129,6 +129,39 @@ describe('MyDecksAddCardsModal', () => {
         expect(increaseBtn).toBeDisabled();
     });
 
+    it('renders deck inks option when deckInks prop has multiple inks', () => {
+        renderModal({
+            deckInks: ['amber', 'sapphire'],
+            inkFilter: 'deck',
+        });
+        expect(
+            screen.getByText('Deck Inks (Amber / Sapphire)'),
+        ).toBeInTheDocument();
+    });
+
+    it('renders single deck ink option when deckInks has one ink', () => {
+        renderModal({
+            deckInks: ['steel'],
+            inkFilter: 'deck',
+        });
+        expect(screen.getByText('Deck Inks (Steel)')).toBeInTheDocument();
+    });
+
+    it('does not render deck inks option when deckInks is empty', () => {
+        renderModal({
+            deckInks: [],
+            inkFilter: 'all',
+        });
+        expect(screen.queryByText(/Deck Inks/i)).not.toBeInTheDocument();
+        expect(screen.getByText('All Inks')).toBeInTheDocument();
+    });
+
+    it('calls onTypeFilterChange when type select changes', () => {
+        const onTypeFilterChange = vi.fn();
+        renderModal({ onTypeFilterChange });
+        expect(screen.getByText('All Types')).toBeInTheDocument();
+    });
+
     it('calls onClose when Done Adding Cards button is clicked', () => {
         const onClose = vi.fn();
         renderModal({ onClose });
