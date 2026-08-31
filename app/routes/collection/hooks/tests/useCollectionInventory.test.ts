@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCollectionInventory } from '../useCollectionInventory';
 import type {
@@ -130,8 +130,8 @@ describe('useCollectionInventory', () => {
             }),
         );
 
-        await act(async () => {});
-
-        expect(result.current.totals.totalCardsOwned).toBe(4);
+        await waitFor(() => {
+            expect(result.current.totals.totalCardsOwned).toBe(4);
+        });
     });
 });
