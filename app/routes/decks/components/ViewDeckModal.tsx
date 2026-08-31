@@ -30,11 +30,14 @@ import {
     IconDice,
     IconChartBar,
     IconPhoto,
+    IconExternalLink,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
 import { parseDeckMetadata } from '../../../utils/deck';
 import { DeckInkCurve } from '../../../components/DeckInkCurve';
 import { ExportDeckGraphicModal } from './ExportDeckGraphicModal';
+import { calculateDeckCost, formatCurrency } from '../../../utils/valuation';
+import { getTcgPlayerCardSearchUrl } from '../../../utils/shoppingList';
 import {
     getInkBadgeStyle,
     VALID_LORCANA_INKS,
@@ -85,6 +88,8 @@ export function ViewDeckModal({
 
     const meta = parseDeckMetadata(activeDeck.description);
     const displayDesc = activeDeck.displayDescription || meta.description;
+
+    const deckCost = calculateDeckCost(activeDeck.cards || []);
 
     // Build ink filter options from deck's known inks
     const deckInkOptions = (activeDeck.displayInks || [])
@@ -154,20 +159,67 @@ export function ViewDeckModal({
                         </Box>
                     </Group>
 
-                    {/* Header Right: Compact Collection Completion */}
-                    <Box style={{ width: 220, marginLeft: 'auto' }}>
-                        <Group justify="space-between" align="center" mb={4}>
-                            <Text
-                                size="10px"
-                                fw={800}
-                                c="gray.4"
-                                tt="uppercase"
+                    {/* Header Right: Valuation & Collection Completion */}
+                    <Group
+                        gap="md"
+                        align="center"
+                        style={{ marginLeft: 'auto' }}
+                    >
+                        {deckCost.totalDeckCost > 0 && (
+                            <Box style={{ textAlign: 'right' }}>
+                                <Text
+                                    size="10px"
+                                    fw={800}
+                                    c="yellow.4"
+                                    tt="uppercase"
+                                >
+                                    Est. Value:{' '}
+                                    {formatCurrency(deckCost.totalDeckCost)}
+                                </Text>
+                                {deckCost.costToFinish > 0 && (
+                                    <Text size="10px" fw={700} c="red.4">
+                                        Need:{' '}
+                                        {formatCurrency(deckCost.costToFinish)}
+                                    </Text>
+                                )}
+                            </Box>
+                        )}
+
+                        <Box style={{ width: 180 }}>
+                            <Group
+                                justify="space-between"
+                                align="center"
+                                mb={4}
                             >
-                                Completion
-                            </Text>
-                            <Badge
-                                size="xs"
-                                variant="light"
+                                <Text
+                                    size="10px"
+                                    fw={800}
+                                    c="gray.4"
+                                    tt="uppercase"
+                                >
+                                    Completion
+                                </Text>
+                                <Badge
+                                    size="xs"
+                                    variant="light"
+                                    color={
+                                        activeDeck.progress.percentage >= 80
+                                            ? 'teal'
+                                            : activeDeck.progress.percentage >=
+                                                50
+                                              ? 'yellow'
+                                              : 'red'
+                                    }
+                                    radius="sm"
+                                    style={{ fontWeight: 800 }}
+                                >
+                                    {activeDeck.progress.ownedCount}/
+                                    {activeDeck.progress.totalCount} (
+                                    {activeDeck.progress.percentage}%)
+                                </Badge>
+                            </Group>
+                            <Progress
+                                value={activeDeck.progress.percentage}
                                 color={
                                     activeDeck.progress.percentage >= 80
                                         ? 'teal'
@@ -175,28 +227,12 @@ export function ViewDeckModal({
                                           ? 'yellow'
                                           : 'red'
                                 }
-                                radius="sm"
-                                style={{ fontWeight: 800 }}
-                            >
-                                {activeDeck.progress.ownedCount}/
-                                {activeDeck.progress.totalCount} (
-                                {activeDeck.progress.percentage}%)
-                            </Badge>
-                        </Group>
-                        <Progress
-                            value={activeDeck.progress.percentage}
-                            color={
-                                activeDeck.progress.percentage >= 80
-                                    ? 'teal'
-                                    : activeDeck.progress.percentage >= 50
-                                      ? 'yellow'
-                                      : 'red'
-                            }
-                            size="xs"
-                            radius="xl"
-                            striped
-                        />
-                    </Box>
+                                size="xs"
+                                radius="xl"
+                                striped
+                            />
+                        </Box>
+                    </Group>
                 </Group>
             }
             size="1100px"
@@ -582,22 +618,89 @@ export function ViewDeckModal({
 
                                             {/* Bottom: Card Name, Ownership, & Quick Actions */}
                                             <Stack
-                                                gap={8}
+                                                gap={6}
                                                 mt="xs"
                                                 justify="space-between"
                                                 style={{ flex: 1 }}
                                             >
-                                                <Text
-                                                    size="xs"
-                                                    fw={700}
-                                                    c="gray.2"
-                                                    lh={1.3}
-                                                    style={{
-                                                        minHeight: '2.6em',
-                                                    }}
-                                                >
-                                                    {dc.card.name}
-                                                </Text>
+                                                <Box>
+                                                    <Group
+                                                        justify="space-between"
+                                                        align="flex-start"
+                                                        wrap="nowrap"
+                                                        gap={2}
+                                                    >
+                                                        <Text
+                                                            size="xs"
+                                                            fw={700}
+                                                            c="gray.2"
+                                                            lh={1.3}
+                                                            lineClamp={2}
+                                                            style={{
+                                                                minHeight:
+                                                                    '2.4em',
+                                                                flex: 1,
+                                                            }}
+                                                        >
+                                                            {dc.card.name}
+                                                        </Text>
+                                                        <Tooltip
+                                                            label="TCGPlayer"
+                                                            position="top"
+                                                            withArrow
+                                                        >
+                                                            <ActionIcon
+                                                                component="a"
+                                                                href={
+                                                                    dc.card
+                                                                        .tcgplayer_url ||
+                                                                    getTcgPlayerCardSearchUrl(
+                                                                        dc.card
+                                                                            .name,
+                                                                    )
+                                                                }
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                size="xs"
+                                                                variant="subtle"
+                                                                color="blue"
+                                                                style={{
+                                                                    opacity: 0.7,
+                                                                    marginTop:
+                                                                        -2,
+                                                                }}
+                                                            >
+                                                                <IconExternalLink
+                                                                    size={12}
+                                                                />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                    </Group>
+
+                                                    {/* Price Tag */}
+                                                    {dc.card.prices?.usd !=
+                                                        null && (
+                                                        <Text
+                                                            size="10px"
+                                                            c="teal.3"
+                                                            fw={700}
+                                                            mt={1}
+                                                        >
+                                                            {formatCurrency(
+                                                                dc.card.prices
+                                                                    .usd,
+                                                            )}{' '}
+                                                            <span
+                                                                style={{
+                                                                    color: '#64748b',
+                                                                    fontWeight: 500,
+                                                                }}
+                                                            >
+                                                                ea
+                                                            </span>
+                                                        </Text>
+                                                    )}
+                                                </Box>
 
                                                 <Group
                                                     justify="space-between"

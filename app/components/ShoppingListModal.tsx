@@ -39,6 +39,7 @@ import {
     getTcgPlayerCardSearchUrl,
     getCardmarketWantsUrl,
 } from '../utils/shoppingList';
+import { formatCurrency } from '../utils/valuation';
 
 export interface ShoppingListModalProps {
     opened: boolean;
@@ -66,6 +67,13 @@ export function ShoppingListModal({
 
     const totalMissingCount = useMemo(() => {
         return missingCards.reduce((sum, item) => sum + item.missingQty, 0);
+    }, [missingCards]);
+
+    const totalEstimatedCost = useMemo(() => {
+        return missingCards.reduce((sum, item) => {
+            const unitPrice = item.card.prices?.usd ?? 0;
+            return sum + unitPrice * item.missingQty;
+        }, 0);
     }, [missingCards]);
 
     if (!deck) return null;
@@ -151,15 +159,34 @@ export function ShoppingListModal({
                         </Box>
                     </Group>
 
-                    <Badge
-                        size="sm"
-                        variant="light"
-                        color={isFullyOwned ? 'teal' : 'violet'}
-                        radius="md"
-                    >
-                        {deck.progress.ownedCount}/{deck.progress.totalCount}{' '}
-                        Cards ({deck.progress.percentage}%)
-                    </Badge>
+                    <Group gap="xs" align="center">
+                        {totalEstimatedCost > 0 && (
+                            <Badge
+                                size="sm"
+                                variant="gradient"
+                                gradient={{
+                                    from: 'orange.6',
+                                    to: 'yellow.6',
+                                    deg: 90,
+                                }}
+                                radius="md"
+                                style={{ fontWeight: 800 }}
+                            >
+                                Est. Missing Cost:{' '}
+                                {formatCurrency(totalEstimatedCost)}
+                            </Badge>
+                        )}
+                        <Badge
+                            size="sm"
+                            variant="light"
+                            color={isFullyOwned ? 'teal' : 'violet'}
+                            radius="md"
+                        >
+                            {deck.progress.ownedCount}/
+                            {deck.progress.totalCount} Cards (
+                            {deck.progress.percentage}%)
+                        </Badge>
+                    </Group>
                 </Group>
             }
             size="1100px"
@@ -513,22 +540,73 @@ export function ShoppingListModal({
 
                                                 {/* Bottom: Card Name, Ownership, & Quick Actions */}
                                                 <Stack
-                                                    gap={8}
+                                                    gap={6}
                                                     mt="xs"
                                                     justify="space-between"
                                                     style={{ flex: 1 }}
                                                 >
-                                                    <Text
-                                                        size="xs"
-                                                        fw={700}
-                                                        c="gray.2"
-                                                        lh={1.3}
-                                                        style={{
-                                                            minHeight: '2.6em',
-                                                        }}
-                                                    >
-                                                        {item.card.name}
-                                                    </Text>
+                                                    <Box>
+                                                        <Text
+                                                            size="xs"
+                                                            fw={700}
+                                                            c="gray.2"
+                                                            lh={1.3}
+                                                            lineClamp={2}
+                                                            style={{
+                                                                minHeight:
+                                                                    '2.4em',
+                                                            }}
+                                                        >
+                                                            {item.card.name}
+                                                        </Text>
+                                                        {item.card.prices
+                                                            ?.usd != null && (
+                                                            <Group
+                                                                gap={4}
+                                                                mt={2}
+                                                                align="center"
+                                                            >
+                                                                <Text
+                                                                    size="10px"
+                                                                    c="teal.3"
+                                                                    fw={700}
+                                                                >
+                                                                    {formatCurrency(
+                                                                        item
+                                                                            .card
+                                                                            .prices
+                                                                            .usd,
+                                                                    )}{' '}
+                                                                    <span
+                                                                        style={{
+                                                                            color: '#64748b',
+                                                                            fontWeight: 500,
+                                                                        }}
+                                                                    >
+                                                                        ea
+                                                                    </span>
+                                                                </Text>
+                                                                {item.missingQty >
+                                                                    1 && (
+                                                                    <Text
+                                                                        size="10px"
+                                                                        c="orange.3"
+                                                                        fw={600}
+                                                                    >
+                                                                        (
+                                                                        {formatCurrency(
+                                                                            item
+                                                                                .card
+                                                                                .prices
+                                                                                .usd *
+                                                                                item.missingQty,
+                                                                        )}{' '}
+                                                                        total)
+                                                                    </Text>
+                                                                )}
+                                                            </Group>
+                                                        )}
+                                                    </Box>
 
                                                     <Group
                                                         justify="space-between"
