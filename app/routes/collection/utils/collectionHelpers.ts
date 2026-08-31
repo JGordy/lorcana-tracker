@@ -53,8 +53,96 @@ export function sortSets(databaseSets: string[]): string[] {
     });
 }
 
-export function sortCards(cards: LorcanaCard[]): LorcanaCard[] {
+import { getCardBestPrice } from '../../../utils/valuation';
+
+export function getCardSortPrice(
+    card: LorcanaCard,
+    selectedOwnership?: string,
+    getCardQuantity?: (card: LorcanaCard, isFoil: boolean) => number,
+): number | null {
+    if (getCardQuantity) {
+        const qtyNormal = getCardQuantity(card, false);
+        const qtyFoil = getCardQuantity(card, true);
+
+        if (selectedOwnership === 'owned') {
+            if (qtyFoil > 0 && qtyNormal > 0) {
+                const pFoil = card.prices?.usd_foil ?? card.prices?.usd ?? null;
+                const pNorm = card.prices?.usd ?? null;
+                if (pFoil != null && pNorm != null)
+                    return Math.max(pFoil, pNorm);
+                return pFoil ?? pNorm;
+            }
+            if (qtyFoil > 0) {
+                return card.prices?.usd_foil ?? card.prices?.usd ?? null;
+            }
+            if (qtyNormal > 0) {
+                return card.prices?.usd ?? null;
+            }
+        } else if (selectedOwnership === 'foil') {
+            return card.prices?.usd_foil ?? card.prices?.usd ?? null;
+        } else if (selectedOwnership === 'non_foil') {
+            return card.prices?.usd ?? null;
+        }
+    }
+
+    return getCardBestPrice(card);
+}
+
+export interface SortCardsOptions {
+    selectedOwnership?: string;
+    getCardQuantity?: (card: LorcanaCard, isFoil: boolean) => number;
+}
+
+export function sortCards(
+    cards: LorcanaCard[],
+    sortBy: string = 'default',
+    options?: SortCardsOptions,
+): LorcanaCard[] {
+    const { selectedOwnership, getCardQuantity } = options || {};
+
     return [...cards].sort((a, b) => {
+        if (sortBy === 'price_desc') {
+            const priceA =
+                getCardSortPrice(a, selectedOwnership, getCardQuantity) ?? -1;
+            const priceB =
+                getCardSortPrice(b, selectedOwnership, getCardQuantity) ?? -1;
+            if (priceB !== priceA) return priceB - priceA;
+            return a.name.localeCompare(b.name);
+        }
+
+        if (sortBy === 'price_asc') {
+            const priceA = getCardSortPrice(
+                a,
+                selectedOwnership,
+                getCardQuantity,
+            );
+            const priceB = getCardSortPrice(
+                b,
+                selectedOwnership,
+                getCardQuantity,
+            );
+            if (priceA == null && priceB == null) return 0;
+            if (priceA == null) return 1;
+            if (priceB == null) return -1;
+            if (priceA !== priceB) return priceA - priceB;
+            return a.name.localeCompare(b.name);
+        }
+
+        if (sortBy === 'cost_asc') {
+            if (a.cost !== b.cost) return a.cost - b.cost;
+            return a.name.localeCompare(b.name);
+        }
+
+        if (sortBy === 'cost_desc') {
+            if (a.cost !== b.cost) return b.cost - a.cost;
+            return a.name.localeCompare(b.name);
+        }
+
+        if (sortBy === 'name_asc') {
+            return a.name.localeCompare(b.name);
+        }
+
+        // Default set + collector number sorting
         const idxA = KNOWN_SETS.indexOf(a.set);
         const idxB = KNOWN_SETS.indexOf(b.set);
         if (idxA !== -1 && idxB !== -1) {

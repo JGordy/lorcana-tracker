@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loader, action } from '../collection';
+import { loader, action, shouldRevalidate } from '../collection';
 import { authService, dbService } from '../../../services/appwrite.server';
 
 vi.mock('../../../services/appwrite.server', () => ({
@@ -125,6 +125,32 @@ describe('Collection Route (Loader & Action)', () => {
                 context: {},
             } as any);
             expect(result).toEqual({ success: false });
+        });
+    });
+
+    describe('shouldRevalidate', () => {
+        it('returns false when intent is update-quantity to prevent blocking loader revalidation', () => {
+            const formData = new FormData();
+            formData.set('intent', 'update-quantity');
+
+            const result = shouldRevalidate({
+                formData,
+                defaultShouldRevalidate: true,
+            } as any);
+
+            expect(result).toBe(false);
+        });
+
+        it('returns defaultShouldRevalidate for other actions or navigations', () => {
+            const formData = new FormData();
+            formData.set('intent', 'other-intent');
+
+            const result = shouldRevalidate({
+                formData,
+                defaultShouldRevalidate: true,
+            } as any);
+
+            expect(result).toBe(true);
         });
     });
 });

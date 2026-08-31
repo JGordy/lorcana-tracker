@@ -134,4 +134,43 @@ describe('useCollectionInventory', () => {
             expect(result.current.totals.totalCardsOwned).toBe(4);
         });
     });
+
+    it('rolls back optimistic update when server action returns error', () => {
+        let currentFetcher = {
+            submit: vi.fn(),
+            formData: null,
+            data: null as any,
+        };
+
+        const { result, rerender } = renderHook(
+            ({ fetcher }) =>
+                useCollectionInventory({
+                    serverCollection: initialCollection,
+                    user: { $id: 'user-1' },
+                    fetcher: fetcher as any,
+                    cardsLookup: mockCardsLookup,
+                }),
+            {
+                initialProps: { fetcher: currentFetcher as any },
+            },
+        );
+
+        expect(result.current.totals.totalCardsOwned).toBe(2);
+
+        // Optimistically increment to 3
+        act(() => {
+            result.current.handleAdjustQuantity('card-1', false, 2, 1);
+        });
+        expect(result.current.totals.totalCardsOwned).toBe(3);
+
+        // Server action fails
+        currentFetcher = {
+            ...currentFetcher,
+            data: { success: false, error: 'Database timeout' },
+        };
+        rerender({ fetcher: currentFetcher as any });
+
+        // Should roll back to 2
+        expect(result.current.totals.totalCardsOwned).toBe(2);
+    });
 });
