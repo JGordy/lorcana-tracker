@@ -36,7 +36,14 @@ export function useCollectionInventory({
                     // Ignore storage errors
                 }
             }
-        } else if (typeof window !== 'undefined') {
+        }
+    }, [serverCollection]);
+
+    useEffect(() => {
+        if (
+            (!serverCollection || serverCollection.length === 0) &&
+            typeof window !== 'undefined'
+        ) {
             try {
                 const stored = localStorage.getItem('lorcana_user_inventory');
                 if (stored) {
@@ -49,7 +56,8 @@ export function useCollectionInventory({
                 // Ignore parse errors
             }
         }
-    }, [serverCollection]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const inventoryMap = useMemo(() => {
         const map = new Map<string, number>();
