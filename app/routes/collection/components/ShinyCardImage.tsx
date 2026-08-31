@@ -84,10 +84,15 @@ export function ShinyCardImage({ card }: ShinyCardImageProps) {
                     data-testid="shiny-holo-layer"
                     style={{
                         background: tilt.active
-                            ? `radial-gradient(ellipse at ${tilt.gx}% ${tilt.gy}%, rgba(255,255,255,0.28) 0%, transparent 55%),
-                 linear-gradient(${tilt.gx + tilt.gy * 0.8}deg,
-                   rgba(255,0,128,0.35) 0%, rgba(255,165,0,0.35) 16%, rgba(255,255,0,0.3) 32%,
-                   rgba(0,255,128,0.35) 48%, rgba(0,128,255,0.35) 64%, rgba(128,0,255,0.35) 80%, rgba(255,0,128,0.35) 100%)`
+                            ? `radial-gradient(circle at ${tilt.gx}% ${tilt.gy}%, rgba(255, 255, 255, 0.45) 0%, transparent 50%),
+                               radial-gradient(circle at ${100 - tilt.gx}% ${100 - tilt.gy}%, rgba(255, 0, 128, 0.35) 0%, transparent 60%),
+                               linear-gradient(135deg,
+                                  rgba(255, 0, 128, 0.35) 0%,
+                                  rgba(255, 165, 0, 0.35) 20%,
+                                  rgba(255, 255, 0, 0.3) 40%,
+                                  rgba(0, 255, 128, 0.35) 60%,
+                                  rgba(0, 128, 255, 0.35) 80%,
+                                  rgba(128, 0, 255, 0.35) 100%)`
                             : undefined,
                         opacity: tilt.active ? 1 : 0,
                     }}

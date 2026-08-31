@@ -12,17 +12,12 @@ import {
     Text,
     Button,
     Badge,
-    Card,
     SimpleGrid,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import {
-    IconSearch,
-    IconPlus,
-    IconMinus,
-    IconCards,
-} from '@tabler/icons-react';
+import { IconSearch, IconPlus, IconMinus } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
+import { LorcanaCardTile } from '../../../../components/LorcanaCardTile';
 
 interface MyDecksAddCardsModalProps {
     opened: boolean;
@@ -239,14 +234,11 @@ export function MyDecksAddCardsModal({
                                     0;
 
                                 return (
-                                    <Card
+                                    <LorcanaCardTile
                                         key={cardId}
-                                        padding="xs"
-                                        radius="md"
-                                        withBorder
+                                        card={card}
+                                        aspectRatio="3/4"
                                         style={{
-                                            backgroundColor:
-                                                'rgba(15, 23, 42, 0.75)',
                                             backgroundImage:
                                                 currentQty > 0
                                                     ? 'linear-gradient(180deg, rgba(168, 85, 247, 0.18) 0%, rgba(15, 23, 42, 0.9) 100%)'
@@ -259,63 +251,9 @@ export function MyDecksAddCardsModal({
                                                 currentQty > 0
                                                     ? '0 0 14px rgba(168, 85, 247, 0.25)'
                                                     : 'none',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            justifyContent: 'space-between',
-                                            overflow: 'hidden',
-                                            transition: 'all 0.2s ease',
                                         }}
-                                    >
-                                        {/* Card Artwork */}
-                                        <Card.Section
-                                            style={{
-                                                position: 'relative',
-                                                overflow: 'hidden',
-                                            }}
-                                        >
-                                            {card.image_url ? (
-                                                <img
-                                                    src={card.image_url}
-                                                    alt={card.name}
-                                                    style={{
-                                                        width: '100%',
-                                                        height: 'auto',
-                                                        aspectRatio: '3/4',
-                                                        objectFit: 'cover',
-                                                        display: 'block',
-                                                    }}
-                                                />
-                                            ) : (
-                                                <Box
-                                                    style={{
-                                                        aspectRatio: '3/4',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        justifyContent:
-                                                            'center',
-                                                        backgroundColor:
-                                                            'rgba(255, 255, 255, 0.03)',
-                                                    }}
-                                                >
-                                                    <IconCards
-                                                        size={32}
-                                                        style={{ opacity: 0.3 }}
-                                                    />
-                                                    <Text
-                                                        size="xs"
-                                                        c="dimmed"
-                                                        ta="center"
-                                                        px="xs"
-                                                        mt={4}
-                                                    >
-                                                        {card.name}
-                                                    </Text>
-                                                </Box>
-                                            )}
-
-                                            {/* In-Deck Badge on Image */}
-                                            {currentQty > 0 && (
+                                        headerOverlay={
+                                            currentQty > 0 ? (
                                                 <Badge
                                                     size="xs"
                                                     variant="filled"
@@ -331,13 +269,13 @@ export function MyDecksAddCardsModal({
                                                 >
                                                     {currentQty} in Deck
                                                 </Badge>
-                                            )}
-                                        </Card.Section>
-
+                                            ) : null
+                                        }
+                                    >
                                         {/* Info & Quantity Stepper */}
                                         <Stack
                                             gap="xs"
-                                            mt="xs"
+                                            p="xs"
                                             style={{
                                                 flex: 1,
                                                 justify: 'space-between',
@@ -429,7 +367,7 @@ export function MyDecksAddCardsModal({
                                                 </ActionIcon>
                                             </Group>
                                         </Stack>
-                                    </Card>
+                                    </LorcanaCardTile>
                                 );
                             })}
                         </SimpleGrid>

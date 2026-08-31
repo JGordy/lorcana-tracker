@@ -9,6 +9,8 @@ if command -v nvm >/dev/null; then
   nvm use --silent 2>/dev/null || nvm use default --silent 2>/dev/null
 fi
 
+export NODE_OPTIONS="--max-old-space-size=4096"
+
 npm run lint
 npm run typecheck
 npm run test

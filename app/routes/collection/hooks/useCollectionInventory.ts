@@ -21,32 +21,43 @@ export function useCollectionInventory({
 }: UseCollectionInventoryOptions) {
     const [userCollection, setUserCollection] = useState<
         UserCollectionItemDoc[]
-    >(() => {
-        if (serverCollection && serverCollection.length > 0) {
-            return serverCollection;
-        }
-        if (typeof window !== 'undefined') {
-            try {
-                const stored = localStorage.getItem('lorcana_user_inventory');
-                return stored ? JSON.parse(stored) : serverCollection;
-            } catch {
-                // Fallthrough to serverCollection
-            }
-        }
-        return serverCollection;
-    });
+    >(serverCollection || []);
 
     useEffect(() => {
         if (serverCollection && serverCollection.length > 0) {
             setUserCollection(serverCollection);
             if (typeof window !== 'undefined') {
-                localStorage.setItem(
-                    'lorcana_user_inventory',
-                    JSON.stringify(serverCollection),
-                );
+                try {
+                    localStorage.setItem(
+                        'lorcana_user_inventory',
+                        JSON.stringify(serverCollection),
+                    );
+                } catch {
+                    // Ignore storage errors
+                }
             }
         }
     }, [serverCollection]);
+
+    useEffect(() => {
+        if (
+            (!serverCollection || serverCollection.length === 0) &&
+            typeof window !== 'undefined'
+        ) {
+            try {
+                const stored = localStorage.getItem('lorcana_user_inventory');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        setUserCollection(parsed);
+                    }
+                }
+            } catch {
+                // Ignore parse errors
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const inventoryMap = useMemo(() => {
         const map = new Map<string, number>();

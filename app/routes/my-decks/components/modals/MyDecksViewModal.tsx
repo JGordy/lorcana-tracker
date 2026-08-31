@@ -12,7 +12,6 @@ import {
     Box,
     ScrollArea,
     SimpleGrid,
-    Card,
     Tooltip,
     ActionIcon,
     Indicator,
@@ -31,6 +30,7 @@ import {
     IconChartBar,
     IconPhoto,
 } from '@tabler/icons-react';
+import { LorcanaCardTile } from '../../../../components/LorcanaCardTile';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DeckInkCurve } from '../../../../components/DeckInkCurve';
 import { ExportDeckGraphicModal } from '../../../decks/components/ExportDeckGraphicModal';
@@ -509,86 +509,16 @@ export function MyDecksViewModal({
                                             requiredQty - ownedQty;
 
                                         return (
-                                            <Card
+                                            <LorcanaCardTile
                                                 key={card.id}
-                                                padding={0}
-                                                radius="md"
-                                                withBorder
+                                                card={card}
                                                 style={{
-                                                    backgroundColor:
-                                                        'rgba(18, 22, 34, 0.85)',
                                                     borderColor: isMissing
                                                         ? 'rgba(239, 68, 68, 0.35)'
                                                         : 'rgba(168, 85, 247, 0.25)',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    justifyContent:
-                                                        'space-between',
-                                                    overflow: 'hidden',
-                                                    transition:
-                                                        'transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
                                                 }}
-                                            >
-                                                {/* Top: Full-Width Card Artwork */}
-                                                <Card.Section
-                                                    style={{
-                                                        position: 'relative',
-                                                        backgroundColor:
-                                                            'rgba(0, 0, 0, 0.3)',
-                                                        aspectRatio: '5/7',
-                                                        overflow: 'hidden',
-                                                    }}
-                                                >
-                                                    {card.image_url ? (
-                                                        <img
-                                                            src={card.image_url}
-                                                            alt={card.name}
-                                                            style={{
-                                                                width: '100%',
-                                                                height: '100%',
-                                                                objectFit:
-                                                                    'cover',
-                                                                display:
-                                                                    'block',
-                                                            }}
-                                                            loading="lazy"
-                                                        />
-                                                    ) : (
-                                                        <Box
-                                                            style={{
-                                                                width: '100%',
-                                                                height: '100%',
-                                                                display: 'flex',
-                                                                flexDirection:
-                                                                    'column',
-                                                                alignItems:
-                                                                    'center',
-                                                                justifyContent:
-                                                                    'center',
-                                                                padding: 8,
-                                                            }}
-                                                        >
-                                                            <IconCards
-                                                                size={24}
-                                                                style={{
-                                                                    opacity: 0.3,
-                                                                    marginBottom: 4,
-                                                                }}
-                                                            />
-                                                            <Text
-                                                                size="xs"
-                                                                fw={700}
-                                                                ta="center"
-                                                                c="gray.3"
-                                                                lineClamp={2}
-                                                            >
-                                                                {card.name}
-                                                            </Text>
-                                                        </Box>
-                                                    )}
-
-                                                    {/* Floating Status Badge (Top Right - Only shown when cards are missing) */}
-                                                    {isMissing && (
+                                                headerOverlay={
+                                                    isMissing ? (
                                                         <Badge
                                                             size="sm"
                                                             color="red"
@@ -605,9 +535,9 @@ export function MyDecksViewModal({
                                                         >
                                                             Need {missingCount}
                                                         </Badge>
-                                                    )}
-                                                </Card.Section>
-
+                                                    ) : null
+                                                }
+                                            >
                                                 {/* Bottom Info & Clean 2-Row Controls */}
                                                 <Stack
                                                     gap={6}
@@ -854,7 +784,7 @@ export function MyDecksViewModal({
                                                         </Group>
                                                     </Group>
                                                 </Stack>
-                                            </Card>
+                                            </LorcanaCardTile>
                                         );
                                     },
                                 )}

@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useCollectionInventory } from '../useCollectionInventory';
 import type {
@@ -107,7 +107,7 @@ describe('useCollectionInventory', () => {
         expect(result.current.totals.totalCardsOwned).toBe(3);
     });
 
-    it('initializes from local storage inventory when server collection is empty', () => {
+    it('initializes from local storage inventory when server collection is empty', async () => {
         localStorage.setItem(
             'lorcana_user_inventory',
             JSON.stringify([
@@ -130,6 +130,8 @@ describe('useCollectionInventory', () => {
             }),
         );
 
-        expect(result.current.totals.totalCardsOwned).toBe(4);
+        await waitFor(() => {
+            expect(result.current.totals.totalCardsOwned).toBe(4);
+        });
     });
 });

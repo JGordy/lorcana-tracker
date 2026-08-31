@@ -87,6 +87,10 @@ body {
     opacity: 0;
     mix-blend-mode: color-dodge;
     transition: opacity 0.3s ease;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    filter: blur(10px);
 }
 
 /* Always-on animated shimmer sweeping diagonally */
