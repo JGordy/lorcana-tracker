@@ -4,6 +4,7 @@ import path from 'path';
 const CARDS_FILE_PATH = path.resolve(process.cwd(), 'public/cards.json');
 const LORCANA_JSON_URL =
     'https://lorcanajson.org/files/current/en/allCards.json';
+const LORCAST_BULK_URL = 'https://api.lorcast.com/v0/bulk/cards';
 
 const SET_NAME_BY_CODE = {
     1: 'The First Chapter',
@@ -49,9 +50,81 @@ export function getCardSlug(name) {
 }
 
 /**
- * Normalizes LorcanaJSON card object to our internal Card schema
+ * Builds multi-key lookup maps for Lorcast cards to maximize matching reliability
  */
-function normalizeCard(raw, usedSlugs) {
+export function buildLorcastLookups(lorcastCards = []) {
+    const byTcgId = new Map();
+    const bySetNum = new Map();
+    const bySlug = new Map();
+
+    for (const card of lorcastCards) {
+        if (card.tcgplayer_id) {
+            byTcgId.set(String(card.tcgplayer_id), card);
+        }
+
+        const setCode = String(card.set?.code || '')
+            .toLowerCase()
+            .replace(/^0+/, '');
+        const num = String(card.collector_number || '')
+            .toLowerCase()
+            .replace(/^0+/, '');
+        if (setCode && num) {
+            bySetNum.set(`${setCode}:${num}`, card);
+        }
+
+        const fullName = card.name + (card.version ? ` - ${card.version}` : '');
+        const slug = getCardSlug(fullName);
+        if (slug && !bySlug.has(slug)) {
+            bySlug.set(slug, card);
+        }
+    }
+
+    return {
+        find(raw, calculatedSetCode, calculatedNumber) {
+            // 1. Match by LorcanaJSON TCGPlayer ID
+            const tcgId = raw.externalLinks?.tcgPlayerId;
+            if (tcgId && byTcgId.has(String(tcgId))) {
+                return byTcgId.get(String(tcgId));
+            }
+
+            // 2. Match by normalized Set Code + Collector Number
+            const setCodeNorm = String(
+                calculatedSetCode || raw.setCode || raw.code || '',
+            )
+                .toLowerCase()
+                .replace(/^0+/, '');
+            const numNorm = String(
+                calculatedNumber || raw.number || raw.collector_number || '',
+            )
+                .toLowerCase()
+                .replace(/^0+/, '');
+            if (setCodeNorm && numNorm) {
+                const setNumKey = `${setCodeNorm}:${numNorm}`;
+                if (bySetNum.has(setNumKey)) {
+                    return bySetNum.get(setNumKey);
+                }
+            }
+
+            // 3. Match by Card Name / Slug
+            const fullName =
+                raw.fullName ||
+                (raw.name && raw.version
+                    ? `${raw.name} - ${raw.version}`
+                    : raw.name || '');
+            const slug = getCardSlug(fullName);
+            if (slug && bySlug.has(slug)) {
+                return bySlug.get(slug);
+            }
+
+            return null;
+        },
+    };
+}
+
+/**
+ * Normalizes LorcanaJSON card object to our internal Card schema, enriched with Lorcast pricing and store links
+ */
+export function normalizeCard(raw, usedSlugs, lorcastLookup = null) {
     const name = raw.fullName || raw.name || 'Unknown';
     const isPromo = raw.rarity === 'Special' || raw.rarity === 'Promo';
 
@@ -103,6 +176,38 @@ function normalizeCard(raw, usedSlugs) {
     let imageUrl =
         raw.images?.full || raw.images?.thumbnail || raw.image_url || '';
 
+    // Match Lorcast market pricing & purchase URIs
+    const lorcastCard = lorcastLookup
+        ? lorcastLookup.find(raw, setCode, number)
+        : null;
+
+    let priceUsd = null;
+    let priceUsdFoil = null;
+
+    if (lorcastCard?.prices) {
+        if (lorcastCard.prices.usd != null) {
+            const parsedUsd = parseFloat(lorcastCard.prices.usd);
+            if (!isNaN(parsedUsd) && parsedUsd >= 0) {
+                priceUsd = parsedUsd;
+            }
+        }
+        if (lorcastCard.prices.usd_foil != null) {
+            const parsedFoil = parseFloat(lorcastCard.prices.usd_foil);
+            if (!isNaN(parsedFoil) && parsedFoil >= 0) {
+                priceUsdFoil = parsedFoil;
+            }
+        }
+    }
+
+    const tcgplayerUrl =
+        raw.externalLinks?.tcgPlayerUrl ||
+        lorcastCard?.purchase_uris?.tcgplayer ||
+        (lorcastCard?.tcgplayer_id
+            ? `https://www.tcgplayer.com/product/${lorcastCard.tcgplayer_id}`
+            : undefined);
+
+    const cardmarketUrl = raw.externalLinks?.cardmarketUrl || undefined;
+
     return {
         $id: slug,
         id: slug,
@@ -126,31 +231,59 @@ function normalizeCard(raw, usedSlugs) {
         formats: raw.allowedInFormats
             ? Object.keys(raw.allowedInFormats).map((f) => f.toLowerCase())
             : ['core', 'infinity'],
+        prices: {
+            usd: priceUsd,
+            usd_foil: priceUsdFoil,
+        },
+        tcgplayer_url: tcgplayerUrl,
+        cardmarket_url: cardmarketUrl,
     };
 }
 
 async function syncCards() {
-    console.log('🔄 Starting automated Lorcana card catalog sync...');
+    console.log('🔄 Starting automated Lorcana card catalog & pricing sync...');
 
     try {
-        console.log(`📥 Fetching bulk card data from ${LORCANA_JSON_URL}...`);
-        const res = await fetch(LORCANA_JSON_URL, {
-            headers: { 'User-Agent': 'GlimmerForge-LorcanaTracker/1.0' },
-        });
+        console.log(
+            `📥 Fetching card dataset and market prices concurrently...`,
+        );
+        const [ljRes, lcRes] = await Promise.all([
+            fetch(LORCANA_JSON_URL, {
+                headers: { 'User-Agent': 'GlimmerForge-LorcanaTracker/1.0' },
+            }),
+            fetch(LORCAST_BULK_URL, {
+                headers: { 'User-Agent': 'GlimmerForge-LorcanaTracker/1.0' },
+            }).catch((err) => {
+                console.warn(
+                    `⚠️ Warning: Failed to fetch Lorcast prices (${err.message}). Continuing without live pricing.`,
+                );
+                return null;
+            }),
+        ]);
 
-        if (!res.ok) {
-            throw new Error(`LorcanaJSON returned HTTP ${res.status}`);
+        if (!ljRes.ok) {
+            throw new Error(`LorcanaJSON returned HTTP ${ljRes.status}`);
         }
 
-        const data = await res.json();
-        const cardsArray = Array.isArray(data)
-            ? data
-            : data.cards || Object.values(data);
+        const ljData = await ljRes.json();
+        const cardsArray = Array.isArray(ljData)
+            ? ljData
+            : ljData.cards || Object.values(ljData);
+
+        let lorcastLookup = null;
+        if (lcRes && lcRes.ok) {
+            const lcData = await lcRes.json();
+            const lcCards = Array.isArray(lcData) ? lcData : [];
+            lorcastLookup = buildLorcastLookups(lcCards);
+            console.log(
+                `📊 Successfully loaded ${lcCards.length} pricing records from Lorcast.`,
+            );
+        }
 
         console.log(`✅ Received ${cardsArray.length} cards from LorcanaJSON.`);
         const usedSlugs = new Set();
         const normalized = cardsArray.map((raw) =>
-            normalizeCard(raw, usedSlugs),
+            normalizeCard(raw, usedSlugs, lorcastLookup),
         );
 
         // Deduplicate by slug ID
@@ -160,9 +293,13 @@ async function syncCards() {
         }
 
         const finalCards = Array.from(cardMap.values());
+        const pricedCount = finalCards.filter(
+            (c) => c.prices?.usd != null || c.prices?.usd_foil != null,
+        ).length;
+
         fs.writeFileSync(CARDS_FILE_PATH, JSON.stringify(finalCards, null, 2));
         console.log(
-            `✨ Successfully synchronized ${finalCards.length} cards with canonical slugs to ${CARDS_FILE_PATH}!`,
+            `✨ Successfully synchronized ${finalCards.length} cards (${pricedCount} with market pricing) to ${CARDS_FILE_PATH}!`,
         );
     } catch (err) {
         console.error('❌ Failed to synchronize cards:', err.message);
@@ -170,4 +307,10 @@ async function syncCards() {
     }
 }
 
-syncCards();
+if (
+    process.argv[1] &&
+    process.argv[1].endsWith('sync-cards.js') &&
+    !process.env.VITEST
+) {
+    syncCards();
+}

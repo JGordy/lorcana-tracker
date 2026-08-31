@@ -9,15 +9,45 @@ This document outlines the external data sources, community APIs, and internal s
 | Source                                                                                                | Role                                | Endpoint / URL                                           | Status / Notes                                                      |
 | :---------------------------------------------------------------------------------------------------- | :---------------------------------- | :------------------------------------------------------- | :------------------------------------------------------------------ |
 | **LorcanaJSON** ([`great-illuminary/lorcana-data`](https://github.com/great-illuminary/lorcana-data)) | Primary Card Database & Catalog     | `https://lorcanajson.org/files/current/en/allCards.json` | **Active** — Synced via `npm run sync:cards` to `public/cards.json` |
+| **[Lorcast](https://lorcast.com)**                                                                    | Live Market Pricing & Store Links   | `https://api.lorcast.com/v0/bulk/cards`                  | **Active** — Ingested in `sync-cards.js` for USD & Foil pricing     |
 | **Ravensburger Official CDN**                                                                         | Card Artwork & High-Res Images      | `https://api.lorcana.ravensburger.com/images/...`        | **Active** — Extracted via LorcanaJSON dataset                      |
 | **[api-lorcana.com](https://api-lorcana.com)**                                                        | Trending & Metagame Decks           | `https://api-lorcana.com/decks/trending`                 | **Active** — Dynamic fetch in `dbService.getDecksWithProgress()`    |
 | **Appwrite Database**                                                                                 | User Inventory, Custom Decks & Auth | Managed Backend (Cloud / Self-hosted)                    | **Active** — Primary persistent storage with cookie fallback        |
 | **[lorcana-api.com](https://lorcana-api.com)**                                                        | Alternative Card API                | `https://api.lorcana-api.com`                            | _Evaluated / Inactive_ (Superseded by LorcanaJSON)                  |
-| **[Lorcast](https://lorcast.com)**                                                                    | Alternative Card & Set API          | `https://api.lorcast.com`                                | _Evaluated / Inactive_ (Available as alternative)                   |
 
 ---
 
-## 2. Card Catalog & Metadata Pipeline
+## 2. Architecture & Data Flow Diagram
+
+```mermaid
+graph TD
+    subgraph Data Sources & Ingestion
+        A[LorcanaJSON<br/>lorcanajson.org] -->|Card Metadata & URLs| SYNC[scripts/sync-cards.js]
+        B[Lorcast Bulk API<br/>api.lorcast.com] -->|Market Pricing USD/Foil & TCG Links| SYNC
+        SYNC -->|Unified Database| C[public/cards.json]
+    end
+
+    subgraph Server Layer
+        C -->|getCardsCatalog| D[In-Memory Card Catalog Cache]
+        E[Appwrite DB / Cookies] -->|user_collections| F[Server Loaders]
+        D --> F
+    end
+
+    subgraph Client Valuation & Deck Engine
+        F -->|SSR Data Loader| G[React Router v8 Routes]
+        G --> H[Collection View & Portfolio Valuation]
+        G --> I[Deck Builder & Market Cost Calculations]
+        G --> J[Shopping List & TCGPlayer Mass Entry]
+
+        H --> K[Crown Jewels Drawer<br/>Top 10 High-Value Cards]
+        I --> L[Deck Finish Cost & Valuation Badges]
+        J --> M[Direct Store Purchasing & Mass Entry]
+    end
+```
+
+---
+
+## 3. Card Catalog & Metadata Pipeline
 
 ### Source: LorcanaJSON ([`great-illuminary/lorcana-data`](https://github.com/great-illuminary/lorcana-data))
 
