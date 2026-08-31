@@ -107,7 +107,7 @@ describe('useCollectionInventory', () => {
         expect(result.current.totals.totalCardsOwned).toBe(3);
     });
 
-    it('initializes from local storage inventory when server collection is empty', () => {
+    it('initializes from local storage inventory when server collection is empty', async () => {
         localStorage.setItem(
             'lorcana_user_inventory',
             JSON.stringify([
@@ -129,6 +129,8 @@ describe('useCollectionInventory', () => {
                 cardsLookup: mockCardsLookup,
             }),
         );
+
+        await act(async () => {});
 
         expect(result.current.totals.totalCardsOwned).toBe(4);
     });
