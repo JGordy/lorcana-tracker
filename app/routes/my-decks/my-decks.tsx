@@ -144,16 +144,21 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 if (stored) {
                     const parsed: Array<{ card_id: string; quantity: number }> =
                         JSON.parse(stored);
+                    const localMap = new Map<string, number>();
                     for (const item of parsed) {
                         if (item.card_id) {
-                            map.set(
+                            localMap.set(
                                 item.card_id,
-                                Math.max(
-                                    map.get(item.card_id) || 0,
-                                    item.quantity || 0,
-                                ),
+                                (localMap.get(item.card_id) || 0) +
+                                    (item.quantity || 0),
                             );
                         }
+                    }
+                    for (const [cardId, localQty] of localMap.entries()) {
+                        map.set(
+                            cardId,
+                            Math.max(map.get(cardId) || 0, localQty),
+                        );
                     }
                 }
             } catch {
@@ -176,8 +181,14 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     );
 
     const auditResult = useMemo(
-        () => calculatePhysicalDeckAudit(activeDecks, userCollection, cards),
-        [activeDecks, userCollection, cards],
+        () =>
+            calculatePhysicalDeckAudit(
+                activeDecks,
+                userCollection,
+                cards,
+                inventoryMap,
+            ),
+        [activeDecks, userCollection, cards, inventoryMap],
     );
 
     // Custom import hook

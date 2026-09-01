@@ -175,6 +175,55 @@ describe('calculatePhysicalDeckAudit', () => {
         expect(audit.conflicts[1].decks).toHaveLength(1);
     });
 
+    it('uses inventoryMap and deck card ownedQty when userCollection is empty or offline', () => {
+        // mockDeck1 requires 4 Mim Fox, 4 Stitch. mockDeck2 requires 4 Mim Fox. Total required: 8 Mim Fox, 4 Stitch.
+        // inventoryMap provides 8 Mim Fox and 4 Stitch.
+        const inventoryMap = new Map([
+            ['madam-mim-fox', 8],
+            ['stitch-rock-star', 4],
+        ]);
+
+        const audit = calculatePhysicalDeckAudit(
+            [mockDeck1, mockDeck2],
+            [],
+            undefined,
+            inventoryMap,
+        );
+
+        expect(audit.activeDecksCount).toBe(2);
+        expect(audit.totalConflictCardsCount).toBe(0);
+        expect(audit.totalDeficitCount).toBe(0);
+        expect(audit.is100PercentBuildable).toBe(true);
+    });
+
+    it('correctly sums standard and foil copies from userCollection and inventoryMap', () => {
+        // mockDeck2 requires 4 Mim Fox.
+        // userCollection has 3 normal Mim Fox, and inventoryMap has 4 (3 normal + 1 foil summed).
+        const collection: UserCollectionItemDoc[] = [
+            {
+                $id: 'inv-1',
+                user_id: 'u1',
+                card_id: 'madam-mim-fox',
+                quantity: 3,
+                is_foil: false,
+            },
+            {
+                $id: 'inv-2',
+                user_id: 'u1',
+                card_id: 'madam-mim-fox',
+                quantity: 1,
+                is_foil: true,
+            },
+        ];
+
+        const audit = calculatePhysicalDeckAudit([mockDeck2], collection);
+
+        expect(audit.activeDecksCount).toBe(1);
+        expect(audit.totalConflictCardsCount).toBe(0);
+        expect(audit.totalDeficitCount).toBe(0);
+        expect(audit.is100PercentBuildable).toBe(true);
+    });
+
     it('handles empty active decks list gracefully', () => {
         const audit = calculatePhysicalDeckAudit([], []);
         expect(audit.activeDecksCount).toBe(0);
