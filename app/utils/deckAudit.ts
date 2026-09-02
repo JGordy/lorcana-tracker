@@ -34,12 +34,13 @@ export function calculatePhysicalDeckAudit(
     activeDecks: DeckWithProgress[],
     userCollection: UserCollectionItemDoc[],
     cardsCatalog?: LorcanaCard[],
+    inventoryMap?: Map<string, number>,
 ): DeckAuditResult {
     const cardsLookup = cardsCatalog ? buildCardsLookup(cardsCatalog) : null;
 
     // 1. Calculate total owned quantities (standard + foil) per canonical card ID
     const ownedMap = new Map<string, number>();
-    for (const item of userCollection) {
+    for (const item of userCollection || []) {
         if (item.quantity > 0) {
             let canonicalId = item.card_id;
             if (cardsLookup) {
@@ -55,6 +56,24 @@ export function calculatePhysicalDeckAudit(
                     item.card_id,
                     (ownedMap.get(item.card_id) || 0) + item.quantity,
                 );
+            }
+        }
+    }
+
+    if (inventoryMap) {
+        for (const [cardId, qty] of inventoryMap.entries()) {
+            if (qty > 0) {
+                let canonicalId = cardId;
+                if (cardsLookup) {
+                    const resolved = cardsLookup.get(cardId);
+                    if (resolved) canonicalId = resolved.id;
+                }
+                const current = ownedMap.get(canonicalId) || 0;
+                const maxQty = Math.max(current, qty);
+                ownedMap.set(canonicalId, maxQty);
+                if (cardId !== canonicalId) {
+                    ownedMap.set(cardId, maxQty);
+                }
             }
         }
     }

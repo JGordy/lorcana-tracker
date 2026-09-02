@@ -136,4 +136,40 @@ describe('useMyDecksActions', () => {
         expect(result.current.localDecks[0]?.title).toBe('Updated Title');
         expect(result.current.localDecks[0]?.meta?.coverCardId).toBe('c1');
     });
+
+    it('toggles deck active state and persists to localStorage and backend on handleToggleDeckActive', () => {
+        const { result } = renderHook(() =>
+            useMyDecksActions({
+                decks: mockDecks,
+                cards: mockCards,
+                user: { $id: 'u1' },
+                submit: mockSubmit,
+                fetcher: mockFetcher,
+            }),
+        );
+
+        act(() => {
+            result.current.handleToggleDeckActive(mockDecks[0]);
+        });
+
+        expect(result.current.localDecks[0]?.is_active).toBe(true);
+        expect(result.current.localDecks[0]?.meta?.is_active).toBe(true);
+        const parsedDesc = JSON.parse(
+            result.current.localDecks[0]?.description || '{}',
+        );
+        expect(parsedDesc.is_active).toBe(true);
+
+        const storedActive = localStorage.getItem('lorcana_active_deck_ids');
+        expect(storedActive).toBeTruthy();
+        expect(JSON.parse(storedActive!)).toContain('deck-1');
+
+        expect(mockFetcher.submit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                intent: 'update-deck-details',
+                deckId: 'deck-1',
+                description: expect.stringContaining('"is_active":true'),
+            }),
+            { method: 'post' },
+        );
+    });
 });

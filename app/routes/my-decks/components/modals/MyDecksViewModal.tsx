@@ -342,6 +342,7 @@ export function MyDecksViewModal({
                                         }),
                                     ),
                                 ]}
+                                comboboxProps={{ zIndex: 1000 }}
                                 styles={{
                                     input: {
                                         backgroundColor:

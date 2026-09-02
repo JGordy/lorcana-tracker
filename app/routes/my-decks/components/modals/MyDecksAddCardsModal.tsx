@@ -33,6 +33,7 @@ interface MyDecksAddCardsModalProps {
     filteredCards: any[];
     activeDeckCardsMap: Map<string, number>;
     onUpdateCardQty: (cardId: string, delta: number) => void;
+    deckInks?: string[];
 }
 
 export function MyDecksAddCardsModal({
@@ -49,6 +50,7 @@ export function MyDecksAddCardsModal({
     filteredCards,
     activeDeckCardsMap,
     onUpdateCardQty,
+    deckInks,
 }: MyDecksAddCardsModalProps) {
     const [localSearch, setLocalSearch] = useState(searchQuery);
     const [debouncedSearch] = useDebouncedValue(localSearch, 150);
@@ -153,13 +155,33 @@ export function MyDecksAddCardsModal({
                         value={inkFilter}
                         onChange={(val) => onInkFilterChange(val || 'all')}
                         data={[
+                            ...(deckInks && deckInks.length > 0
+                                ? [
+                                      {
+                                          value: 'deck',
+                                          label: `Deck Inks (${deckInks
+                                              .map(
+                                                  (i) =>
+                                                      i
+                                                          .charAt(0)
+                                                          .toUpperCase() +
+                                                      i.slice(1).toLowerCase(),
+                                              )
+                                              .join(' / ')})`,
+                                      },
+                                  ]
+                                : []),
                             { value: 'all', label: 'All Inks' },
                             ...ALL_INKS.map((ink) => ({
                                 value: ink.id,
                                 label: ink.name,
                             })),
                         ]}
-                        style={{ width: 140 }}
+                        style={{
+                            minWidth:
+                                deckInks && deckInks.length > 0 ? 180 : 140,
+                        }}
+                        comboboxProps={{ zIndex: 1000 }}
                         styles={{
                             input: {
                                 backgroundColor: 'rgba(15, 23, 42, 0.7)',
@@ -184,6 +206,7 @@ export function MyDecksAddCardsModal({
                             { value: 'Location', label: 'Location' },
                         ]}
                         style={{ width: 140 }}
+                        comboboxProps={{ zIndex: 1000 }}
                         styles={{
                             input: {
                                 backgroundColor: 'rgba(15, 23, 42, 0.7)',
