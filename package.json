@@ -11,7 +11,7 @@
         "sync:cards": "node scripts/sync-cards.js",
         "lint": "eslint .",
         "format": "prettier --write .",
-        "prepare": "husky"
+        "prepare": "husky || true"
     },
     "lint-staged": {
         "**/*": "prettier --write --ignore-unknown",
