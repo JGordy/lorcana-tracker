@@ -105,7 +105,7 @@ export function SubstituteCardTile({
                             label={
                                 <Stack gap={6} style={{ maxWidth: 300 }}>
                                     <Stack
-                                        gap={0}
+                                        gap={6}
                                         pb={8}
                                         style={{
                                             borderBottom:
@@ -130,12 +130,13 @@ export function SubstituteCardTile({
                                             size="xs"
                                             fw={800}
                                             c="#ffffff"
-                                            mt={6}
-                                            mb={2}
                                             style={{
                                                 fontFamily:
                                                     "'Cinzel Decorative', serif",
                                                 letterSpacing: '0.5px',
+                                                marginTop: '8px',
+                                                marginBottom: '4px',
+                                                display: 'block',
                                             }}
                                         >
                                             Why this is a good substitute
