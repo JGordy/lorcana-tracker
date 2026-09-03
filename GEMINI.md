@@ -93,15 +93,15 @@ Detailed technical reference is available in [`docs/DATA_SOURCES.md`](./docs/DAT
 
 ## 5. Development & Testing Commands
 
-| Command              | Purpose                                                                    |
-| :------------------- | :------------------------------------------------------------------------- |
-| `npm run dev`        | Start local Vite/React Router development server (`http://localhost:5173`) |
-| `npm run build`      | Create production build (`build/client` & `build/server`)                  |
-| `npm run test`       | Run complete Vitest unit and component test suite                          |
-| `npm run typecheck`  | Run React Router typegen and TypeScript compiler checks                    |
-| `npm run lint`       | Run ESLint across the codebase                                             |
-| `npm run format`     | Format code with Prettier                                                  |
-| `npm run sync:cards` | Sync latest cards from LorcanaJSON into `public/cards.json`                |
+| Command              | Purpose                                                                           |
+| :------------------- | :-------------------------------------------------------------------------------- |
+| `npm run dev`        | Start local Vite/React Router development server (`http://localhost:5173`)        |
+| `npm run build`      | Create production build (`build/client` & `build/server`)                         |
+| `npm run test`       | Run Vitest test suite (e.g. `npm run test app/utils/tests/substitutions.test.ts`) |
+| `npm run typecheck`  | Run React Router typegen and TypeScript compiler checks                           |
+| `npm run lint`       | Run ESLint across the codebase                                                    |
+| `npm run format`     | Format code with Prettier                                                         |
+| `npm run sync:cards` | Sync latest cards from LorcanaJSON into `public/cards.json`                       |
 
 ---
 

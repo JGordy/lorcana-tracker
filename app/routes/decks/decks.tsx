@@ -19,6 +19,8 @@ import { ImportDeckModal } from './components/ImportDeckModal';
 import { ViewDeckModal } from './components/ViewDeckModal';
 import { ShoppingListModal } from '../../components/ShoppingListModal';
 import { PlaytestModal } from '../../components/PlaytestModal';
+import { CardSubstitutionModal } from '../../components/substitutions/CardSubstitutionModal';
+import type { Card } from '../../types/lorcana';
 
 import type { Route } from './+types/decks';
 
@@ -26,7 +28,14 @@ export { loader } from './loader';
 export { action } from './action';
 
 export default function Decks({ loaderData }: Route.ComponentProps) {
-    const { decks, cards, user, sort, completion = 'all' } = loaderData;
+    const {
+        decks,
+        cards,
+        userCollection = [],
+        user,
+        sort,
+        completion = 'all',
+    } = loaderData;
     const navigate = useNavigate();
     const fetcher = useFetcher();
     const cloneFetcher = useFetcher();
@@ -48,6 +57,21 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
     const [playtestDeck, setPlaytestDeck] = useState<ProcessedDeck | null>(
         null,
     );
+
+    const [substitutionModalOpen, setSubstitutionModalOpen] = useState(false);
+    const [substitutionTargetCard, setSubstitutionTargetCard] =
+        useState<Card | null>(null);
+    const [substitutionDeck, setSubstitutionDeck] =
+        useState<ProcessedDeck | null>(null);
+
+    const handleOpenSubstitutions = (
+        card: Card,
+        deck?: ProcessedDeck | null,
+    ) => {
+        setSubstitutionTargetCard(card);
+        setSubstitutionDeck(deck || activeDeckForView);
+        setSubstitutionModalOpen(true);
+    };
 
     const handleOpenPlaytest = (deck: ProcessedDeck) => {
         setPlaytestDeck(deck);
@@ -223,6 +247,9 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                     setShoppingListModalOpen(true);
                 }}
                 onOpenPlaytest={handleOpenPlaytest}
+                onOpenSubstitutions={(card) =>
+                    handleOpenSubstitutions(card, activeDeckForView)
+                }
             />
 
             <ShoppingListModal
@@ -233,6 +260,25 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
                 }}
                 deck={shoppingListDeck}
                 user={user}
+                onQuickAdd={handleQuickAdd}
+                onOpenSubstitutions={(card) =>
+                    handleOpenSubstitutions(card, shoppingListDeck)
+                }
+            />
+
+            <CardSubstitutionModal
+                opened={substitutionModalOpen}
+                onClose={() => {
+                    setSubstitutionModalOpen(false);
+                    setSubstitutionTargetCard(null);
+                    setSubstitutionDeck(null);
+                }}
+                targetCard={substitutionTargetCard}
+                deck={substitutionDeck || activeDeckForView}
+                catalog={cards}
+                userCollection={userCollection}
+                user={user}
+                canSwapInDeck={false}
                 onQuickAdd={handleQuickAdd}
             />
 

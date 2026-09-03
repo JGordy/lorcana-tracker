@@ -21,6 +21,7 @@ import { MyDecksViewModal } from './components/modals/MyDecksViewModal';
 import { MyDecksAddCardsModal } from './components/modals/MyDecksAddCardsModal';
 import { MyDecksDeleteModal } from './components/modals/MyDecksDeleteModal';
 import { PhysicalDeckAuditModal } from './components/modals/PhysicalDeckAuditModal';
+import { CardSubstitutionModal } from '../../components/substitutions/CardSubstitutionModal';
 import { ShoppingListModal } from '../../components/ShoppingListModal';
 import { PlaytestModal } from '../../components/PlaytestModal';
 
@@ -64,10 +65,21 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const [playtestModalOpen, setPlaytestModalOpen] = useState(false);
     const [playtestDeck, setPlaytestDeck] = useState<any>(null);
 
+    const [substitutionModalOpen, setSubstitutionModalOpen] = useState(false);
+    const [substitutionTargetCard, setSubstitutionTargetCard] =
+        useState<any>(null);
+    const [substitutionDeck, setSubstitutionDeck] = useState<any>(null);
+
     const handleOpenPlaytest = (deck: any) => {
         setPlaytestDeck(deck);
         setViewModalOpen(false); // Seamless transition: no stacked modals
         setPlaytestModalOpen(true);
+    };
+
+    const handleOpenSubstitutions = (card: any, deck?: any) => {
+        setSubstitutionTargetCard(card);
+        setSubstitutionDeck(deck || activeDeckForView);
+        setSubstitutionModalOpen(true);
     };
 
     const handleOpenAddCardsModal = (deck: any) => {
@@ -112,6 +124,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
         handleRemoveCard,
         handleUndo,
         handleAddCardToDeck,
+        handleSwapCardInDeck,
         handleDeleteDeck,
         handleExportDeck,
         handleQuickAdd,
@@ -496,6 +509,9 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                     setShoppingListModalOpen(true);
                 }}
                 onOpenPlaytest={handleOpenPlaytest}
+                onOpenSubstitutions={(card) =>
+                    handleOpenSubstitutions(card, activeDeckForView)
+                }
             />
 
             {/* 5. Add Cards Modal */}
@@ -561,9 +577,40 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 deck={shoppingListDeck}
                 user={user}
                 onQuickAdd={handleQuickAdd}
+                onOpenSubstitutions={(card) =>
+                    handleOpenSubstitutions(card, shoppingListDeck)
+                }
             />
 
-            {/* 8. Playtest / Opening Hand & Alter Simulator Modal */}
+            {/* 8. Card Substitutions Modal */}
+            <CardSubstitutionModal
+                opened={substitutionModalOpen}
+                onClose={() => {
+                    setSubstitutionModalOpen(false);
+                    setSubstitutionTargetCard(null);
+                    setSubstitutionDeck(null);
+                }}
+                targetCard={substitutionTargetCard}
+                deck={substitutionDeck || activeDeckForView}
+                catalog={cards}
+                userCollection={userCollection}
+                user={user}
+                canSwapInDeck={true}
+                onSwapCardInDeck={(oldCard, newCard, qty) => {
+                    const deckToUpdate = substitutionDeck || activeDeckForView;
+                    if (deckToUpdate) {
+                        handleSwapCardInDeck(
+                            deckToUpdate.$id,
+                            oldCard.id,
+                            newCard,
+                            qty,
+                        );
+                    }
+                }}
+                onQuickAdd={handleQuickAdd}
+            />
+
+            {/* 9. Playtest / Opening Hand & Alter Simulator Modal */}
             <PlaytestModal
                 opened={playtestModalOpen}
                 onClose={() => {
@@ -573,7 +620,7 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
                 deck={playtestDeck}
             />
 
-            {/* 9. Multi-Deck Physical Collection Audit Modal */}
+            {/* 10. Multi-Deck Physical Collection Audit Modal */}
             <PhysicalDeckAuditModal
                 opened={auditModalOpen}
                 onClose={() => setAuditModalOpen(false)}

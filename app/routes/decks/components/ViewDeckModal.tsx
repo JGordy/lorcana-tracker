@@ -31,8 +31,10 @@ import {
     IconChartBar,
     IconPhoto,
     IconExternalLink,
+    IconArrowsExchange,
 } from '@tabler/icons-react';
 import type { useFetcher } from 'react-router';
+import type { Card as LorcanaCard } from '../../../types/lorcana';
 import { parseDeckMetadata } from '../../../utils/deck';
 import { DeckInkCurve } from '../../../components/DeckInkCurve';
 import { ExportDeckGraphicModal } from './ExportDeckGraphicModal';
@@ -61,6 +63,7 @@ interface ViewDeckModalProps {
     onQuickAdd: (cardId: string, currentOwned: number) => void;
     onOpenShoppingList?: (deck: ProcessedDeck) => void;
     onOpenPlaytest?: (deck: ProcessedDeck) => void;
+    onOpenSubstitutions?: (card: LorcanaCard) => void;
 }
 
 export function ViewDeckModal({
@@ -80,6 +83,7 @@ export function ViewDeckModal({
     onQuickAdd,
     onOpenShoppingList,
     onOpenPlaytest,
+    onOpenSubstitutions,
 }: ViewDeckModalProps) {
     const [showCurve, setShowCurve] = useState(false);
     const [showGraphicModal, setShowGraphicModal] = useState(false);
@@ -644,37 +648,76 @@ export function ViewDeckModal({
                                                         >
                                                             {dc.card.name}
                                                         </Text>
-                                                        <Tooltip
-                                                            label="TCGPlayer"
-                                                            position="top"
-                                                            withArrow
+                                                        <Group
+                                                            gap={3}
+                                                            align="center"
+                                                            wrap="nowrap"
                                                         >
-                                                            <ActionIcon
-                                                                component="a"
-                                                                href={
-                                                                    dc.card
-                                                                        .tcgplayer_url ||
-                                                                    getTcgPlayerCardSearchUrl(
-                                                                        dc.card
-                                                                            .name,
-                                                                    )
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                size="xs"
-                                                                variant="subtle"
-                                                                color="blue"
-                                                                style={{
-                                                                    opacity: 0.7,
-                                                                    marginTop:
-                                                                        -2,
-                                                                }}
+                                                            {onOpenSubstitutions && (
+                                                                <Tooltip
+                                                                    label="Find Substitutes"
+                                                                    position="top"
+                                                                    withArrow
+                                                                >
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        variant="subtle"
+                                                                        color="violet"
+                                                                        aria-label={`Find substitutes for ${dc.card.name}`}
+                                                                        onClick={() =>
+                                                                            onOpenSubstitutions(
+                                                                                dc.card,
+                                                                            )
+                                                                        }
+                                                                        style={{
+                                                                            opacity: 0.85,
+                                                                            marginTop:
+                                                                                -2,
+                                                                        }}
+                                                                    >
+                                                                        <IconArrowsExchange
+                                                                            size={
+                                                                                13
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                </Tooltip>
+                                                            )}
+                                                            <Tooltip
+                                                                label="TCGPlayer"
+                                                                position="top"
+                                                                withArrow
                                                             >
-                                                                <IconExternalLink
-                                                                    size={12}
-                                                                />
-                                                            </ActionIcon>
-                                                        </Tooltip>
+                                                                <ActionIcon
+                                                                    component="a"
+                                                                    href={
+                                                                        dc.card
+                                                                            .tcgplayer_url ||
+                                                                        getTcgPlayerCardSearchUrl(
+                                                                            dc
+                                                                                .card
+                                                                                .name,
+                                                                        )
+                                                                    }
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    size="xs"
+                                                                    variant="subtle"
+                                                                    color="blue"
+                                                                    style={{
+                                                                        opacity: 0.7,
+                                                                        marginTop:
+                                                                            -2,
+                                                                    }}
+                                                                >
+                                                                    <IconExternalLink
+                                                                        size={
+                                                                            12
+                                                                        }
+                                                                    />
+                                                                </ActionIcon>
+                                                            </Tooltip>
+                                                        </Group>
                                                     </Group>
 
                                                     {/* Price Tag */}

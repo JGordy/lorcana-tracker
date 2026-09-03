@@ -37,4 +37,4 @@ Welcome to the **Lorcana Tracker & Deck Builder** codebase. This file provides A
     - Follow Mantine v9 conventions (`@mantine/core`).
     - React Router route definitions and loaders are organized in `app/routes/<route-name>/`.
 4. **Testing:**
-    - Run tests using `npm run test`. Always ensure tests pass when modifying utilities, hooks, or loaders.
+    - Run tests using `npm run test` (or `npm run test <path-to-test-file>` for a specific test file). Never run `npx vitest` directly. Always ensure tests pass when modifying utilities, hooks, or loaders.

@@ -66,5 +66,6 @@ vi.mock('@tabler/icons-react', async (importOriginal) => {
         IconLogout: createDummyIcon('logout'),
         IconUser: createDummyIcon('user'),
         IconFolder: createDummyIcon('folder'),
+        IconArrowsExchange: createDummyIcon('arrows-exchange'),
     };
 });

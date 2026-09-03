@@ -27,8 +27,9 @@ import {
     IconSearch,
     IconChevronDown,
     IconCards,
+    IconArrowsExchange,
 } from '@tabler/icons-react';
-import type { DeckWithProgress } from '../types/lorcana';
+import type { Card as LorcanaCard, DeckWithProgress } from '../types/lorcana';
 import { getInkBadgeStyle } from '../routes/decks/utils/deckHelpers';
 import {
     getMissingCards,
@@ -47,6 +48,7 @@ export interface ShoppingListModalProps {
     deck: DeckWithProgress | null;
     user?: { $id: string } | null;
     onQuickAdd?: (cardId: string, currentOwned: number) => void;
+    onOpenSubstitutions?: (card: LorcanaCard) => void;
 }
 
 export function ShoppingListModal({
@@ -55,6 +57,7 @@ export function ShoppingListModal({
     deck,
     user,
     onQuickAdd,
+    onOpenSubstitutions,
 }: ShoppingListModalProps) {
     const [copiedFormat, setCopiedFormat] = useState<
         'tcg' | 'md' | 'text' | null
@@ -637,6 +640,30 @@ export function ShoppingListModal({
                                                             gap={4}
                                                             wrap="nowrap"
                                                         >
+                                                            {onOpenSubstitutions && (
+                                                                <Tooltip
+                                                                    label={`Find budget substitutes for ${item.card.name}`}
+                                                                    position="top"
+                                                                >
+                                                                    <ActionIcon
+                                                                        size="xs"
+                                                                        variant="subtle"
+                                                                        color="violet"
+                                                                        aria-label={`Find substitutes for ${item.card.name}`}
+                                                                        onClick={() =>
+                                                                            onOpenSubstitutions(
+                                                                                item.card,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <IconArrowsExchange
+                                                                            size={
+                                                                                13
+                                                                            }
+                                                                        />
+                                                                    </ActionIcon>
+                                                                </Tooltip>
+                                                            )}
                                                             <Tooltip
                                                                 label={`Search "${item.card.name}" on TCGPlayer`}
                                                                 position="top"

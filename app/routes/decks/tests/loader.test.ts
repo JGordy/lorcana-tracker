@@ -9,6 +9,7 @@ vi.mock('../../../services/appwrite.server', () => ({
     dbService: {
         getDecksWithProgress: vi.fn(),
         getCollection: vi.fn(),
+        getUserInventory: vi.fn(),
     },
     COLLECTIONS: {
         CARDS: 'cards',
