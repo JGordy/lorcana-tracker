@@ -685,6 +685,74 @@ export function useMyDecksActions({
         debouncedSubmitDeckCards(activeDeckId, user.$id, payload);
     };
 
+    const handleSwapCardInDeck = (
+        deckId: string,
+        oldCardId: string,
+        newCard: LorcanaCard,
+        swapQty: number = 1,
+    ) => {
+        if (!deckId || !user) return;
+
+        const targetDeck = localDecks.find(
+            (d) => d.$id === deckId || d.id === deckId,
+        );
+        if (!targetDeck) return;
+
+        const oldCardEntry = targetDeck.cards.find(
+            (c) => c.card.id === oldCardId || (c.card as any).$id === oldCardId,
+        );
+        if (!oldCardEntry || oldCardEntry.requiredQty <= 0) return;
+
+        const actualSwapQty = Math.min(swapQty, oldCardEntry.requiredQty);
+
+        let nextDeckCards = targetDeck.cards
+            .map((c) => {
+                if (
+                    c.card.id === oldCardId ||
+                    (c.card as any).$id === oldCardId
+                ) {
+                    return {
+                        ...c,
+                        requiredQty: c.requiredQty - actualSwapQty,
+                    };
+                }
+                return c;
+            })
+            .filter((c) => c.requiredQty > 0);
+
+        const existingNewCard = nextDeckCards.find(
+            (c) =>
+                c.card.id === newCard.id || (c.card as any).$id === newCard.id,
+        );
+
+        if (existingNewCard) {
+            const nextNewQty = Math.min(
+                existingNewCard.requiredQty + actualSwapQty,
+                4,
+            );
+            nextDeckCards = nextDeckCards.map((c) =>
+                c.card.id === newCard.id || (c.card as any).$id === newCard.id
+                    ? { ...c, requiredQty: nextNewQty }
+                    : c,
+            );
+        } else {
+            nextDeckCards.push({
+                card: newCard,
+                requiredQty: Math.min(actualSwapQty, 4),
+                ownedQty: 0,
+            });
+        }
+
+        applyDeckCardsOptimistic(targetDeck.$id, nextDeckCards);
+
+        const payload = nextDeckCards.map((c) => ({
+            cardId: c.card.id,
+            quantity: c.requiredQty,
+        }));
+
+        debouncedSubmitDeckCards(targetDeck.$id, user.$id, payload);
+    };
+
     const handleDeleteDeck = (deckToDelete: DeckWithProgress) => {
         if (!deckToDelete || !user) return;
 
@@ -824,6 +892,7 @@ export function useMyDecksActions({
         handleRemoveCard,
         handleUndo,
         handleAddCardToDeck,
+        handleSwapCardInDeck,
         handleDeleteDeck,
         handleExportDeck,
         handleQuickAdd,
