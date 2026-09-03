@@ -138,6 +138,45 @@ describe('CardSubstitutionModal', () => {
         expect(mockOnQuickAdd).toHaveBeenCalledWith(mockZeus.id, 3);
     });
 
+    it('correctly picks up collection items stored in localStorage', () => {
+        const mockRC: Card = {
+            $id: 'rc-remote-controlled-car',
+            id: 'rc-remote-controlled-car',
+            name: 'RC - Remote-Controlled Car',
+            set: 'Wilds Unknown',
+            number: 77,
+            ink_color: 'Ruby',
+            cost: 5,
+            inkwell: true,
+            strength: 3,
+            willpower: 2,
+            lore: 2,
+            type: ['Character'],
+            classifications: ['Storyborn', 'Ally', 'Toy', 'Racer', 'Rush'],
+            rarity: 'Common',
+            image_url: 'https://api.lorcana.ravensburger.com/images/rc.jpg',
+            formats: ['core', 'infinity'],
+            prices: { usd: 0.08, usd_foil: 0.3 },
+        };
+
+        // Populate localStorage
+        localStorage.setItem(
+            'lorcana_user_inventory',
+            JSON.stringify([
+                { card_id: 'rc-remote-controlled-car', quantity: 4 },
+            ]),
+        );
+
+        renderComponent({
+            catalog: [mockTargetMaui, mockRC],
+            userCollection: [], // empty server collection
+        });
+
+        // RC should show 4 owned
+        expect(screen.getByText(/4 owned/i)).toBeInTheDocument();
+        localStorage.removeItem('lorcana_user_inventory');
+    });
+
     it('filters candidate list based on search query', () => {
         renderComponent();
         const searchInput = screen.getByPlaceholderText(

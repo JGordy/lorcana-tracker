@@ -79,6 +79,52 @@ export function CardSubstitutionModal({
             ) || null
         );
     }, [deck, targetCard]);
+    // Combine server-provided userCollection with client-side local storage inventory
+    const effectiveUserCollection = useMemo(() => {
+        const map = new Map<string, { card_id: string; quantity: number }>();
+        for (const item of userCollection || []) {
+            const id =
+                (item as any).card_id ||
+                (item as any).cardId ||
+                (item as any).$id ||
+                (item as any).id;
+            if (id && item.quantity > 0) {
+                map.set(id, { card_id: id, quantity: item.quantity });
+            }
+        }
+
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem('lorcana_user_inventory');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        for (const item of parsed) {
+                            const id =
+                                (item as any).card_id ||
+                                (item as any).cardId ||
+                                (item as any).$id ||
+                                (item as any).id;
+                            if (id && item.quantity > 0) {
+                                const current = map.get(id);
+                                map.set(id, {
+                                    card_id: id,
+                                    quantity: Math.max(
+                                        current?.quantity || 0,
+                                        item.quantity,
+                                    ),
+                                });
+                            }
+                        }
+                    }
+                }
+            } catch {
+                // Ignore storage errors
+            }
+        }
+
+        return Array.from(map.values());
+    }, [userCollection, opened]);
 
     const substitutions = useMemo(() => {
         if (!targetCard || !deck || !catalog || catalog.length === 0) {
@@ -89,7 +135,7 @@ export function CardSubstitutionModal({
             targetCard,
             deck,
             catalog,
-            userCollection,
+            effectiveUserCollection,
             {
                 maxResults: 30,
                 onlyOwned,
@@ -113,7 +159,7 @@ export function CardSubstitutionModal({
         targetCard,
         deck,
         catalog,
-        userCollection,
+        effectiveUserCollection,
         onlyOwned,
         exactCostOnly,
         allowOtherDeckInks,

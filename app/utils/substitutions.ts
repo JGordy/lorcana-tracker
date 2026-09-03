@@ -305,6 +305,9 @@ export function findCardSubstitutions(
             (item as any).id;
         const qty = item.quantity || 0;
         if (rawId && qty > 0) {
+            const keysToUpdate = new Set<string>();
+            keysToUpdate.add(rawId);
+
             const resolved =
                 cardsLookup.get(rawId) ||
                 cardsLookup.get(getCardSlug(rawId)) ||
@@ -313,8 +316,20 @@ export function findCardSubstitutions(
                         .replace(/-(set|promo)-[a-z0-9]+-\d+$/i, '')
                         .replace(/-\d+-\d+$/i, ''),
                 );
-            const canonicalKey = resolved?.id || resolved?.$id || rawId;
-            ownedMap.set(canonicalKey, (ownedMap.get(canonicalKey) || 0) + qty);
+
+            if (resolved) {
+                if (resolved.id) keysToUpdate.add(resolved.id);
+                if (resolved.$id) keysToUpdate.add(resolved.$id);
+                const baseSlug = getCardSlug(resolved.name);
+                if (baseSlug) keysToUpdate.add(baseSlug);
+            } else {
+                const slug = getCardSlug(rawId);
+                if (slug) keysToUpdate.add(slug);
+            }
+
+            for (const key of keysToUpdate) {
+                ownedMap.set(key, (ownedMap.get(key) || 0) + qty);
+            }
         }
     }
 
@@ -328,14 +343,25 @@ export function findCardSubstitutions(
                 : typeof dc.quantity === 'number'
                   ? dc.quantity
                   : 1;
-        if (cId) {
+        if (cId && qty > 0) {
+            const keysToUpdate = new Set<string>();
+            keysToUpdate.add(cId);
+
             const resolved =
                 cardsLookup.get(cId) || cardsLookup.get(getCardSlug(cId));
-            const canonicalKey = resolved?.id || resolved?.$id || cId;
-            inDeckMap.set(
-                canonicalKey,
-                (inDeckMap.get(canonicalKey) || 0) + qty,
-            );
+            if (resolved) {
+                if (resolved.id) keysToUpdate.add(resolved.id);
+                if (resolved.$id) keysToUpdate.add(resolved.$id);
+                const baseSlug = getCardSlug(resolved.name);
+                if (baseSlug) keysToUpdate.add(baseSlug);
+            } else {
+                const slug = getCardSlug(cId);
+                if (slug) keysToUpdate.add(slug);
+            }
+
+            for (const key of keysToUpdate) {
+                inDeckMap.set(key, (inDeckMap.get(key) || 0) + qty);
+            }
         }
     }
 
@@ -390,9 +416,14 @@ export function findCardSubstitutions(
         }
 
         // Owned quantity
+        const candId = candidate.id || (candidate as any).$id;
+        const candSlug = getCardSlug(candidate.name);
         const ownedQty =
-            ownedMap.get(candidate.id) ||
-            ownedMap.get((candidate as any).$id) ||
+            ownedMap.get(candId) ||
+            ((candidate as any).$id
+                ? ownedMap.get((candidate as any).$id)
+                : 0) ||
+            (candSlug ? ownedMap.get(candSlug) : 0) ||
             0;
         if (onlyOwned && ownedQty <= 0) {
             continue;
