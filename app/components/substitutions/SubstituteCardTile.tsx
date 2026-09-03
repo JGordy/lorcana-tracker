@@ -103,11 +103,9 @@ export function SubstituteCardTile({
                         {/* Top Right: Score Badge with Themed Header & Bulleted Reason List */}
                         <Tooltip
                             label={
-                                <Stack gap={8} style={{ maxWidth: 280 }}>
-                                    <Group
-                                        justify="space-between"
-                                        align="center"
-                                        wrap="nowrap"
+                                <Stack gap={6} style={{ maxWidth: 300 }}>
+                                    <Stack
+                                        gap={4}
                                         pb={6}
                                         style={{
                                             borderBottom:
@@ -119,31 +117,28 @@ export function SubstituteCardTile({
                                                 size={14}
                                                 color="#c084fc"
                                             />
-                                            <Text
+                                            <Badge
                                                 size="xs"
-                                                fw={800}
-                                                c="#ffffff"
-                                                style={{
-                                                    fontFamily:
-                                                        "'Cinzel Decorative', serif",
-                                                    letterSpacing: '0.5px',
-                                                }}
+                                                variant="filled"
+                                                color="violet.8"
+                                                style={{ fontWeight: 800 }}
                                             >
-                                                Why this is a good substitute
-                                            </Text>
+                                                {score} pts Match
+                                            </Badge>
                                         </Group>
-                                        <Badge
+                                        <Text
                                             size="xs"
-                                            variant="filled"
-                                            color="violet.8"
+                                            fw={800}
+                                            c="#ffffff"
                                             style={{
-                                                fontWeight: 800,
-                                                flexShrink: 0,
+                                                fontFamily:
+                                                    "'Cinzel Decorative', serif",
+                                                letterSpacing: '0.5px',
                                             }}
                                         >
-                                            {score} pts
-                                        </Badge>
-                                    </Group>
+                                            Why this is a good substitute
+                                        </Text>
+                                    </Stack>
 
                                     <List
                                         size="xs"
