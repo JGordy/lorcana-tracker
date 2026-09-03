@@ -8,4 +8,5 @@ export default [
     route('verify', 'routes/verify/verify.tsx'),
     route('logout', 'routes/logout/logout.tsx'),
     route('api/proxy-image', 'routes/api/proxy-image.ts'),
+    route('api/health', 'routes/api/health.ts'),
 ] satisfies RouteConfig;
