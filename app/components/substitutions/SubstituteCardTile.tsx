@@ -6,12 +6,15 @@ import {
     Button,
     Tooltip,
     ActionIcon,
+    List,
+    ThemeIcon,
 } from '@mantine/core';
 import {
     IconExternalLink,
     IconPlus,
     IconArrowsExchange,
     IconSparkles,
+    IconCheck,
 } from '@tabler/icons-react';
 import type { Card } from '../../types/lorcana';
 import type { SubstitutionRecommendation } from '../../utils/substitutions';
@@ -28,6 +31,23 @@ export interface SubstituteCardTileProps {
     onSwapCard?: (substituteCard: Card, swapQuantity: number) => void;
     onQuickAdd?: (cardId: string, newOwnedQty: number) => void;
 }
+
+const darkTooltipStyles = {
+    tooltip: {
+        background:
+            'linear-gradient(180deg, rgba(24, 18, 52, 0.98) 0%, rgba(13, 9, 30, 0.98) 100%)',
+        border: '1px solid rgba(168, 85, 247, 0.45)',
+        boxShadow:
+            '0 16px 36px rgba(0, 0, 0, 0.9), 0 0 20px rgba(168, 85, 247, 0.25)',
+        borderRadius: '10px',
+        padding: '10px 14px',
+        color: '#ffffff',
+    },
+    arrow: {
+        border: '1px solid rgba(168, 85, 247, 0.45)',
+        background: 'rgba(13, 9, 30, 0.98)',
+    },
+};
 
 export function SubstituteCardTile({
     substitute,
@@ -80,28 +100,88 @@ export function SubstituteCardTile({
                     }}
                 >
                     <Group gap={4} align="center" wrap="nowrap">
-                        {/* Top Right: Score Badge with Detailed Breakdown Tooltip */}
+                        {/* Top Right: Score Badge with Themed Header & Bulleted Reason List */}
                         <Tooltip
                             label={
-                                <Stack gap={4} p={2}>
-                                    <Text size="11px" fw={800} c="violet.2">
-                                        Match Score: {score} pts
-                                    </Text>
-                                    <Text size="10px" c="gray.4">
-                                        Scored on type, ink cost curve,
-                                        keywords, stats, ownership & budget:
-                                    </Text>
-                                    {reasons.map((r, i) => (
-                                        <Text key={i} size="10px" c="gray.2">
-                                            • {r}
-                                        </Text>
-                                    ))}
+                                <Stack gap={8} style={{ maxWidth: 280 }}>
+                                    <Group
+                                        justify="space-between"
+                                        align="center"
+                                        wrap="nowrap"
+                                        pb={6}
+                                        style={{
+                                            borderBottom:
+                                                '1px solid rgba(255, 255, 255, 0.12)',
+                                        }}
+                                    >
+                                        <Group gap={6} align="center">
+                                            <IconSparkles
+                                                size={14}
+                                                color="#c084fc"
+                                            />
+                                            <Text
+                                                size="xs"
+                                                fw={800}
+                                                c="#ffffff"
+                                                style={{
+                                                    fontFamily:
+                                                        "'Cinzel Decorative', serif",
+                                                    letterSpacing: '0.5px',
+                                                }}
+                                            >
+                                                Why this is a good substitute
+                                            </Text>
+                                        </Group>
+                                        <Badge
+                                            size="xs"
+                                            variant="filled"
+                                            color="violet.8"
+                                            style={{
+                                                fontWeight: 800,
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            {score} pts
+                                        </Badge>
+                                    </Group>
+
+                                    <List
+                                        size="xs"
+                                        spacing={5}
+                                        icon={
+                                            <ThemeIcon
+                                                color="teal.6"
+                                                size={14}
+                                                radius="xl"
+                                                variant="light"
+                                            >
+                                                <IconCheck
+                                                    size={10}
+                                                    stroke={3}
+                                                />
+                                            </ThemeIcon>
+                                        }
+                                    >
+                                        {reasons.map((r, i) => (
+                                            <List.Item
+                                                key={i}
+                                                style={{
+                                                    color: '#f1f5f9',
+                                                    fontSize: '11px',
+                                                    lineHeight: 1.4,
+                                                }}
+                                            >
+                                                {r}
+                                            </List.Item>
+                                        ))}
+                                    </List>
                                 </Stack>
                             }
                             withArrow
                             position="top"
                             multiline
                             zIndex={1000}
+                            styles={darkTooltipStyles}
                         >
                             <Badge
                                 size="xs"
@@ -125,6 +205,7 @@ export function SubstituteCardTile({
                             withArrow
                             position="top"
                             zIndex={1000}
+                            styles={darkTooltipStyles}
                         >
                             <ActionIcon
                                 component="a"
@@ -199,21 +280,56 @@ export function SubstituteCardTile({
                     <Group gap={4} wrap="nowrap" align="center">
                         <Tooltip
                             label={
-                                <Stack gap={2}>
-                                    <Text size="11px" fw={700}>
-                                        Match Reasons:
+                                <Stack gap={6} style={{ maxWidth: 260 }}>
+                                    <Text
+                                        size="xs"
+                                        fw={800}
+                                        c="#ffffff"
+                                        style={{
+                                            borderBottom:
+                                                '1px solid rgba(255, 255, 255, 0.12)',
+                                            paddingBottom: 4,
+                                        }}
+                                    >
+                                        Match Breakdown
                                     </Text>
-                                    {reasons.map((r, i) => (
-                                        <Text key={i} size="10px">
-                                            • {r}
-                                        </Text>
-                                    ))}
+                                    <List
+                                        size="xs"
+                                        spacing={4}
+                                        icon={
+                                            <ThemeIcon
+                                                color="teal.6"
+                                                size={14}
+                                                radius="xl"
+                                                variant="light"
+                                            >
+                                                <IconCheck
+                                                    size={10}
+                                                    stroke={3}
+                                                />
+                                            </ThemeIcon>
+                                        }
+                                    >
+                                        {reasons.map((r, i) => (
+                                            <List.Item
+                                                key={i}
+                                                style={{
+                                                    color: '#f1f5f9',
+                                                    fontSize: '11px',
+                                                    lineHeight: 1.4,
+                                                }}
+                                            >
+                                                {r}
+                                            </List.Item>
+                                        ))}
+                                    </List>
                                 </Stack>
                             }
                             withArrow
                             position="top"
                             multiline
                             zIndex={1000}
+                            styles={darkTooltipStyles}
                         >
                             <Badge
                                 size="xs"
@@ -268,6 +384,7 @@ export function SubstituteCardTile({
                             label="Add 1 copy to collection"
                             position="top"
                             zIndex={1000}
+                            styles={darkTooltipStyles}
                         >
                             <Button
                                 size="xs"
