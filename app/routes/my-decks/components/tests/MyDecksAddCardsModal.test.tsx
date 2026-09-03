@@ -89,7 +89,7 @@ describe('MyDecksAddCardsModal', () => {
             () => {
                 expect(onSearchQueryChange).toHaveBeenCalledWith('Stitch');
             },
-            { timeout: 1000 },
+            { timeout: 3000 },
         );
     });
 

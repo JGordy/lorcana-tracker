@@ -124,7 +124,7 @@ export function CardSubstitutionModal({
         }
 
         return Array.from(map.values());
-    }, [userCollection, opened]);
+    }, [userCollection]);
 
     const substitutions = useMemo(() => {
         if (!targetCard || !deck || !catalog || catalog.length === 0) {
