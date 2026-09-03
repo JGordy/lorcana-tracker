@@ -299,82 +299,88 @@ export function CardSubstitutionModal({
                                 aspectRatio="5/7"
                                 headerOverlay={
                                     <Group
-                                        justify="space-between"
-                                        align="center"
+                                        justify="flex-end"
+                                        align="flex-start"
                                         wrap="nowrap"
                                         p={6}
-                                        style={{ width: '100%' }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            zIndex: 2,
+                                        }}
                                     >
-                                        <Badge
-                                            size="xs"
-                                            variant="filled"
-                                            style={{
-                                                backgroundColor:
-                                                    targetInkStyle.color,
-                                            }}
+                                        <Group
+                                            gap={4}
+                                            align="center"
+                                            wrap="nowrap"
                                         >
-                                            {targetCard.ink_color}
-                                        </Badge>
+                                            {targetCard.prices?.usd != null && (
+                                                <Badge
+                                                    size="xs"
+                                                    variant="filled"
+                                                    color="teal.8"
+                                                    style={{
+                                                        backdropFilter:
+                                                            'blur(6px)',
+                                                        backgroundColor:
+                                                            'rgba(13, 148, 136, 0.9)',
+                                                        fontWeight: 700,
+                                                    }}
+                                                >
+                                                    {formatCurrency(
+                                                        targetCard.prices.usd,
+                                                    )}
+                                                </Badge>
+                                            )}
 
-                                        {targetCard.prices?.usd != null && (
-                                            <Badge
-                                                size="xs"
-                                                variant="filled"
-                                                color="teal.8"
-                                                style={{
-                                                    backdropFilter: 'blur(6px)',
-                                                    backgroundColor:
-                                                        'rgba(13, 148, 136, 0.9)',
-                                                    fontWeight: 700,
-                                                }}
+                                            <Tooltip
+                                                label="View on TCGPlayer"
+                                                withArrow
+                                                position="top"
+                                                zIndex={1000}
                                             >
-                                                {formatCurrency(
-                                                    targetCard.prices.usd,
-                                                )}
-                                            </Badge>
-                                        )}
+                                                <ActionIcon
+                                                    component="a"
+                                                    href={
+                                                        targetCard.tcgplayer_url ||
+                                                        getTcgPlayerCardSearchUrl(
+                                                            targetCard.name,
+                                                        )
+                                                    }
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    size="xs"
+                                                    variant="filled"
+                                                    color="dark"
+                                                    style={{
+                                                        backdropFilter:
+                                                            'blur(6px)',
+                                                        backgroundColor:
+                                                            'rgba(15, 23, 42, 0.85)',
+                                                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                                                    }}
+                                                >
+                                                    <IconExternalLink
+                                                        size={11}
+                                                    />
+                                                </ActionIcon>
+                                            </Tooltip>
+                                        </Group>
                                     </Group>
                                 }
                             >
                                 <Stack gap={6} p={8}>
-                                    <Group
-                                        justify="space-between"
-                                        align="center"
-                                        wrap="nowrap"
+                                    <Text
+                                        size="xs"
+                                        fw={700}
+                                        c="gray.2"
+                                        truncate
+                                        title={targetCard.name}
                                     >
-                                        <Text
-                                            size="xs"
-                                            fw={700}
-                                            c="gray.2"
-                                            truncate
-                                            title={targetCard.name}
-                                        >
-                                            Replacing: {targetCard.name}
-                                        </Text>
-
-                                        <Tooltip
-                                            label="View on TCGPlayer"
-                                            withArrow
-                                            position="top"
-                                        >
-                                            <ActionIcon
-                                                component="a"
-                                                href={
-                                                    targetCard.tcgplayer_url ||
-                                                    getTcgPlayerCardSearchUrl(
-                                                        targetCard.name,
-                                                    )
-                                                }
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                size="xs"
-                                                variant="subtle"
-                                                color="blue"
-                                            >
-                                                <IconExternalLink size={12} />
-                                            </ActionIcon>
-                                        </Tooltip>
-                                    </Group>
+                                        Replacing: {targetCard.name}
+                                    </Text>
 
                                     {/* Deck Requirement & Collection Status */}
                                     <Box

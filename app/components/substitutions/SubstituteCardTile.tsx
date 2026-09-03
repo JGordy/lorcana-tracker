@@ -67,63 +67,64 @@ export function SubstituteCardTile({
             aspectRatio="5/7"
             headerOverlay={
                 <Group
-                    justify="space-between"
+                    justify="flex-end"
                     align="flex-start"
                     wrap="nowrap"
                     p={6}
-                    style={{ width: '100%' }}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 2,
+                    }}
                 >
-                    {/* Top Left: Score Badge */}
-                    <Badge
-                        size="xs"
-                        variant="filled"
-                        color="violet.8"
-                        leftSection={<IconSparkles size={10} />}
-                        style={{
-                            backdropFilter: 'blur(6px)',
-                            backgroundColor: 'rgba(107, 33, 168, 0.85)',
-                            border: '1px solid rgba(192, 132, 252, 0.4)',
-                            fontWeight: 700,
-                        }}
-                    >
-                        {score} pts
-                    </Badge>
-
-                    {/* Top Right: Savings / Price & TCG Link */}
                     <Group gap={4} align="center" wrap="nowrap">
-                        {isCheaper ? (
+                        {/* Top Right: Score Badge with Detailed Breakdown Tooltip */}
+                        <Tooltip
+                            label={
+                                <Stack gap={4} p={2}>
+                                    <Text size="11px" fw={800} c="violet.2">
+                                        Match Score: {score} pts
+                                    </Text>
+                                    <Text size="10px" c="gray.4">
+                                        Scored on type, ink cost curve,
+                                        keywords, stats, ownership & budget:
+                                    </Text>
+                                    {reasons.map((r, i) => (
+                                        <Text key={i} size="10px" c="gray.2">
+                                            • {r}
+                                        </Text>
+                                    ))}
+                                </Stack>
+                            }
+                            withArrow
+                            position="top"
+                            multiline
+                            zIndex={1000}
+                        >
                             <Badge
                                 size="xs"
                                 variant="filled"
-                                color="teal.8"
+                                color="violet.8"
+                                leftSection={<IconSparkles size={10} />}
                                 style={{
                                     backdropFilter: 'blur(6px)',
-                                    backgroundColor: 'rgba(13, 148, 136, 0.9)',
+                                    backgroundColor: 'rgba(107, 33, 168, 0.85)',
+                                    border: '1px solid rgba(192, 132, 252, 0.4)',
                                     fontWeight: 700,
+                                    cursor: 'help',
                                 }}
                             >
-                                Save {formatCurrency(priceDifference!)} (
-                                {percentSavings}%)
+                                {score} pts
                             </Badge>
-                        ) : priceUsd !== null ? (
-                            <Badge
-                                size="xs"
-                                variant="filled"
-                                color="gray.8"
-                                style={{
-                                    backdropFilter: 'blur(6px)',
-                                    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                                    fontWeight: 700,
-                                }}
-                            >
-                                {formatCurrency(priceUsd)}
-                            </Badge>
-                        ) : null}
+                        </Tooltip>
 
                         <Tooltip
                             label="View on TCGPlayer"
                             withArrow
                             position="top"
+                            zIndex={1000}
                         >
                             <ActionIcon
                                 component="a"
@@ -150,7 +151,7 @@ export function SubstituteCardTile({
             }
         >
             <Stack gap={6} p={8} justify="space-between" style={{ flex: 1 }}>
-                {/* Row 1: Ownership & Deck Status */}
+                {/* Row 1: Ownership & Price + Cost Savings Together */}
                 <Group justify="space-between" align="center" wrap="nowrap">
                     <Group gap={4} align="center">
                         <Badge
@@ -168,14 +169,32 @@ export function SubstituteCardTile({
                         )}
                     </Group>
 
-                    {priceUsd !== null && (
-                        <Text size="11px" fw={700} c="teal.3">
-                            {formatCurrency(priceUsd)}
-                        </Text>
-                    )}
+                    {/* Cost of card and savings badge together */}
+                    <Group gap={4} align="center" wrap="nowrap">
+                        {isCheaper && (
+                            <Badge
+                                size="xs"
+                                variant="filled"
+                                color="teal.8"
+                                style={{
+                                    backgroundColor: 'rgba(13, 148, 136, 0.9)',
+                                    fontWeight: 700,
+                                    fontSize: '10px',
+                                }}
+                            >
+                                Save {formatCurrency(priceDifference!)} (
+                                {percentSavings}%)
+                            </Badge>
+                        )}
+                        {priceUsd !== null && (
+                            <Text size="11px" fw={700} c="teal.3">
+                                {formatCurrency(priceUsd)}
+                            </Text>
+                        )}
+                    </Group>
                 </Group>
 
-                {/* Row 2: "Why this works" highlight reason */}
+                {/* Row 2: Match Reasons Badge */}
                 {primaryReason && (
                     <Group gap={4} wrap="nowrap" align="center">
                         <Tooltip
@@ -194,6 +213,7 @@ export function SubstituteCardTile({
                             withArrow
                             position="top"
                             multiline
+                            zIndex={1000}
                         >
                             <Badge
                                 size="xs"
@@ -247,6 +267,7 @@ export function SubstituteCardTile({
                         <Tooltip
                             label="Add 1 copy to collection"
                             position="top"
+                            zIndex={1000}
                         >
                             <Button
                                 size="xs"
