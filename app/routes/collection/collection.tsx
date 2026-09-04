@@ -1,8 +1,12 @@
 import { useFetcher, type ShouldRevalidateFunctionArgs } from 'react-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Container, Grid } from '@mantine/core';
 
 import { buildCardsLookup } from '../../utils/deck';
+import {
+    calculateSetProgress,
+    getSetProgressMap,
+} from '../../utils/setCompletion';
 
 import { useCollectionInventory } from './hooks/useCollectionInventory';
 import { useCollectionFilters } from './hooks/useCollectionFilters';
@@ -28,16 +32,22 @@ export function shouldRevalidate({
 export default function Collection({ loaderData }: Route.ComponentProps) {
     const { cards, userCollection: serverCollection, user } = loaderData;
     const fetcher = useFetcher();
+    const [setBreakdownOpened, setSetBreakdownOpened] = useState(false);
 
     const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
 
-    const { getCardQuantity, handleAdjustQuantity, totals, valuation } =
-        useCollectionInventory({
-            serverCollection,
-            user,
-            fetcher,
-            cardsLookup,
-        });
+    const {
+        userCollection,
+        getCardQuantity,
+        handleAdjustQuantity,
+        totals,
+        valuation,
+    } = useCollectionInventory({
+        serverCollection,
+        user,
+        fetcher,
+        cardsLookup,
+    });
 
     const {
         selectedOwnership,
@@ -57,6 +67,21 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
         getCardQuantity,
     });
 
+    const setProgressStats = useMemo(() => {
+        return calculateSetProgress(cards, userCollection, cardsLookup);
+    }, [cards, userCollection, cardsLookup]);
+
+    const setProgressMap = useMemo(() => {
+        return getSetProgressMap(setProgressStats);
+    }, [setProgressStats]);
+
+    const selectedSet = sidebarFilterProps.selectedSet;
+    const setSelectedSet = sidebarFilterProps.setSelectedSet;
+    const selectedSetStats = useMemo(() => {
+        if (!selectedSet || selectedSet === 'All') return null;
+        return setProgressMap.get(selectedSet) || null;
+    }, [selectedSet, setProgressMap]);
+
     return (
         <Container size="xl" py="lg">
             {/* Banner Dashboard Header */}
@@ -64,6 +89,13 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
                 totals={totals}
                 valuation={valuation}
                 totalCatalogCards={cards.length}
+                selectedSet={selectedSet}
+                selectedSetStats={selectedSetStats}
+                setProgressStats={setProgressStats}
+                onSelectSet={setSelectedSet}
+                setBreakdownOpened={setBreakdownOpened}
+                onOpenSetBreakdown={() => setSetBreakdownOpened(true)}
+                onCloseSetBreakdown={() => setSetBreakdownOpened(false)}
             />
 
             {/* Workspace Layout */}
@@ -75,6 +107,7 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
                         setSelectedOwnership={setSelectedOwnership}
                         hasActiveFilters={hasActiveFilters}
                         handleResetFilters={handleResetFilters}
+                        setProgressMap={setProgressMap}
                         {...sidebarFilterProps}
                     />
                 </Grid.Col>
@@ -88,8 +121,11 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
                         setSearchQuery={setSearchQuery}
                         selectedInks={selectedInks}
                         setSelectedInks={setSelectedInks}
-                        selectedSort={sidebarFilterProps.selectedSort}
-                        setSelectedSort={sidebarFilterProps.setSelectedSort}
+                        selectedSetStats={selectedSetStats}
+                        onClearSet={() => setSelectedSet('All')}
+                        onOpenSetBreakdown={() => setSetBreakdownOpened(true)}
+                        onResetAll={handleResetFilters}
+                        {...sidebarFilterProps}
                     />
 
                     <CollectionCardGrid
