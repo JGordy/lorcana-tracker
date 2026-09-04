@@ -19,6 +19,7 @@ import {
     IconFolder,
 } from '@tabler/icons-react';
 import { AuthModal } from './AuthModal';
+import { MobileBottomNav } from './MobileBottomNav';
 
 interface NavbarProps {
     user: {
@@ -66,14 +67,19 @@ export function Navbar({ user }: NavbarProps) {
             >
                 <Container
                     fluid
-                    px={{ base: 'md', md: 'xl' }}
+                    px={{ base: 'sm', md: 'xl' }}
                     style={{
-                        height: 68,
+                        height: 64,
                         display: 'flex',
                         alignItems: 'center',
                     }}
                 >
-                    <Group justify="space-between" w="100%" align="center">
+                    <Group
+                        justify="space-between"
+                        w="100%"
+                        align="center"
+                        wrap="nowrap"
+                    >
                         {/* Logo */}
                         <Link
                             to="/"
@@ -82,14 +88,15 @@ export function Navbar({ user }: NavbarProps) {
                                 outline: 'none',
                                 display: 'flex',
                                 alignItems: 'center',
+                                flexShrink: 0,
                             }}
                         >
-                            <Group gap={10} align="center" wrap="nowrap">
+                            <Group gap={8} align="center" wrap="nowrap">
                                 <img
                                     src="/icon-transparent.png"
                                     alt="GlimmerForge"
                                     style={{
-                                        height: 38,
+                                        height: 34,
                                         width: 'auto',
                                         display: 'block',
                                         border: 0,
@@ -98,7 +105,6 @@ export function Navbar({ user }: NavbarProps) {
                                     }}
                                 />
                                 <Text
-                                    size="xl"
                                     fw={800}
                                     style={{
                                         fontFamily:
@@ -108,6 +114,8 @@ export function Navbar({ user }: NavbarProps) {
                                             'linear-gradient(to right, #a78bfa, #ec4899, #f43f5e)',
                                         WebkitBackgroundClip: 'text',
                                         WebkitTextFillColor: 'transparent',
+                                        fontSize: 'clamp(18px, 4vw, 22px)',
+                                        whiteSpace: 'nowrap',
                                     }}
                                 >
                                     GlimmerForge
@@ -177,67 +185,14 @@ export function Navbar({ user }: NavbarProps) {
                         </Group>
 
                         {/* Right User Auth Section */}
-                        <Group gap="md" align="center">
-                            {/* Mobile Navigation Toggles */}
-                            <Group gap={6} hiddenFrom="md">
-                                <Button
-                                    component={Link}
-                                    to="/decks"
-                                    variant={
-                                        location.pathname === '/decks'
-                                            ? 'light'
-                                            : 'subtle'
-                                    }
-                                    color={
-                                        location.pathname === '/decks'
-                                            ? 'violet'
-                                            : 'gray'
-                                    }
-                                    size="xs"
-                                    px="xs"
-                                >
-                                    Decks
-                                </Button>
-                                <Button
-                                    component={Link}
-                                    to="/my-decks"
-                                    variant={
-                                        location.pathname === '/my-decks'
-                                            ? 'light'
-                                            : 'subtle'
-                                    }
-                                    color={
-                                        location.pathname === '/my-decks'
-                                            ? 'violet'
-                                            : 'gray'
-                                    }
-                                    size="xs"
-                                    px="xs"
-                                >
-                                    My Decks
-                                </Button>
-                                <Button
-                                    component={Link}
-                                    to="/collection"
-                                    variant={
-                                        location.pathname === '/collection'
-                                            ? 'light'
-                                            : 'subtle'
-                                    }
-                                    color={
-                                        location.pathname === '/collection'
-                                            ? 'violet'
-                                            : 'gray'
-                                    }
-                                    size="xs"
-                                    px="xs"
-                                >
-                                    Collection
-                                </Button>
-                            </Group>
-
+                        <Group
+                            gap="sm"
+                            align="center"
+                            wrap="nowrap"
+                            style={{ flexShrink: 0 }}
+                        >
                             {user ? (
-                                <Group gap="sm" align="center">
+                                <Group gap="sm" align="center" wrap="nowrap">
                                     <Box
                                         visibleFrom="sm"
                                         style={{ textAlign: 'right' }}
@@ -317,10 +272,18 @@ export function Navbar({ user }: NavbarProps) {
                                         from: 'violet.6',
                                         to: 'indigo.6',
                                     }}
-                                    size="sm"
+                                    size="xs"
                                     radius="md"
                                     fw={700}
-                                    leftSection={<IconLogin size={16} />}
+                                    leftSection={<IconLogin size={15} />}
+                                    styles={{
+                                        root: {
+                                            paddingLeft: 12,
+                                            paddingRight: 12,
+                                            whiteSpace: 'nowrap',
+                                            flexShrink: 0,
+                                        },
+                                    }}
                                 >
                                     Sign In / Register
                                 </Button>
@@ -329,6 +292,9 @@ export function Navbar({ user }: NavbarProps) {
                     </Group>
                 </Container>
             </Box>
+
+            {/* Floating Mobile Bottom Navigation Bar */}
+            <MobileBottomNav />
         </>
     );
 }
