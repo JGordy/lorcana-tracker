@@ -21,6 +21,23 @@ const selectStyles = {
         fontSize: 11,
         fontWeight: 600,
     },
+    dropdown: {
+        background:
+            'linear-gradient(135deg, rgba(24, 20, 52, 0.98) 0%, rgba(12, 16, 33, 0.98) 100%)',
+        backdropFilter: 'blur(16px)',
+        borderColor: 'rgba(168, 85, 247, 0.3)',
+        boxShadow:
+            '0 12px 32px rgba(0, 0, 0, 0.65), 0 0 15px rgba(168, 85, 247, 0.15)',
+        borderRadius: 10,
+        padding: 4,
+    },
+    option: {
+        fontSize: 11,
+        fontWeight: 500,
+        borderRadius: 6,
+        color: '#e2e8f0',
+        padding: '6px 10px',
+    },
 };
 
 export interface CollectionFiltersSidebarProps {

@@ -325,3 +325,52 @@ body {
         0 18px 35px rgba(0, 0, 0, 0.95),
         0 0 22px rgba(239, 68, 68, 0.75) !important;
 }
+
+/* -------------------------------------------------------
+   Premium Glassmorphism styling for Mantine Select dropdowns
+   ------------------------------------------------------- */
+.mantine-Select-dropdown,
+.mantine-Combobox-dropdown {
+    background: linear-gradient(
+        135deg,
+        rgba(24, 20, 52, 0.98) 0%,
+        rgba(12, 16, 33, 0.98) 100%
+    ) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(168, 85, 247, 0.3) !important;
+    box-shadow:
+        0 12px 32px rgba(0, 0, 0, 0.65),
+        0 0 15px rgba(168, 85, 247, 0.15) !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+}
+
+.mantine-Select-option,
+.mantine-Combobox-option {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    border-radius: 6px !important;
+    color: #e2e8f0 !important;
+    padding: 6px 10px !important;
+    transition: all 0.15s ease !important;
+}
+
+.mantine-Select-option:hover,
+.mantine-Combobox-option:hover,
+.mantine-Select-option[data-hovered],
+.mantine-Combobox-option[data-hovered] {
+    background-color: rgba(168, 85, 247, 0.2) !important;
+    color: #ffffff !important;
+}
+
+.mantine-Select-option[data-checked],
+.mantine-Combobox-option[data-checked] {
+    background-color: rgba(147, 51, 234, 0.35) !important;
+    color: #c084fc !important;
+    font-weight: 700 !important;
+}
+
+.mantine-Select-option[data-checked] svg,
+.mantine-Combobox-option[data-checked] svg {
+    color: #c084fc !important;
+}
