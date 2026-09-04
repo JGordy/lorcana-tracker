@@ -7,13 +7,16 @@ import {
     Text,
     SimpleGrid,
     Card,
-    Badge,
     Tooltip,
+    Button,
+    ActionIcon,
 } from '@mantine/core';
-import { IconCards } from '@tabler/icons-react';
+import { IconCards, IconChartBar, IconDiamond } from '@tabler/icons-react';
 import type { CollectionValuationResult } from '../../../utils/valuation';
 import { formatCurrency } from '../../../utils/valuation';
+import type { SetProgressStats } from '../../../utils/setCompletion';
 import { CrownJewelsDrawer } from './CrownJewelsDrawer';
+import { SetBreakdownDrawer } from './SetBreakdownDrawer';
 
 export interface CollectionHeaderProps {
     totals: {
@@ -22,14 +25,40 @@ export interface CollectionHeaderProps {
     };
     valuation?: CollectionValuationResult;
     totalCatalogCards: number;
+    selectedSet?: string;
+    selectedSetStats?: SetProgressStats | null;
+    setProgressStats?: SetProgressStats[];
+    onSelectSet?: (setName: string) => void;
+    setBreakdownOpened?: boolean;
+    onOpenSetBreakdown?: () => void;
+    onCloseSetBreakdown?: () => void;
 }
 
 export function CollectionHeader({
     totals,
     valuation,
     totalCatalogCards,
+    selectedSet = 'All',
+    selectedSetStats,
+    setProgressStats = [],
+    onSelectSet,
+    setBreakdownOpened: controlledSetBreakdownOpened,
+    onOpenSetBreakdown,
+    onCloseSetBreakdown,
 }: CollectionHeaderProps) {
     const [crownJewelsOpened, setCrownJewelsOpened] = useState(false);
+    const [internalSetBreakdownOpened, setInternalSetBreakdownOpened] =
+        useState(false);
+
+    const isSetBreakdownOpen =
+        controlledSetBreakdownOpened !== undefined
+            ? controlledSetBreakdownOpened
+            : internalSetBreakdownOpened;
+
+    const handleOpenSetBreakdown =
+        onOpenSetBreakdown || (() => setInternalSetBreakdownOpened(true));
+    const handleCloseSetBreakdown =
+        onCloseSetBreakdown || (() => setInternalSetBreakdownOpened(false));
 
     const completionPercentage =
         totalCatalogCards > 0
@@ -40,6 +69,11 @@ export function CollectionHeader({
     const stdVal = valuation?.standardValue ?? 0;
     const foilVal = valuation?.foilValue ?? 0;
     const topGems = valuation?.topGems ?? [];
+
+    const isSetFiltered = Boolean(selectedSet && selectedSet !== 'All');
+    const setCompletionPercent = selectedSetStats
+        ? selectedSetStats.completionPercentage
+        : 0;
 
     return (
         <>
@@ -82,6 +116,42 @@ export function CollectionHeader({
                             and live market valuation. Changes save instantly
                             and automatically update deck percentages.
                         </Text>
+                        <Group gap="xs" mt="xs">
+                            <Button
+                                size="xs"
+                                variant="light"
+                                color="violet"
+                                leftSection={<IconChartBar size={14} />}
+                                onClick={handleOpenSetBreakdown}
+                                styles={{
+                                    root: {
+                                        backgroundColor:
+                                            'rgba(168, 85, 247, 0.12)',
+                                        border: '1px solid rgba(168, 85, 247, 0.3)',
+                                    },
+                                }}
+                            >
+                                Set Progress
+                            </Button>
+                            {topGems.length > 0 && (
+                                <Button
+                                    size="xs"
+                                    variant="light"
+                                    color="yellow"
+                                    leftSection={<IconDiamond size={14} />}
+                                    onClick={() => setCrownJewelsOpened(true)}
+                                    styles={{
+                                        root: {
+                                            backgroundColor:
+                                                'rgba(234, 179, 8, 0.12)',
+                                            border: '1px solid rgba(234, 179, 8, 0.3)',
+                                        },
+                                    }}
+                                >
+                                    Crown Jewels ({topGems.length})
+                                </Button>
+                            )}
+                        </Group>
                     </Box>
 
                     {/* Metric Quick Stats */}
@@ -139,18 +209,54 @@ export function CollectionHeader({
                             radius="md"
                             bg="rgba(15, 23, 42, 0.6)"
                             withBorder
-                            style={{ borderColor: 'rgba(255,255,255,0.06)' }}
+                            style={{
+                                borderColor: 'rgba(255,255,255,0.06)',
+                                cursor: 'pointer',
+                            }}
+                            onClick={handleOpenSetBreakdown}
                         >
-                            <Text
-                                size="10px"
-                                c="violet.4"
-                                fw={600}
-                                tt="uppercase"
+                            <Group
+                                justify="space-between"
+                                align="center"
+                                wrap="nowrap"
                             >
-                                Completion
-                            </Text>
+                                <Text
+                                    size="10px"
+                                    c="violet.4"
+                                    fw={600}
+                                    tt="uppercase"
+                                    style={{
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {isSetFiltered
+                                        ? `${selectedSet} Completion`
+                                        : 'Completion'}
+                                </Text>
+                                <Tooltip
+                                    label="View Set Progress Breakdown"
+                                    withArrow
+                                >
+                                    <ActionIcon
+                                        size="xs"
+                                        variant="subtle"
+                                        color="violet"
+                                        aria-label="View Set Progress Breakdown"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSetBreakdown();
+                                        }}
+                                    >
+                                        <IconChartBar size={13} />
+                                    </ActionIcon>
+                                </Tooltip>
+                            </Group>
                             <Text size="lg" fw={800} c="violet.3" mt={2}>
-                                {`${completionPercentage}%`}
+                                {isSetFiltered
+                                    ? `${setCompletionPercent}%`
+                                    : `${completionPercentage}%`}
                                 <Text
                                     component="span"
                                     size="10px"
@@ -158,8 +264,9 @@ export function CollectionHeader({
                                     fw={500}
                                     ml={4}
                                 >
-                                    ({totals.uniqueCardsCount} /{' '}
-                                    {totalCatalogCards})
+                                    {isSetFiltered
+                                        ? `(${selectedSetStats?.uniqueCardsOwned ?? 0} / ${selectedSetStats?.totalCardsInSet ?? 0})`
+                                        : `(${totals.uniqueCardsCount} / ${totalCatalogCards})`}
                                 </Text>
                             </Text>
                         </Card>
@@ -170,7 +277,15 @@ export function CollectionHeader({
                             radius="md"
                             bg="linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(15, 23, 42, 0.8) 100%)"
                             withBorder
-                            style={{ borderColor: 'rgba(234, 179, 8, 0.3)' }}
+                            style={{
+                                borderColor: 'rgba(234, 179, 8, 0.3)',
+                                cursor:
+                                    topGems.length > 0 ? 'pointer' : 'default',
+                            }}
+                            onClick={() => {
+                                if (topGems.length > 0)
+                                    setCrownJewelsOpened(true);
+                            }}
                         >
                             <Group
                                 justify="space-between"
@@ -190,24 +305,18 @@ export function CollectionHeader({
                                         label="View Crown Jewels (Top Gems)"
                                         withArrow
                                     >
-                                        <Badge
+                                        <ActionIcon
                                             size="xs"
-                                            variant="gradient"
-                                            gradient={{
-                                                from: 'yellow.6',
-                                                to: 'amber.7',
-                                                deg: 90,
+                                            variant="subtle"
+                                            color="yellow"
+                                            aria-label="View Crown Jewels"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setCrownJewelsOpened(true);
                                             }}
-                                            style={{
-                                                cursor: 'pointer',
-                                                padding: '0 5px',
-                                            }}
-                                            onClick={() =>
-                                                setCrownJewelsOpened(true)
-                                            }
                                         >
-                                            💎 Gems
-                                        </Badge>
+                                            <IconDiamond size={13} />
+                                        </ActionIcon>
                                     </Tooltip>
                                 )}
                             </Group>
@@ -238,6 +347,14 @@ export function CollectionHeader({
                 onClose={() => setCrownJewelsOpened(false)}
                 topGems={topGems}
                 totalCollectionValue={totalVal}
+            />
+
+            <SetBreakdownDrawer
+                opened={isSetBreakdownOpen}
+                onClose={handleCloseSetBreakdown}
+                setProgressStats={setProgressStats}
+                selectedSet={selectedSet}
+                onSelectSet={(set) => onSelectSet?.(set)}
             />
         </>
     );
