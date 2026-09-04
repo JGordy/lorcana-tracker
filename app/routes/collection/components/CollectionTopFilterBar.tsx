@@ -488,20 +488,20 @@ export function CollectionTopFilterBar({
                             },
                             dropdown: {
                                 background:
-                                    'linear-gradient(135deg, rgba(24, 20, 52, 0.98) 0%, rgba(12, 16, 33, 0.98) 100%)',
-                                backdropFilter: 'blur(16px)',
-                                borderColor: 'rgba(168, 85, 247, 0.3)',
+                                    'linear-gradient(145deg, rgba(30, 24, 60, 0.99) 0%, rgba(15, 17, 38, 0.99) 100%)',
+                                backdropFilter: 'blur(20px)',
+                                borderColor: 'rgba(192, 132, 252, 0.45)',
                                 boxShadow:
-                                    '0 12px 32px rgba(0, 0, 0, 0.65), 0 0 15px rgba(168, 85, 247, 0.15)',
+                                    '0 20px 40px -8px rgba(0, 0, 0, 0.9), 0 0 22px rgba(168, 85, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
                                 borderRadius: 10,
-                                padding: 4,
+                                padding: 6,
                             },
                             option: {
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 fontWeight: 500,
                                 borderRadius: 6,
-                                color: '#e2e8f0',
-                                padding: '6px 10px',
+                                color: '#f1f5f9',
+                                padding: '7px 10px',
                             },
                         }}
                         style={{ width: 175, flexShrink: 0 }}
