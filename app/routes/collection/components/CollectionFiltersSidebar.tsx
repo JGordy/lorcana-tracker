@@ -7,8 +7,21 @@ import {
     Select,
     Badge,
     Progress,
+    Button,
 } from '@mantine/core';
+import { IconFilter, IconRefresh } from '@tabler/icons-react';
 import type { SetProgressStats } from '../../../utils/setCompletion';
+
+const selectStyles = {
+    input: {
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        borderColor: 'rgba(168, 85, 247, 0.2)',
+        color: '#f8fafc',
+        height: 36,
+        fontSize: 11,
+        fontWeight: 600,
+    },
+};
 
 export interface CollectionFiltersSidebarProps {
     selectedOwnership: string;
@@ -91,33 +104,46 @@ export function CollectionFiltersSidebar({
                 withBorder
                 className="filters-sidebar-card"
                 style={{
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    borderColor: 'rgba(168, 85, 247, 0.15)',
-                    backdropFilter: 'blur(12px)',
+                    background:
+                        'linear-gradient(135deg, rgba(24, 20, 52, 0.9) 0%, rgba(12, 16, 33, 0.94) 100%)',
+                    backdropFilter: 'blur(16px)',
+                    borderColor: 'rgba(168, 85, 247, 0.25)',
+                    boxShadow:
+                        '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
                 }}
             >
-                <Group justify="space-between" mb="xs">
-                    <Text
-                        size="xs"
-                        fw={700}
-                        c="dimmed"
-                        style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: 0.5,
-                        }}
-                    >
-                        Filters
-                    </Text>
-                    {hasActiveFilters && (
+                <Group justify="space-between" align="center" mb="xs">
+                    <Group gap={6} align="center">
+                        <IconFilter size={14} color="#c084fc" />
                         <Text
                             size="xs"
-                            c="violet.4"
                             fw={700}
-                            style={{ cursor: 'pointer' }}
+                            c="gray.3"
+                            style={{
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                            }}
+                        >
+                            Filters
+                        </Text>
+                    </Group>
+                    {hasActiveFilters && (
+                        <Button
+                            size="compact-xs"
+                            variant="subtle"
+                            color="red"
+                            leftSection={<IconRefresh size={11} />}
                             onClick={handleResetFilters}
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                height: 22,
+                                paddingLeft: 6,
+                                paddingRight: 6,
+                            }}
                         >
                             Reset All
-                        </Text>
+                        </Button>
                     )}
                 </Group>
 
@@ -162,6 +188,7 @@ export function CollectionFiltersSidebar({
                                 }
                                 allowDeselect={false}
                                 size="xs"
+                                styles={selectStyles}
                             />
                         </Box>
                     )}
@@ -192,6 +219,7 @@ export function CollectionFiltersSidebar({
                                 }
                                 allowDeselect={false}
                                 size="xs"
+                                styles={selectStyles}
                             />
                         </Box>
                     )}
@@ -231,6 +259,7 @@ export function CollectionFiltersSidebar({
                             }
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -256,6 +285,7 @@ export function CollectionFiltersSidebar({
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                             renderOption={({ option }) => {
                                 if (option.value === 'All') {
                                     return <Text size="xs">All Sets</Text>;
@@ -367,6 +397,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedRarity(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -389,6 +420,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedCost(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -408,6 +440,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedInkable(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -427,6 +460,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedFormat(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -448,6 +482,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedType(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -470,6 +505,7 @@ export function CollectionFiltersSidebar({
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -491,6 +527,7 @@ export function CollectionFiltersSidebar({
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -513,6 +550,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedAttack(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -535,6 +573,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedDefense(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -557,6 +596,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedLore(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
                 </Stack>
