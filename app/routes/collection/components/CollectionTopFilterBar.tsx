@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import {
     Paper,
     Group,
+    Stack,
     SegmentedControl,
     TextInput,
     ActionIcon,
@@ -19,8 +20,10 @@ import {
     IconChevronLeft,
     IconChevronRight,
     IconRefresh,
+    IconFilter,
 } from '@tabler/icons-react';
 import type { SetProgressStats } from '../../../utils/setCompletion';
+import { CollectionMobileInkBar, INK_LIST } from './CollectionMobileInkBar';
 
 export interface CollectionTopFilterBarProps {
     selectedOwnership: string;
@@ -36,6 +39,8 @@ export interface CollectionTopFilterBarProps {
     selectedSetStats?: SetProgressStats | null;
     onClearSet?: () => void;
     onOpenSetBreakdown?: () => void;
+    onOpenMobileFilters?: () => void;
+    activeFilterCount?: number;
 
     // Filter synchronization
     selectedRarity?: string;
@@ -63,15 +68,6 @@ export interface CollectionTopFilterBarProps {
     onResetAll?: () => void;
 }
 
-const INK_LIST = [
-    { name: 'Amber', color: '#F5B041' },
-    { name: 'Amethyst', color: '#AF7AC5' },
-    { name: 'Emerald', color: '#2ECC71' },
-    { name: 'Ruby', color: '#EC7063' },
-    { name: 'Sapphire', color: '#5DADE2' },
-    { name: 'Steel', color: '#A6ACAF' },
-];
-
 interface ActiveChip {
     id: string;
     label: string;
@@ -95,6 +91,8 @@ export function CollectionTopFilterBar({
     selectedSetStats,
     onClearSet,
     onOpenSetBreakdown,
+    onOpenMobileFilters,
+    activeFilterCount,
     selectedRarity,
     setSelectedRarity,
     selectedCost,
@@ -347,14 +345,16 @@ export function CollectionTopFilterBar({
         return () => clearTimeout(timer);
     }, [activeChips.length, updateScrollState]);
 
+    const currentActiveCount = activeFilterCount ?? activeChips.length;
+
     return (
         <Paper
-            p="xs"
-            px="md"
+            p={{ base: 6, md: 'xs' }}
+            px={{ base: 8, sm: 'md' }}
             radius="lg"
             withBorder
             className="top-filter-bar"
-            mb="md"
+            mb={{ base: 'xs', md: 'md' }}
             style={{
                 position: 'sticky',
                 top: 76,
@@ -367,245 +367,471 @@ export function CollectionTopFilterBar({
                     '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
             }}
         >
-            <Group
-                justify="space-between"
-                align="center"
-                gap="sm"
-                wrap="nowrap"
-            >
-                {/* Compact Ownership SegmentedControl */}
-                <SegmentedControl
-                    value={
-                        selectedOwnership === 'owned' ||
-                        selectedOwnership === 'missing'
-                            ? selectedOwnership
-                            : selectedOwnership === 'all'
-                              ? 'all'
-                              : ''
-                    }
-                    onChange={(val) => {
-                        if (val) setSelectedOwnership(val);
-                    }}
-                    data={[
-                        { value: 'all', label: 'All' },
-                        { value: 'owned', label: 'Owned' },
-                        { value: 'missing', label: 'Missing' },
-                    ]}
-                    size="xs"
-                    radius="md"
-                    color="violet"
-                    style={{ flexShrink: 0 }}
-                    styles={{
-                        root: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.7)',
-                            border: '1px solid rgba(168, 85, 247, 0.2)',
-                            padding: 3,
-                        },
-                        indicator: {
-                            boxShadow: '0 2px 8px rgba(168, 85, 247, 0.3)',
-                        },
-                        label: {
-                            padding: '4px 12px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                        },
-                    }}
-                />
-
-                {/* Fluid Search Input with Clear Button */}
-                <TextInput
-                    placeholder="Search cards catalog..."
-                    leftSection={<IconSearch size={15} color="#c084fc" />}
-                    rightSection={
-                        searchQuery ? (
-                            <ActionIcon
-                                size="xs"
-                                variant="subtle"
-                                color="gray"
-                                onClick={() => setSearchQuery('')}
-                                title="Clear search"
-                                aria-label="Clear search"
-                            >
-                                <IconX size={13} />
-                            </ActionIcon>
-                        ) : null
-                    }
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    size="xs"
-                    style={{ flex: 1, minWidth: 140 }}
-                    styles={{
-                        input: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                            borderColor: 'rgba(168, 85, 247, 0.2)',
-                            color: '#f8fafc',
-                            height: 36,
-                        },
-                    }}
-                />
-
-                {/* Sort Order Selector */}
-                {setSelectedSort && (
-                    <Select
-                        size="xs"
-                        value={selectedSort}
-                        onChange={(val) => setSelectedSort(val || 'default')}
-                        data={[
-                            {
-                                value: 'default',
-                                label: 'Sort: Default (Set #)',
-                            },
-                            {
-                                value: 'price_desc',
-                                label: 'Sort: Price (High to Low)',
-                            },
-                            {
-                                value: 'price_asc',
-                                label: 'Sort: Price (Low to High)',
-                            },
-                            {
-                                value: 'cost_asc',
-                                label: 'Sort: Ink Cost (Low to High)',
-                            },
-                            {
-                                value: 'cost_desc',
-                                label: 'Sort: Ink Cost (High to Low)',
-                            },
-                            { value: 'name_asc', label: 'Sort: Name (A-Z)' },
-                        ]}
-                        allowDeselect={false}
-                        leftSection={
-                            <IconArrowsSort size={14} color="#a855f7" />
+            {/* Desktop Controls (Single Unified Row) */}
+            <Box visibleFrom="md">
+                <Group
+                    justify="space-between"
+                    align="center"
+                    gap="sm"
+                    wrap="nowrap"
+                >
+                    {/* Compact Ownership SegmentedControl */}
+                    <SegmentedControl
+                        value={
+                            selectedOwnership === 'owned' ||
+                            selectedOwnership === 'missing'
+                                ? selectedOwnership
+                                : selectedOwnership === 'all'
+                                  ? 'all'
+                                  : ''
                         }
+                        onChange={(val) => {
+                            if (val) setSelectedOwnership(val);
+                        }}
+                        data={[
+                            { value: 'all', label: 'All' },
+                            { value: 'owned', label: 'Owned' },
+                            { value: 'missing', label: 'Missing' },
+                        ]}
+                        size="xs"
+                        radius="md"
+                        color="violet"
+                        style={{ flexShrink: 0 }}
+                        styles={{
+                            root: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                                border: '1px solid rgba(168, 85, 247, 0.2)',
+                                padding: 3,
+                            },
+                            indicator: {
+                                boxShadow: '0 2px 8px rgba(168, 85, 247, 0.3)',
+                            },
+                            label: {
+                                padding: '4px 12px',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                            },
+                        }}
+                    />
+
+                    {/* Fluid Search Input with Clear Button */}
+                    <TextInput
+                        placeholder="Search cards catalog..."
+                        leftSection={<IconSearch size={15} color="#c084fc" />}
+                        rightSection={
+                            searchQuery ? (
+                                <ActionIcon
+                                    size="xs"
+                                    variant="subtle"
+                                    color="gray"
+                                    onClick={() => setSearchQuery('')}
+                                    title="Clear search"
+                                    aria-label="Clear search"
+                                >
+                                    <IconX size={13} />
+                                </ActionIcon>
+                            ) : null
+                        }
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        size="xs"
+                        style={{ flex: 1, minWidth: 140 }}
                         styles={{
                             input: {
                                 backgroundColor: 'rgba(15, 23, 42, 0.6)',
                                 borderColor: 'rgba(168, 85, 247, 0.2)',
                                 color: '#f8fafc',
                                 height: 36,
-                                fontSize: 11,
-                                fontWeight: 600,
-                            },
-                            dropdown: {
-                                background:
-                                    'linear-gradient(145deg, rgba(30, 24, 60, 0.99) 0%, rgba(15, 17, 38, 0.99) 100%)',
-                                backdropFilter: 'blur(20px)',
-                                borderColor: 'rgba(192, 132, 252, 0.45)',
-                                boxShadow:
-                                    '0 20px 40px -8px rgba(0, 0, 0, 0.9), 0 0 22px rgba(168, 85, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
-                                borderRadius: 10,
-                                padding: 6,
-                            },
-                            option: {
-                                fontSize: 11.5,
-                                fontWeight: 500,
-                                borderRadius: 6,
-                                color: '#f1f5f9',
-                                padding: '7px 10px',
                             },
                         }}
-                        style={{ width: 175, flexShrink: 0 }}
                     />
-                )}
 
-                {/* Ink Colors Filter */}
-                <Group
-                    gap={6}
-                    align="center"
-                    style={{ flexShrink: 0 }}
-                    wrap="nowrap"
-                >
-                    {INK_LIST.map((ink) => {
-                        const isSelected = selectedInks.includes(ink.name);
-                        const isDimmed = selectedInks.length > 0 && !isSelected;
-                        const handleInkClick = () => {
-                            if (isSelected) {
-                                setSelectedInks((prev) =>
-                                    prev.filter((name) => name !== ink.name),
-                                );
-                            } else if (selectedInks.length < 3) {
-                                setSelectedInks((prev) => [...prev, ink.name]);
+                    {/* Sort Order Selector */}
+                    {setSelectedSort && (
+                        <Select
+                            size="xs"
+                            value={selectedSort}
+                            onChange={(val) =>
+                                setSelectedSort(val || 'default')
                             }
-                        };
-                        return (
-                            <Tooltip
-                                key={ink.name}
-                                label={`${ink.name}${isSelected ? ' (Selected)' : ''}`}
-                                withArrow
-                                position="top"
-                            >
-                                <Box
-                                    onClick={handleInkClick}
-                                    style={{
-                                        cursor:
-                                            selectedInks.length >= 3 &&
-                                            !isSelected
-                                                ? 'not-allowed'
-                                                : 'pointer',
-                                        opacity: isDimmed ? 0.35 : 1,
-                                        filter: isDimmed
-                                            ? 'grayscale(80%)'
-                                            : 'none',
-                                        transform: isSelected
-                                            ? 'scale(1.15)'
-                                            : 'scale(1)',
-                                        transition: 'all 0.2s ease',
-                                        borderRadius: '50%',
-                                        padding: 3,
-                                        border: isSelected
-                                            ? `2px solid ${ink.color}`
-                                            : '2px solid transparent',
-                                        backgroundColor: isSelected
-                                            ? 'rgba(255,255,255,0.04)'
-                                            : 'transparent',
-                                        display: 'flex',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        width: 36,
-                                        height: 36,
-                                    }}
-                                >
-                                    <img
-                                        src={`/inks/${ink.name.toLowerCase()}.svg`}
-                                        alt={ink.name}
-                                        style={{
-                                            width: 22,
-                                            height: 22,
-                                            display: 'block',
-                                        }}
-                                    />
-                                </Box>
-                            </Tooltip>
-                        );
-                    })}
-                    {selectedInks.length > 0 && (
-                        <ActionIcon
-                            size="sm"
-                            radius="xl"
-                            variant="subtle"
-                            color="violet"
-                            onClick={() => setSelectedInks([])}
-                            title="Clear ink filters"
-                            aria-label="Clear ink filters"
-                            ml={2}
-                        >
-                            <IconX size={15} />
-                        </ActionIcon>
+                            data={[
+                                {
+                                    value: 'default',
+                                    label: 'Sort: Default (Set #)',
+                                },
+                                {
+                                    value: 'price_desc',
+                                    label: 'Sort: Price (High to Low)',
+                                },
+                                {
+                                    value: 'price_asc',
+                                    label: 'Sort: Price (Low to High)',
+                                },
+                                {
+                                    value: 'cost_asc',
+                                    label: 'Sort: Ink Cost (Low to High)',
+                                },
+                                {
+                                    value: 'cost_desc',
+                                    label: 'Sort: Ink Cost (High to Low)',
+                                },
+                                {
+                                    value: 'name_asc',
+                                    label: 'Sort: Name (A-Z)',
+                                },
+                            ]}
+                            allowDeselect={false}
+                            leftSection={
+                                <IconArrowsSort size={14} color="#a855f7" />
+                            }
+                            styles={{
+                                input: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                                    borderColor: 'rgba(168, 85, 247, 0.2)',
+                                    color: '#f8fafc',
+                                    height: 36,
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                },
+                                dropdown: {
+                                    background:
+                                        'linear-gradient(145deg, rgba(30, 24, 60, 0.99) 0%, rgba(15, 17, 38, 0.99) 100%)',
+                                    backdropFilter: 'blur(20px)',
+                                    borderColor: 'rgba(192, 132, 252, 0.45)',
+                                    boxShadow:
+                                        '0 20px 40px -8px rgba(0, 0, 0, 0.9), 0 0 22px rgba(168, 85, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+                                    borderRadius: 10,
+                                    padding: 6,
+                                },
+                                option: {
+                                    fontSize: 11.5,
+                                    fontWeight: 500,
+                                    borderRadius: 6,
+                                    color: '#f1f5f9',
+                                    padding: '7px 10px',
+                                },
+                            }}
+                            style={{ width: 175, flexShrink: 0 }}
+                        />
                     )}
+
+                    {/* Ink Colors Filter */}
+                    <Group
+                        gap={6}
+                        align="center"
+                        style={{ flexShrink: 0 }}
+                        wrap="nowrap"
+                    >
+                        {INK_LIST.map((ink) => {
+                            const isSelected = selectedInks.includes(ink.name);
+                            const isDimmed =
+                                selectedInks.length > 0 && !isSelected;
+                            const handleInkClick = () => {
+                                if (isSelected) {
+                                    setSelectedInks((prev) =>
+                                        prev.filter(
+                                            (name) => name !== ink.name,
+                                        ),
+                                    );
+                                } else if (selectedInks.length < 3) {
+                                    setSelectedInks((prev) => [
+                                        ...prev,
+                                        ink.name,
+                                    ]);
+                                }
+                            };
+                            return (
+                                <Tooltip
+                                    key={ink.name}
+                                    label={`${ink.name}${isSelected ? ' (Selected)' : ''}`}
+                                    withArrow
+                                    position="top"
+                                >
+                                    <Box
+                                        onClick={handleInkClick}
+                                        style={{
+                                            cursor:
+                                                selectedInks.length >= 3 &&
+                                                !isSelected
+                                                    ? 'not-allowed'
+                                                    : 'pointer',
+                                            opacity: isDimmed ? 0.35 : 1,
+                                            filter: isDimmed
+                                                ? 'grayscale(80%)'
+                                                : 'none',
+                                            transform: isSelected
+                                                ? 'scale(1.15)'
+                                                : 'scale(1)',
+                                            transition: 'all 0.2s ease',
+                                            borderRadius: '50%',
+                                            padding: 3,
+                                            border: isSelected
+                                                ? `2px solid ${ink.color}`
+                                                : '2px solid transparent',
+                                            backgroundColor: isSelected
+                                                ? 'rgba(255,255,255,0.04)'
+                                                : 'transparent',
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            width: 36,
+                                            height: 36,
+                                        }}
+                                    >
+                                        <img
+                                            src={`/inks/${ink.name.toLowerCase()}.svg`}
+                                            alt={ink.name}
+                                            style={{
+                                                width: 22,
+                                                height: 22,
+                                                display: 'block',
+                                            }}
+                                        />
+                                    </Box>
+                                </Tooltip>
+                            );
+                        })}
+                        {selectedInks.length > 0 && (
+                            <ActionIcon
+                                size="sm"
+                                radius="xl"
+                                variant="subtle"
+                                color="violet"
+                                onClick={() => setSelectedInks([])}
+                                title="Clear ink filters"
+                                aria-label="Clear ink filters"
+                                ml={2}
+                            >
+                                <IconX size={15} />
+                            </ActionIcon>
+                        )}
+                    </Group>
                 </Group>
-            </Group>
+            </Box>
+
+            {/* Mobile Controls (Responsive Multi-Row Layout) */}
+            <Box hiddenFrom="md">
+                <Stack gap={6}>
+                    {/* Row 1: Search Input + Mobile Filters Drawer Button */}
+                    <Group gap="xs" wrap="nowrap" align="center">
+                        <TextInput
+                            placeholder="Search cards..."
+                            leftSection={
+                                <IconSearch size={14} color="#c084fc" />
+                            }
+                            rightSection={
+                                searchQuery ? (
+                                    <ActionIcon
+                                        size="xs"
+                                        variant="subtle"
+                                        color="gray"
+                                        onClick={() => setSearchQuery('')}
+                                        title="Clear search"
+                                        aria-label="Clear search"
+                                    >
+                                        <IconX size={12} />
+                                    </ActionIcon>
+                                ) : null
+                            }
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            size="xs"
+                            style={{ flex: 1 }}
+                            styles={{
+                                input: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                                    borderColor: 'rgba(168, 85, 247, 0.2)',
+                                    color: '#f8fafc',
+                                    height: 32,
+                                    fontSize: 12,
+                                },
+                            }}
+                        />
+
+                        {onOpenMobileFilters && (
+                            <Button
+                                size="xs"
+                                variant="light"
+                                color="violet"
+                                leftSection={<IconFilter size={13} />}
+                                onClick={onOpenMobileFilters}
+                                styles={{
+                                    root: {
+                                        height: 32,
+                                        paddingLeft: 8,
+                                        paddingRight: 8,
+                                        backgroundColor:
+                                            'rgba(147, 51, 234, 0.25)',
+                                        border: '1px solid rgba(168, 85, 247, 0.35)',
+                                        flexShrink: 0,
+                                        color: '#f1f5f9',
+                                        fontWeight: 600,
+                                        fontSize: 12,
+                                    },
+                                }}
+                            >
+                                Filters
+                                {currentActiveCount > 0 && (
+                                    <Badge
+                                        size="xs"
+                                        variant="filled"
+                                        color="violet"
+                                        ml={5}
+                                        style={{
+                                            backgroundColor: '#9333ea',
+                                            height: 16,
+                                            minWidth: 16,
+                                            padding: '0 3px',
+                                            fontSize: 9.5,
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        {currentActiveCount}
+                                    </Badge>
+                                )}
+                            </Button>
+                        )}
+                    </Group>
+
+                    {/* Row 2: Ownership SegmentedControl + Sort Dropdown */}
+                    <Group
+                        justify="space-between"
+                        align="center"
+                        gap={6}
+                        wrap="nowrap"
+                    >
+                        <SegmentedControl
+                            value={
+                                selectedOwnership === 'owned' ||
+                                selectedOwnership === 'missing'
+                                    ? selectedOwnership
+                                    : selectedOwnership === 'all'
+                                      ? 'all'
+                                      : ''
+                            }
+                            onChange={(val) => {
+                                if (val) setSelectedOwnership(val);
+                            }}
+                            data={[
+                                { value: 'all', label: 'All' },
+                                { value: 'owned', label: 'Owned' },
+                                { value: 'missing', label: 'Missing' },
+                            ]}
+                            size="xs"
+                            radius="md"
+                            color="violet"
+                            style={{ flex: 1 }}
+                            styles={{
+                                root: {
+                                    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                                    border: '1px solid rgba(168, 85, 247, 0.2)',
+                                    padding: 2,
+                                },
+                                indicator: {
+                                    boxShadow:
+                                        '0 2px 8px rgba(168, 85, 247, 0.3)',
+                                },
+                                label: {
+                                    padding: '3px 6px',
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                },
+                            }}
+                        />
+
+                        {setSelectedSort && (
+                            <Select
+                                size="xs"
+                                value={selectedSort}
+                                onChange={(val) =>
+                                    setSelectedSort(val || 'default')
+                                }
+                                data={[
+                                    {
+                                        value: 'default',
+                                        label: 'Sort: Default',
+                                    },
+                                    {
+                                        value: 'price_desc',
+                                        label: 'Sort: Price (High)',
+                                    },
+                                    {
+                                        value: 'price_asc',
+                                        label: 'Sort: Price (Low)',
+                                    },
+                                    {
+                                        value: 'cost_asc',
+                                        label: 'Sort: Cost (Low)',
+                                    },
+                                    {
+                                        value: 'cost_desc',
+                                        label: 'Sort: Cost (High)',
+                                    },
+                                    {
+                                        value: 'name_asc',
+                                        label: 'Sort: Name (A-Z)',
+                                    },
+                                ]}
+                                allowDeselect={false}
+                                leftSection={
+                                    <IconArrowsSort size={12} color="#a855f7" />
+                                }
+                                styles={{
+                                    input: {
+                                        backgroundColor:
+                                            'rgba(15, 23, 42, 0.6)',
+                                        borderColor: 'rgba(168, 85, 247, 0.2)',
+                                        color: '#f8fafc',
+                                        height: 28,
+                                        fontSize: 10.5,
+                                        fontWeight: 600,
+                                        paddingLeft: 24,
+                                        paddingRight: 16,
+                                    },
+                                    dropdown: {
+                                        background:
+                                            'linear-gradient(145deg, rgba(30, 24, 60, 0.99) 0%, rgba(15, 17, 38, 0.99) 100%)',
+                                        backdropFilter: 'blur(20px)',
+                                        borderColor:
+                                            'rgba(192, 132, 252, 0.45)',
+                                        boxShadow:
+                                            '0 20px 40px -8px rgba(0, 0, 0, 0.9), 0 0 22px rgba(168, 85, 247, 0.25)',
+                                        borderRadius: 10,
+                                        padding: 6,
+                                    },
+                                    option: {
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        borderRadius: 6,
+                                        color: '#f1f5f9',
+                                        padding: '6px 8px',
+                                    },
+                                }}
+                                style={{ width: 135, flexShrink: 0 }}
+                            />
+                        )}
+                    </Group>
+
+                    {/* Row 3: Dedicated Mobile Ink Colors Filter Component (Compact) */}
+                    <CollectionMobileInkBar
+                        selectedInks={selectedInks}
+                        setSelectedInks={setSelectedInks}
+                        size="sm"
+                    />
+                </Stack>
+            </Box>
 
             {/* Active Filter Strip (Sub-Row) */}
             {activeChips.length > 0 && (
                 <Box
-                    pt={8}
-                    mt={8}
+                    pt={{ base: 5, md: 8 }}
+                    mt={{ base: 5, md: 8 }}
                     style={{
                         borderTop: '1px solid rgba(168, 85, 247, 0.15)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        minHeight: 34,
+                        minHeight: 28,
                     }}
                 >
                     {/* Scroll Left Chevron */}

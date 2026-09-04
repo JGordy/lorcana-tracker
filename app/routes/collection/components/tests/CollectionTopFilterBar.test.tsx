@@ -25,8 +25,8 @@ describe('CollectionTopFilterBar', () => {
         );
         expect(searchInput).toBeDefined();
 
-        const amberInk = screen.getByAltText('Amber');
-        expect(amberInk).toBeDefined();
+        const amberInks = screen.getAllByAltText('Amber');
+        expect(amberInks.length).toBeGreaterThanOrEqual(1);
     });
 
     it('calls setSearchQuery on text change', () => {
@@ -201,5 +201,28 @@ describe('CollectionTopFilterBar', () => {
             left: 160,
             behavior: 'smooth',
         });
+    });
+
+    it('renders mobile filters button and triggers onOpenMobileFilters with badge count', () => {
+        const onOpenMobileFilters = vi.fn();
+        render(
+            <MantineProvider>
+                <CollectionTopFilterBar
+                    {...defaultProps}
+                    onOpenMobileFilters={onOpenMobileFilters}
+                    searchQuery="Elsa"
+                    selectedOwnership="owned"
+                />
+            </MantineProvider>,
+        );
+
+        const filterBtn = screen.getByRole('button', { name: /Filters/i });
+        expect(filterBtn).toBeInTheDocument();
+
+        // 2 active filters ("Elsa" and "owned")
+        expect(screen.getByText('2')).toBeInTheDocument();
+
+        fireEvent.click(filterBtn);
+        expect(onOpenMobileFilters).toHaveBeenCalledTimes(1);
     });
 });
