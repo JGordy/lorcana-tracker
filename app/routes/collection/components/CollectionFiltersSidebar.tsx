@@ -1,4 +1,14 @@
-import { Paper, Group, Text, Stack, Box, Select } from '@mantine/core';
+import {
+    Paper,
+    Group,
+    Text,
+    Stack,
+    Box,
+    Select,
+    Badge,
+    Progress,
+} from '@mantine/core';
+import type { SetProgressStats } from '../../../utils/setCompletion';
 
 export interface CollectionFiltersSidebarProps {
     selectedOwnership: string;
@@ -6,6 +16,7 @@ export interface CollectionFiltersSidebarProps {
     selectedSet: string;
     setSelectedSet: (val: string) => void;
     sets: string[];
+    setProgressMap?: Map<string, SetProgressStats>;
     selectedRarity: string;
     setSelectedRarity: (val: string) => void;
     selectedCost: string;
@@ -42,6 +53,7 @@ export function CollectionFiltersSidebar({
     selectedSet,
     setSelectedSet,
     sets,
+    setProgressMap,
     selectedRarity,
     setSelectedRarity,
     selectedCost,
@@ -229,15 +241,106 @@ export function CollectionFiltersSidebar({
                         </Text>
                         <Select
                             placeholder="All Sets"
-                            data={sets.map((s) => ({
-                                value: s,
-                                label: s === 'All' ? 'All Sets' : s,
-                            }))}
+                            data={sets.map((s) => {
+                                if (s === 'All') {
+                                    return { value: 'All', label: 'All Sets' };
+                                }
+                                const stats = setProgressMap?.get(s);
+                                const label = stats
+                                    ? `${s} (${stats.completionPercentage}%)`
+                                    : s;
+                                return { value: s, label };
+                            })}
                             value={selectedSet}
                             onChange={(val) => setSelectedSet(val || 'All')}
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            renderOption={({ option }) => {
+                                if (option.value === 'All') {
+                                    return <Text size="xs">All Sets</Text>;
+                                }
+                                const stats = setProgressMap?.get(option.value);
+                                const percent =
+                                    stats?.completionPercentage ?? 0;
+                                const isComplete = percent === 100;
+                                return (
+                                    <Box style={{ width: '100%' }} py={2}>
+                                        <Group
+                                            justify="space-between"
+                                            align="center"
+                                            wrap="nowrap"
+                                            mb={3}
+                                        >
+                                            <Group
+                                                gap={6}
+                                                wrap="nowrap"
+                                                style={{ overflow: 'hidden' }}
+                                            >
+                                                {stats?.setIndex !==
+                                                    undefined && (
+                                                    <Badge
+                                                        size="xs"
+                                                        variant="outline"
+                                                        color="violet"
+                                                    >
+                                                        Set {stats.setIndex}
+                                                    </Badge>
+                                                )}
+                                                <Text
+                                                    size="xs"
+                                                    fw={500}
+                                                    style={{
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow:
+                                                            'ellipsis',
+                                                    }}
+                                                >
+                                                    {option.value}
+                                                </Text>
+                                            </Group>
+                                            <Badge
+                                                size="xs"
+                                                variant={
+                                                    isComplete
+                                                        ? 'filled'
+                                                        : percent > 0
+                                                          ? 'light'
+                                                          : 'outline'
+                                                }
+                                                color={
+                                                    isComplete
+                                                        ? 'teal'
+                                                        : percent > 0
+                                                          ? 'violet'
+                                                          : 'gray'
+                                                }
+                                            >
+                                                {percent}%
+                                            </Badge>
+                                        </Group>
+                                        <Progress
+                                            value={percent}
+                                            size={3}
+                                            radius="xl"
+                                            color={
+                                                isComplete
+                                                    ? 'teal'
+                                                    : percent >= 50
+                                                      ? 'violet'
+                                                      : 'indigo'
+                                            }
+                                            styles={{
+                                                root: {
+                                                    backgroundColor:
+                                                        'rgba(255, 255, 255, 0.08)',
+                                                },
+                                            }}
+                                        />
+                                    </Box>
+                                );
+                            }}
                         />
                     </Box>
 

@@ -70,4 +70,37 @@ describe('CollectionFiltersSidebar', () => {
         fireEvent.click(resetButton);
         expect(defaultProps.handleResetFilters).toHaveBeenCalled();
     });
+
+    it('enriches set options with completion percentages', () => {
+        const setProgressMap = new Map([
+            [
+                'The First Chapter',
+                {
+                    setName: 'The First Chapter',
+                    setIndex: 1,
+                    totalCardsInSet: 204,
+                    uniqueCardsOwned: 102,
+                    totalCardsOwned: 130,
+                    standardCardsOwned: 120,
+                    foilCardsOwned: 10,
+                    completionPercentage: 50,
+                    marketValue: 120.0,
+                },
+            ],
+        ]);
+
+        render(
+            <MantineProvider>
+                <CollectionFiltersSidebar
+                    {...defaultProps}
+                    selectedSet="The First Chapter"
+                    setProgressMap={setProgressMap}
+                />
+            </MantineProvider>,
+        );
+
+        // Mantine Select displays input with value of selected option
+        const setInput = screen.getByDisplayValue('The First Chapter (50%)');
+        expect(setInput).toBeInTheDocument();
+    });
 });
