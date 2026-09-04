@@ -1,4 +1,44 @@
-import { Paper, Group, Text, Stack, Box, Select } from '@mantine/core';
+import {
+    Paper,
+    Group,
+    Text,
+    Stack,
+    Box,
+    Select,
+    Badge,
+    Progress,
+    Button,
+} from '@mantine/core';
+import { IconFilter, IconRefresh } from '@tabler/icons-react';
+import type { SetProgressStats } from '../../../utils/setCompletion';
+
+const selectStyles = {
+    input: {
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        borderColor: 'rgba(168, 85, 247, 0.2)',
+        color: '#f8fafc',
+        height: 36,
+        fontSize: 11,
+        fontWeight: 600,
+    },
+    dropdown: {
+        background:
+            'linear-gradient(145deg, rgba(30, 24, 60, 0.99) 0%, rgba(15, 17, 38, 0.99) 100%)',
+        backdropFilter: 'blur(20px)',
+        borderColor: 'rgba(192, 132, 252, 0.45)',
+        boxShadow:
+            '0 20px 40px -8px rgba(0, 0, 0, 0.9), 0 0 22px rgba(168, 85, 247, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+        borderRadius: 10,
+        padding: 6,
+    },
+    option: {
+        fontSize: 11.5,
+        fontWeight: 500,
+        borderRadius: 6,
+        color: '#f1f5f9',
+        padding: '7px 10px',
+    },
+};
 
 export interface CollectionFiltersSidebarProps {
     selectedOwnership: string;
@@ -6,6 +46,7 @@ export interface CollectionFiltersSidebarProps {
     selectedSet: string;
     setSelectedSet: (val: string) => void;
     sets: string[];
+    setProgressMap?: Map<string, SetProgressStats>;
     selectedRarity: string;
     setSelectedRarity: (val: string) => void;
     selectedCost: string;
@@ -42,6 +83,7 @@ export function CollectionFiltersSidebar({
     selectedSet,
     setSelectedSet,
     sets,
+    setProgressMap,
     selectedRarity,
     setSelectedRarity,
     selectedCost,
@@ -79,33 +121,46 @@ export function CollectionFiltersSidebar({
                 withBorder
                 className="filters-sidebar-card"
                 style={{
-                    background: 'rgba(15, 23, 42, 0.6)',
-                    borderColor: 'rgba(168, 85, 247, 0.15)',
-                    backdropFilter: 'blur(12px)',
+                    background:
+                        'linear-gradient(135deg, rgba(24, 20, 52, 0.9) 0%, rgba(12, 16, 33, 0.94) 100%)',
+                    backdropFilter: 'blur(16px)',
+                    borderColor: 'rgba(168, 85, 247, 0.25)',
+                    boxShadow:
+                        '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
                 }}
             >
-                <Group justify="space-between" mb="xs">
-                    <Text
-                        size="xs"
-                        fw={700}
-                        c="dimmed"
-                        style={{
-                            textTransform: 'uppercase',
-                            letterSpacing: 0.5,
-                        }}
-                    >
-                        Filters
-                    </Text>
-                    {hasActiveFilters && (
+                <Group justify="space-between" align="center" mb="xs">
+                    <Group gap={6} align="center">
+                        <IconFilter size={14} color="#c084fc" />
                         <Text
                             size="xs"
-                            c="violet.4"
                             fw={700}
-                            style={{ cursor: 'pointer' }}
+                            c="gray.3"
+                            style={{
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5,
+                            }}
+                        >
+                            Filters
+                        </Text>
+                    </Group>
+                    {hasActiveFilters && (
+                        <Button
+                            size="compact-xs"
+                            variant="subtle"
+                            color="red"
+                            leftSection={<IconRefresh size={11} />}
                             onClick={handleResetFilters}
+                            style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                height: 22,
+                                paddingLeft: 6,
+                                paddingRight: 6,
+                            }}
                         >
                             Reset All
-                        </Text>
+                        </Button>
                     )}
                 </Group>
 
@@ -150,6 +205,7 @@ export function CollectionFiltersSidebar({
                                 }
                                 allowDeselect={false}
                                 size="xs"
+                                styles={selectStyles}
                             />
                         </Box>
                     )}
@@ -180,6 +236,7 @@ export function CollectionFiltersSidebar({
                                 }
                                 allowDeselect={false}
                                 size="xs"
+                                styles={selectStyles}
                             />
                         </Box>
                     )}
@@ -219,6 +276,7 @@ export function CollectionFiltersSidebar({
                             }
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -229,15 +287,107 @@ export function CollectionFiltersSidebar({
                         </Text>
                         <Select
                             placeholder="All Sets"
-                            data={sets.map((s) => ({
-                                value: s,
-                                label: s === 'All' ? 'All Sets' : s,
-                            }))}
+                            data={sets.map((s) => {
+                                if (s === 'All') {
+                                    return { value: 'All', label: 'All Sets' };
+                                }
+                                const stats = setProgressMap?.get(s);
+                                const label = stats
+                                    ? `${s} (${stats.completionPercentage}%)`
+                                    : s;
+                                return { value: s, label };
+                            })}
                             value={selectedSet}
                             onChange={(val) => setSelectedSet(val || 'All')}
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
+                            renderOption={({ option }) => {
+                                if (option.value === 'All') {
+                                    return <Text size="xs">All Sets</Text>;
+                                }
+                                const stats = setProgressMap?.get(option.value);
+                                const percent =
+                                    stats?.completionPercentage ?? 0;
+                                const isComplete = percent === 100;
+                                return (
+                                    <Box style={{ width: '100%' }} py={2}>
+                                        <Group
+                                            justify="space-between"
+                                            align="center"
+                                            wrap="nowrap"
+                                            mb={3}
+                                        >
+                                            <Group
+                                                gap={6}
+                                                wrap="nowrap"
+                                                style={{ overflow: 'hidden' }}
+                                            >
+                                                {stats?.setIndex !==
+                                                    undefined && (
+                                                    <Badge
+                                                        size="xs"
+                                                        variant="outline"
+                                                        color="violet"
+                                                    >
+                                                        Set {stats.setIndex}
+                                                    </Badge>
+                                                )}
+                                                <Text
+                                                    size="xs"
+                                                    fw={500}
+                                                    style={{
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow:
+                                                            'ellipsis',
+                                                    }}
+                                                >
+                                                    {option.value}
+                                                </Text>
+                                            </Group>
+                                            <Badge
+                                                size="xs"
+                                                variant={
+                                                    isComplete
+                                                        ? 'filled'
+                                                        : percent > 0
+                                                          ? 'light'
+                                                          : 'outline'
+                                                }
+                                                color={
+                                                    isComplete
+                                                        ? 'teal'
+                                                        : percent > 0
+                                                          ? 'violet'
+                                                          : 'gray'
+                                                }
+                                            >
+                                                {percent}%
+                                            </Badge>
+                                        </Group>
+                                        <Progress
+                                            value={percent}
+                                            size={3}
+                                            radius="xl"
+                                            color={
+                                                isComplete
+                                                    ? 'teal'
+                                                    : percent >= 50
+                                                      ? 'violet'
+                                                      : 'indigo'
+                                            }
+                                            styles={{
+                                                root: {
+                                                    backgroundColor:
+                                                        'rgba(255, 255, 255, 0.08)',
+                                                },
+                                            }}
+                                        />
+                                    </Box>
+                                );
+                            }}
                         />
                     </Box>
 
@@ -264,6 +414,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedRarity(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -286,6 +437,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedCost(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -305,6 +457,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedInkable(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -324,6 +477,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedFormat(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -345,6 +499,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedType(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -367,6 +522,7 @@ export function CollectionFiltersSidebar({
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -388,6 +544,7 @@ export function CollectionFiltersSidebar({
                             searchable
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -410,6 +567,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedAttack(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -432,6 +590,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedDefense(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
 
@@ -454,6 +613,7 @@ export function CollectionFiltersSidebar({
                             onChange={(val) => setSelectedLore(val || 'All')}
                             allowDeselect={false}
                             size="xs"
+                            styles={selectStyles}
                         />
                     </Box>
                 </Stack>

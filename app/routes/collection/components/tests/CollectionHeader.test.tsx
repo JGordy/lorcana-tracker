@@ -62,6 +62,38 @@ describe('CollectionHeader', () => {
         expect(screen.getByText('$125.50')).toBeInTheDocument();
         expect(screen.getByText('$75.50')).toBeInTheDocument();
         expect(screen.getByText('$50.00')).toBeInTheDocument();
-        expect(screen.getByText('💎 Gems')).toBeInTheDocument();
+        expect(screen.getByText(/Crown Jewels/i)).toBeInTheDocument();
+        expect(screen.getByText('Set Progress')).toBeInTheDocument();
+    });
+
+    it('renders contextual set completion when a specific set is selected', () => {
+        const mockSetStats = {
+            setName: 'Wilds Unknown',
+            setIndex: 12,
+            totalCardsInSet: 204,
+            uniqueCardsOwned: 106,
+            totalCardsOwned: 140,
+            standardCardsOwned: 120,
+            foilCardsOwned: 20,
+            completionPercentage: 52,
+            marketValue: 185.0,
+        };
+
+        render(
+            <MantineProvider>
+                <CollectionHeader
+                    totals={{ totalCardsOwned: 450, uniqueCardsCount: 200 }}
+                    totalCatalogCards={1000}
+                    selectedSet="Wilds Unknown"
+                    selectedSetStats={mockSetStats}
+                />
+            </MantineProvider>,
+        );
+
+        expect(
+            screen.getByText('Wilds Unknown Completion'),
+        ).toBeInTheDocument();
+        expect(screen.getByText('52%')).toBeInTheDocument();
+        expect(screen.getByText('(106 / 204)')).toBeInTheDocument();
     });
 });
