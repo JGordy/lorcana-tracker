@@ -12,6 +12,7 @@ import { useCollectionInventory } from './hooks/useCollectionInventory';
 import { useCollectionFilters } from './hooks/useCollectionFilters';
 import { CollectionHeader } from './components/CollectionHeader';
 import { CollectionFiltersSidebar } from './components/CollectionFiltersSidebar';
+import { CollectionFiltersDrawer } from './components/CollectionFiltersDrawer';
 import { CollectionTopFilterBar } from './components/CollectionTopFilterBar';
 import { CollectionCardGrid } from './components/CollectionCardGrid';
 import type { Route } from './+types/collection';
@@ -33,6 +34,7 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
     const { cards, userCollection: serverCollection, user } = loaderData;
     const fetcher = useFetcher();
     const [setBreakdownOpened, setSetBreakdownOpened] = useState(false);
+    const [mobileFiltersOpened, setMobileFiltersOpened] = useState(false);
 
     const cardsLookup = useMemo(() => buildCardsLookup(cards), [cards]);
 
@@ -98,10 +100,23 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
                 onCloseSetBreakdown={() => setSetBreakdownOpened(false)}
             />
 
+            {/* Mobile Filters Drawer */}
+            <CollectionFiltersDrawer
+                opened={mobileFiltersOpened}
+                onClose={() => setMobileFiltersOpened(false)}
+                selectedOwnership={selectedOwnership}
+                setSelectedOwnership={setSelectedOwnership}
+                hasActiveFilters={hasActiveFilters}
+                handleResetFilters={handleResetFilters}
+                setProgressMap={setProgressMap}
+                totalFilteredCards={filteredCards.length}
+                {...sidebarFilterProps}
+            />
+
             {/* Workspace Layout */}
             <Grid gap="md">
-                {/* Left Panel: Filters */}
-                <Grid.Col span={{ base: 12, md: 3 }}>
+                {/* Left Panel: Desktop Filters Sidebar */}
+                <Grid.Col span={{ base: 12, md: 3 }} visibleFrom="md">
                     <CollectionFiltersSidebar
                         selectedOwnership={selectedOwnership}
                         setSelectedOwnership={setSelectedOwnership}
@@ -124,6 +139,7 @@ export default function Collection({ loaderData }: Route.ComponentProps) {
                         selectedSetStats={selectedSetStats}
                         onClearSet={() => setSelectedSet('All')}
                         onOpenSetBreakdown={() => setSetBreakdownOpened(true)}
+                        onOpenMobileFilters={() => setMobileFiltersOpened(true)}
                         onResetAll={handleResetFilters}
                         {...sidebarFilterProps}
                     />

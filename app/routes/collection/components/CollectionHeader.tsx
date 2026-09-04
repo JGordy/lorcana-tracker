@@ -78,9 +78,9 @@ export function CollectionHeader({
     return (
         <>
             <Paper
-                p={{ base: 'md', md: 'lg' }}
+                p={{ base: 8, md: 'lg' }}
                 radius="lg"
-                mb="md"
+                mb={{ base: 8, md: 'md' }}
                 style={{
                     background:
                         'linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)',
@@ -91,17 +91,17 @@ export function CollectionHeader({
                     justify="space-between"
                     align="center"
                     wrap="wrap"
-                    gap="md"
+                    gap="xs"
                 >
-                    <Box style={{ maxWidth: 460 }}>
-                        <Group gap="xs" mb={4}>
-                            <IconCards size={24} color="#a855f7" />
+                    <Box style={{ maxWidth: 460, flex: '1 1 auto' }}>
+                        <Group gap="xs" mb={{ base: 2, md: 4 }}>
+                            <IconCards size={22} color="#a855f7" />
                             <Title
                                 order={1}
                                 style={{
                                     fontFamily: "'Cinzel Decorative', serif",
                                     letterSpacing: '0.5px',
-                                    fontSize: 24,
+                                    fontSize: 'clamp(18px, 4vw, 24px)',
                                     background:
                                         'linear-gradient(to right, #c084fc, #f472b6)',
                                     WebkitBackgroundClip: 'text',
@@ -111,12 +111,12 @@ export function CollectionHeader({
                                 My Collection
                             </Title>
                         </Group>
-                        <Text size="xs" c="gray.4" lh={1.5}>
+                        <Text size="xs" c="gray.4" lh={1.5} visibleFrom="md">
                             Track your Lorcana cards (foil & non-foil counts)
                             and live market valuation. Changes save instantly
                             and automatically update deck percentages.
                         </Text>
-                        <Group gap="xs" mt="xs">
+                        <Group gap="xs" mt={{ base: 4, md: 'xs' }}>
                             <Button
                                 size="xs"
                                 variant="light"
@@ -125,6 +125,10 @@ export function CollectionHeader({
                                 onClick={handleOpenSetBreakdown}
                                 styles={{
                                     root: {
+                                        height: 28,
+                                        paddingLeft: 8,
+                                        paddingRight: 8,
+                                        fontSize: 11,
                                         backgroundColor:
                                             'rgba(168, 85, 247, 0.12)',
                                         border: '1px solid rgba(168, 85, 247, 0.3)',
@@ -142,6 +146,10 @@ export function CollectionHeader({
                                     onClick={() => setCrownJewelsOpened(true)}
                                     styles={{
                                         root: {
+                                            height: 28,
+                                            paddingLeft: 8,
+                                            paddingRight: 8,
+                                            fontSize: 11,
                                             backgroundColor:
                                                 'rgba(234, 179, 8, 0.12)',
                                             border: '1px solid rgba(234, 179, 8, 0.3)',
@@ -156,16 +164,16 @@ export function CollectionHeader({
 
                     {/* Metric Quick Stats */}
                     <SimpleGrid
-                        cols={{ base: 2, sm: 4 }}
-                        spacing="xs"
+                        cols={{ base: 4, sm: 4 }}
+                        spacing={{ base: 6, sm: 'xs' }}
                         style={{
-                            minWidth: 320,
-                            flex: '1 1 480px',
+                            minWidth: 260,
+                            flex: '1 1 360px',
                             maxWidth: 640,
                         }}
                     >
                         <Card
-                            padding="xs"
+                            p={{ base: 6, md: 'xs' }}
                             radius="md"
                             bg="rgba(15, 23, 42, 0.6)"
                             withBorder
@@ -179,13 +187,18 @@ export function CollectionHeader({
                             >
                                 Total Cards
                             </Text>
-                            <Text size="lg" fw={800} c="gray.1" mt={2}>
+                            <Text
+                                fz={{ base: 'sm', sm: 'lg' }}
+                                fw={800}
+                                c="gray.1"
+                                mt={2}
+                            >
                                 {totals.totalCardsOwned}
                             </Text>
                         </Card>
 
                         <Card
-                            padding="xs"
+                            p={{ base: 6, md: 'xs' }}
                             radius="md"
                             bg="rgba(15, 23, 42, 0.6)"
                             withBorder
@@ -199,13 +212,18 @@ export function CollectionHeader({
                             >
                                 Unique
                             </Text>
-                            <Text size="lg" fw={800} c="teal.3" mt={2}>
+                            <Text
+                                fz={{ base: 'sm', sm: 'lg' }}
+                                fw={800}
+                                c="teal.3"
+                                mt={2}
+                            >
                                 {totals.uniqueCardsCount}
                             </Text>
                         </Card>
 
                         <Card
-                            padding="xs"
+                            p={{ base: 6, md: 'xs' }}
                             radius="md"
                             bg="rgba(15, 23, 42, 0.6)"
                             withBorder
@@ -244,6 +262,7 @@ export function CollectionHeader({
                                         variant="subtle"
                                         color="violet"
                                         aria-label="View Set Progress Breakdown"
+                                        visibleFrom="sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleOpenSetBreakdown();
@@ -253,7 +272,12 @@ export function CollectionHeader({
                                     </ActionIcon>
                                 </Tooltip>
                             </Group>
-                            <Text size="lg" fw={800} c="violet.3" mt={2}>
+                            <Text
+                                fz={{ base: 'sm', sm: 'lg' }}
+                                fw={800}
+                                c="violet.3"
+                                mt={2}
+                            >
                                 {isSetFiltered
                                     ? `${setCompletionPercent}%`
                                     : `${completionPercentage}%`}
@@ -263,6 +287,7 @@ export function CollectionHeader({
                                     c="dimmed"
                                     fw={500}
                                     ml={4}
+                                    visibleFrom="sm"
                                 >
                                     {isSetFiltered
                                         ? `(${selectedSetStats?.uniqueCardsOwned ?? 0} / ${selectedSetStats?.totalCardsInSet ?? 0})`
@@ -273,7 +298,7 @@ export function CollectionHeader({
 
                         {/* Portfolio Valuation Card */}
                         <Card
-                            padding="xs"
+                            p={{ base: 6, md: 'xs' }}
                             radius="md"
                             bg="linear-gradient(135deg, rgba(234, 179, 8, 0.12) 0%, rgba(15, 23, 42, 0.8) 100%)"
                             withBorder
@@ -310,6 +335,7 @@ export function CollectionHeader({
                                             variant="subtle"
                                             color="yellow"
                                             aria-label="View Crown Jewels"
+                                            visibleFrom="sm"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setCrownJewelsOpened(true);
@@ -320,10 +346,15 @@ export function CollectionHeader({
                                     </Tooltip>
                                 )}
                             </Group>
-                            <Text size="lg" fw={900} c="yellow.3" mt={2}>
+                            <Text
+                                fz={{ base: 'sm', sm: 'lg' }}
+                                fw={900}
+                                c="yellow.3"
+                                mt={2}
+                            >
                                 {formatCurrency(totalVal)}
                             </Text>
-                            <Group gap={4} mt={3}>
+                            <Group gap={4} mt={3} visibleFrom="sm">
                                 <Text size="9px" c="dimmed">
                                     Reg:{' '}
                                     <span style={{ color: '#e2e8f0' }}>

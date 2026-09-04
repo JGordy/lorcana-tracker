@@ -384,3 +384,14 @@ body {
 .mantine-Combobox-option[data-checked] svg {
     color: #ffffff !important;
 }
+
+/* Mobile bottom navigation spacing & back-to-top adjustment */
+@media (max-width: 991px) {
+    body {
+        padding-bottom: 76px;
+    }
+
+    .back-to-top-affix {
+        bottom: 84px !important;
+    }
+}

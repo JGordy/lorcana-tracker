@@ -103,4 +103,16 @@ describe('CollectionFiltersSidebar', () => {
         const setInput = screen.getByDisplayValue('The First Chapter (50%)');
         expect(setInput).toBeInTheDocument();
     });
+
+    it('renders in drawer mode without outer card Paper wrapper', () => {
+        const { container } = render(
+            <MantineProvider>
+                <CollectionFiltersSidebar {...defaultProps} variant="drawer" />
+            </MantineProvider>,
+        );
+
+        expect(container.querySelector('.filters-sidebar')).toBeNull();
+        expect(screen.getByText('Card Set')).toBeInTheDocument();
+        expect(screen.getByText('Rarity')).toBeInTheDocument();
+    });
 });

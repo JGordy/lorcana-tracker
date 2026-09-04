@@ -10,7 +10,11 @@ export function BackToTop({ threshold = 300 }: BackToTopProps) {
     const [scroll, scrollTo] = useWindowScroll();
 
     return (
-        <Affix position={{ bottom: 24, right: 24 }} zIndex={99}>
+        <Affix
+            position={{ bottom: 24, right: 24 }}
+            zIndex={99}
+            className="back-to-top-affix"
+        >
             <Transition transition="slide-up" mounted={scroll.y > threshold}>
                 {(transitionStyles) => (
                     <Button
