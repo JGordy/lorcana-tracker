@@ -65,6 +65,9 @@ describe('DecksToolbar', () => {
         renderComponent({ user: { $id: 'user-1' } });
         const importBtn = screen.getByText('Import Deck');
         expect(importBtn).toBeInTheDocument();
+        expect(screen.getByText('Import')).toBeInTheDocument();
+        expect(screen.getByText('All (5)')).toBeInTheDocument();
+        expect(screen.getByText('Ready (1)')).toBeInTheDocument();
         fireEvent.click(importBtn);
         expect(mockOpenImportModal).toHaveBeenCalled();
     });
@@ -72,5 +75,6 @@ describe('DecksToolbar', () => {
     it('hides Import Deck button for guest user', () => {
         renderComponent({ user: null });
         expect(screen.queryByText('Import Deck')).not.toBeInTheDocument();
+        expect(screen.queryByText('Import')).not.toBeInTheDocument();
     });
 });

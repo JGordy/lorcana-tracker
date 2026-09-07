@@ -183,7 +183,11 @@ export default function Decks({ loaderData }: Route.ComponentProps) {
     };
 
     return (
-        <Container size="xl" py="lg">
+        <Container
+            size="xl"
+            py={{ base: 'xs', md: 'lg' }}
+            px={{ base: 'xs', sm: 'md' }}
+        >
             <DecksHeader
                 totalDecksCount={decks.length}
                 coreDecksCount={allCoreDecks.length}
