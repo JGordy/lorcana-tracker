@@ -322,7 +322,11 @@ export default function MyDecks({ loaderData }: Route.ComponentProps) {
     const inProgressCount = totalDecksCount - readyToPlayCount;
 
     return (
-        <Container size="xl" py="lg">
+        <Container
+            size="xl"
+            py={{ base: 'xs', md: 'lg' }}
+            px={{ base: 'xs', sm: 'md' }}
+        >
             {/* Undo Notification Banner */}
             {undoState && (
                 <Alert
