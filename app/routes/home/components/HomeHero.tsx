@@ -11,7 +11,7 @@ export function HomeHero() {
     return (
         <Stack
             align="center"
-            gap="lg"
+            gap="md"
             style={{ textAlign: 'center', position: 'relative' }}
         >
             {/* Subtle violet highlight blur background */}
@@ -21,8 +21,8 @@ export function HomeHero() {
                     top: '50%',
                     left: '50%',
                     transform: 'translate(-50%, -50%)',
-                    width: '380px',
-                    height: '380px',
+                    width: 'clamp(260px, 60vw, 380px)',
+                    height: 'clamp(260px, 60vw, 380px)',
                     backgroundColor: 'rgba(124, 58, 237, 0.12)',
                     filter: 'blur(90px)',
                     borderRadius: '100%',
@@ -30,7 +30,7 @@ export function HomeHero() {
                 }}
             />
 
-            <Badge variant="filled" color="violet" size="lg" radius="xl">
+            <Badge variant="filled" color="violet" size="md" radius="xl">
                 Lorcana Recommendation Engine
             </Badge>
 
@@ -39,7 +39,7 @@ export function HomeHero() {
                 size="h1"
                 style={(theme) => ({
                     fontWeight: 900,
-                    fontSize: '3.25rem',
+                    fontSize: 'clamp(2.25rem, 7vw, 3.25rem)',
                     lineHeight: 1.15,
                     background: `linear-gradient(135deg, ${theme.colors.violet[2]} 0%, ${theme.colors.pink[2]} 100%)`,
                     WebkitBackgroundClip: 'text',
@@ -55,6 +55,7 @@ export function HomeHero() {
                 c="gray.4"
                 maw={640}
                 mx="auto"
+                px={{ base: 'xs', sm: 0 }}
                 style={{ zIndex: 1, lineHeight: 1.65 }}
             >
                 Stop guessing which decks you can build. Manage your physical
@@ -63,7 +64,7 @@ export function HomeHero() {
             </Text>
 
             {/* Feature Pills */}
-            <Group justify="center" gap="sm" style={{ zIndex: 1 }} mt="xs">
+            <Group justify="center" gap="xs" style={{ zIndex: 1 }} mt="xs">
                 <Badge
                     size="sm"
                     variant="outline"
@@ -90,7 +91,12 @@ export function HomeHero() {
                 </Badge>
             </Group>
 
-            <Group gap="md" mt="md" style={{ zIndex: 1 }}>
+            <Group
+                gap="sm"
+                mt={{ base: 'xs', sm: 'md' }}
+                justify="center"
+                style={{ zIndex: 1, width: '100%', maxWidth: 440 }}
+            >
                 <Button
                     component={Link}
                     to="/collection"
@@ -98,6 +104,7 @@ export function HomeHero() {
                     variant="gradient"
                     gradient={{ from: 'violet.6', to: 'indigo.6' }}
                     rightSection={<IconArrowRight size={16} />}
+                    w={{ base: '100%', sm: 'auto' }}
                 >
                     Manage My Collection
                 </Button>
@@ -107,6 +114,7 @@ export function HomeHero() {
                     size="md"
                     variant="outline"
                     color="gray"
+                    w={{ base: '100%', sm: 'auto' }}
                 >
                     Browse Public Decks
                 </Button>
