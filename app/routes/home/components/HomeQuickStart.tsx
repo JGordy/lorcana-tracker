@@ -12,24 +12,41 @@ import { IconPlus, IconSparkles, IconShoppingCart } from '@tabler/icons-react';
 
 export function HomeQuickStart() {
     return (
-        <Stack gap="xl" mt={90}>
+        <Stack gap="xl" mt={{ base: 40, sm: 60, md: 90 }}>
             <Box style={{ textAlign: 'center' }}>
                 <Text size="xs" fw={700} c="violet.4" tt="uppercase" lts={1}>
                     How It Works
                 </Text>
-                <Title order={2} size="h2" c="gray.1" fw={800} mt={4}>
+                <Title
+                    order={2}
+                    size="h2"
+                    c="gray.1"
+                    fw={800}
+                    mt={4}
+                    style={{ fontSize: 'clamp(1.25rem, 4.5vw, 1.75rem)' }}
+                >
                     From Booster Pack to Tournament Ready
                 </Title>
-                <Text size="xs" c="gray.4" max-width={550} mx="auto" mt={6}>
+                <Text
+                    size="xs"
+                    c="gray.4"
+                    max-width={550}
+                    mx="auto"
+                    mt={6}
+                    px={{ base: 'xs', sm: 0 }}
+                >
                     Get up and running in under three minutes with
                     GlimmerForge&apos;s streamlined recommendation workflow.
                 </Text>
             </Box>
 
-            <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
+            <SimpleGrid
+                cols={{ base: 1, md: 3 }}
+                spacing={{ base: 'sm', sm: 'lg' }}
+            >
                 {/* Step 1 */}
                 <Card
-                    padding="lg"
+                    p={{ base: 'sm', sm: 'lg' }}
                     radius="md"
                     bg="dark.8"
                     style={{
@@ -60,7 +77,7 @@ export function HomeQuickStart() {
 
                 {/* Step 2 */}
                 <Card
-                    padding="lg"
+                    p={{ base: 'sm', sm: 'lg' }}
                     radius="md"
                     bg="dark.8"
                     style={{
@@ -91,7 +108,7 @@ export function HomeQuickStart() {
 
                 {/* Step 3 */}
                 <Card
-                    padding="lg"
+                    p={{ base: 'sm', sm: 'lg' }}
                     radius="md"
                     bg="dark.8"
                     style={{

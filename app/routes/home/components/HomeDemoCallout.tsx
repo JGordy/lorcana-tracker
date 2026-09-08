@@ -8,10 +8,10 @@ interface HomeDemoCalloutProps {
 export function HomeDemoCallout({ onTriggerDemoLogin }: HomeDemoCalloutProps) {
     return (
         <Card
-            padding="xl"
+            p={{ base: 'md', sm: 'xl' }}
             radius="lg"
             withBorder
-            mt={80}
+            mt={{ base: 36, sm: 54, md: 80 }}
             mx="auto"
             maw={720}
             style={{
@@ -39,6 +39,7 @@ export function HomeDemoCallout({ onTriggerDemoLogin }: HomeDemoCalloutProps) {
                 gradient={{ from: 'violet.6', to: 'indigo.6' }}
                 size="sm"
                 fw={700}
+                w={{ base: '100%', sm: 'auto' }}
             >
                 Sign In & Seed Mock Collection
             </Button>

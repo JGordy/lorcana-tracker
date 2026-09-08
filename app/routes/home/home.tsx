@@ -36,7 +36,11 @@ export default function Home({ loaderData }: Route.ComponentProps) {
     };
 
     return (
-        <Container size="lg" py={60}>
+        <Container
+            size="lg"
+            py={{ base: 'md', sm: 'xl', md: 60 }}
+            px={{ base: 'xs', sm: 'md' }}
+        >
             <HomeHero />
             <HomeFeaturesGrid />
             <HomeQuickStart />

@@ -12,10 +12,14 @@ import { IconCards, IconDatabase, IconFilter } from '@tabler/icons-react';
 
 export function HomeFeaturesGrid() {
     return (
-        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg" mt={70}>
+        <SimpleGrid
+            cols={{ base: 1, md: 3 }}
+            spacing={{ base: 'sm', sm: 'lg' }}
+            mt={{ base: 36, sm: 50, md: 70 }}
+        >
             {/* Feature 1 */}
             <Card
-                padding="xl"
+                p={{ base: 'md', sm: 'xl' }}
                 radius="lg"
                 withBorder
                 style={{
@@ -85,7 +89,7 @@ export function HomeFeaturesGrid() {
 
             {/* Feature 2 */}
             <Card
-                padding="xl"
+                p={{ base: 'md', sm: 'xl' }}
                 radius="lg"
                 withBorder
                 style={{
@@ -147,7 +151,7 @@ export function HomeFeaturesGrid() {
 
             {/* Feature 3 */}
             <Card
-                padding="xl"
+                p={{ base: 'md', sm: 'xl' }}
                 radius="lg"
                 withBorder
                 style={{
