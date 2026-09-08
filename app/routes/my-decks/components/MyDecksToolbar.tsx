@@ -6,6 +6,7 @@ import {
     Select,
     Button,
     Badge,
+    Text,
 } from '@mantine/core';
 import {
     IconSearch,
@@ -47,10 +48,10 @@ export function MyDecksToolbar({
 }: MyDecksToolbarProps) {
     return (
         <Paper
-            p="sm"
+            p={{ base: 6, md: 'sm' }}
             radius="lg"
             withBorder
-            mb="lg"
+            mb={{ base: 'xs', md: 'lg' }}
             style={{
                 position: 'sticky',
                 top: 76,
@@ -63,11 +64,11 @@ export function MyDecksToolbar({
                     '0 10px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(168, 85, 247, 0.08)',
             }}
         >
-            <Group justify="space-between" wrap="wrap" gap="sm" align="center">
+            <Group justify="space-between" wrap="wrap" gap="xs" align="center">
                 {/* Search Input */}
                 <TextInput
                     placeholder="Search personal decks by name or notes..."
-                    leftSection={<IconSearch size={16} color="#c084fc" />}
+                    leftSection={<IconSearch size={14} color="#c084fc" />}
                     rightSection={
                         searchQuery ? (
                             <ActionIcon
@@ -83,12 +84,16 @@ export function MyDecksToolbar({
                     }
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.currentTarget.value)}
-                    style={{ flex: '1 1 220px', minWidth: 200 }}
+                    size="xs"
+                    style={{ flex: '1 1 200px', minWidth: 160 }}
                     styles={{
                         input: {
                             backgroundColor: 'rgba(15, 23, 42, 0.6)',
                             borderColor: 'rgba(168, 85, 247, 0.2)',
                             color: '#f8fafc',
+                            height: 32,
+                            minHeight: 32,
+                            fontSize: 12,
                         },
                     }}
                     radius="md"
@@ -100,20 +105,27 @@ export function MyDecksToolbar({
                         variant="gradient"
                         gradient={{ from: 'violet.6', to: 'indigo.6' }}
                         radius="md"
-                        size="sm"
-                        leftSection={<IconPlus size={16} />}
+                        size="xs"
+                        leftSection={<IconPlus size={14} />}
                         onClick={onOpenCreateModal}
                         disabled={!user}
+                        style={{ height: 28, fontSize: 11, padding: '0 8px' }}
                     >
-                        New Deck
+                        <Text component="span" visibleFrom="xs">
+                            New Deck
+                        </Text>
+                        <Text component="span" hiddenFrom="xs">
+                            New
+                        </Text>
                     </Button>
                     <Button
                         variant="light"
                         color="violet"
                         radius="md"
-                        size="sm"
-                        leftSection={<IconUpload size={16} />}
+                        size="xs"
+                        leftSection={<IconUpload size={14} />}
                         onClick={onOpenImportModal}
+                        style={{ height: 28, fontSize: 11, padding: '0 8px' }}
                     >
                         Import
                     </Button>
@@ -123,8 +135,8 @@ export function MyDecksToolbar({
                             variant="light"
                             color={conflictCount > 0 ? 'amber' : 'blue'}
                             radius="md"
-                            size="sm"
-                            leftSection={<IconLayersIntersect size={16} />}
+                            size="xs"
+                            leftSection={<IconLayersIntersect size={14} />}
                             rightSection={
                                 physicallyBuiltCount > 0 ? (
                                     <Badge
@@ -145,14 +157,25 @@ export function MyDecksToolbar({
                                 ) : undefined
                             }
                             onClick={onOpenAuditModal}
+                            style={{
+                                height: 28,
+                                fontSize: 11,
+                                padding: '0 8px',
+                            }}
                         >
-                            Deck Audit
+                            <Text component="span" visibleFrom="xs">
+                                Deck Audit
+                            </Text>
+                            <Text component="span" hiddenFrom="xs">
+                                Audit
+                            </Text>
                         </Button>
                     )}
 
                     <Select
+                        size="xs"
                         leftSection={
-                            <IconArrowsSort size={15} color="#c084fc" />
+                            <IconArrowsSort size={13} color="#c084fc" />
                         }
                         data={[
                             {
@@ -176,10 +199,14 @@ export function MyDecksToolbar({
                                 backgroundColor: 'rgba(15, 23, 42, 0.6)',
                                 borderColor: 'rgba(168, 85, 247, 0.2)',
                                 color: '#f8fafc',
+                                height: 28,
+                                minHeight: 28,
+                                fontSize: 11,
+                                paddingLeft: 24,
                             },
                         }}
                         radius="md"
-                        style={{ width: 175 }}
+                        style={{ width: 'clamp(140px, 35vw, 175px)' }}
                     />
                 </Group>
             </Group>

@@ -74,7 +74,10 @@ export function MyDecksGrid({
     }
 
     return (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="lg">
+        <SimpleGrid
+            cols={{ base: 1, sm: 2, md: 3, lg: 4 }}
+            spacing={{ base: 'sm', sm: 'lg' }}
+        >
             {decks.map((deck) => (
                 <MyDeckCardItem
                     key={deck.$id}

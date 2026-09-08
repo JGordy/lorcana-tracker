@@ -54,7 +54,7 @@ export function DeckGrid({
                     md: 3,
                     lg: 4,
                 }}
-                spacing="lg"
+                spacing={{ base: 'sm', sm: 'lg' }}
             >
                 {decksToRender.map((deck) => (
                     <DeckCardItem
@@ -77,18 +77,28 @@ export function DeckGrid({
             defaultValue="core"
             color="violet"
             className="deck-format-tabs"
-            mt="md"
-            mb="xl"
+            mt={{ base: 6, md: 'md' }}
+            mb={{ base: 'md', md: 'xl' }}
         >
-            <Tabs.List>
+            <Tabs.List grow>
                 <Tabs.Tab value="core" leftSection={<IconCards size={18} />}>
-                    Core Constructed ({coreDecks.length})
+                    <Text component="span" visibleFrom="xs">
+                        Core Constructed ({coreDecks.length})
+                    </Text>
+                    <Text component="span" hiddenFrom="xs">
+                        Core ({coreDecks.length})
+                    </Text>
                 </Tabs.Tab>
                 <Tabs.Tab
                     value="infinity"
                     leftSection={<IconInfinity size={18} />}
                 >
-                    Infinity Constructed ({infinityDecks.length})
+                    <Text component="span" visibleFrom="xs">
+                        Infinity Constructed ({infinityDecks.length})
+                    </Text>
+                    <Text component="span" hiddenFrom="xs">
+                        Infinity ({infinityDecks.length})
+                    </Text>
                 </Tabs.Tab>
             </Tabs.List>
 

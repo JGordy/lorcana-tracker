@@ -31,6 +31,7 @@ describe('MyDecksToolbar', () => {
             ),
         ).toBeInTheDocument();
         expect(screen.getByText('New Deck')).toBeInTheDocument();
+        expect(screen.getByText('New')).toBeInTheDocument();
         expect(screen.getByText('Import')).toBeInTheDocument();
         expect(screen.getByText('Highest Match %')).toBeInTheDocument();
     });
@@ -89,6 +90,7 @@ describe('MyDecksToolbar', () => {
             physicallyBuiltCount: 3,
         });
         expect(screen.getByText('Deck Audit')).toBeInTheDocument();
+        expect(screen.getByText('Audit')).toBeInTheDocument();
         expect(screen.getByText('2 Conflicts')).toBeInTheDocument();
 
         fireEvent.click(screen.getByText('Deck Audit'));

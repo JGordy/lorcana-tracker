@@ -22,9 +22,11 @@ describe('DeckGrid', () => {
         );
 
         expect(screen.getByText('Core Constructed (0)')).toBeInTheDocument();
+        expect(screen.getByText('Core (0)')).toBeInTheDocument();
         expect(
             screen.getByText('Infinity Constructed (0)'),
         ).toBeInTheDocument();
+        expect(screen.getByText('Infinity (0)')).toBeInTheDocument();
         expect(
             screen.getAllByText(
                 'No decks found matching your filters in this format.',
