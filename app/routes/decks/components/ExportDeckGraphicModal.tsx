@@ -226,43 +226,9 @@ export function ExportDeckGraphicModal({
         <ResponsiveModal
             opened={opened}
             onClose={onClose}
-            title={
-                <Group gap="xs" align="center">
-                    <Box
-                        style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: '8px',
-                            background:
-                                'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
-                            border: '1px solid rgba(168, 85, 247, 0.35)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <IconPhoto size={18} color="#c084fc" />
-                    </Box>
-                    <Box>
-                        <Text
-                            fw={900}
-                            size="md"
-                            style={{
-                                fontFamily: "'Cinzel Decorative', serif",
-                                background:
-                                    'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}
-                        >
-                            Export Shareable Graphic
-                        </Text>
-                        <Text size="11px" c="gray.4">
-                            High-DPI visual deck spread for Discord & Reddit
-                        </Text>
-                    </Box>
-                </Group>
-            }
+            icon={<IconPhoto size={18} color="#c084fc" />}
+            title="Export Shareable Graphic"
+            subtitle="Download high-resolution image or copy directly to clipboard"
             size="1380px"
             centered
             radius="lg"

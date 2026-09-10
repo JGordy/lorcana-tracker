@@ -115,4 +115,30 @@ describe('ResponsiveModal', () => {
         fireEvent.click(closeBtn);
         expect(onClose).toHaveBeenCalled();
     });
+
+    it('renders icon, subtitle, badge, and headerRightSection via ModalHeader', () => {
+        vi.mocked(mantineHooks.useMediaQuery).mockReturnValue(false);
+
+        render(
+            <MantineProvider>
+                <ResponsiveModal
+                    opened
+                    onClose={vi.fn()}
+                    icon={<span data-testid="test-icon">Icon</span>}
+                    title="Deck Builder"
+                    subtitle="Customize your cards"
+                    badge={<span data-testid="test-badge">PRO</span>}
+                    headerRightSection={<button>Action</button>}
+                >
+                    <div>Content</div>
+                </ResponsiveModal>
+            </MantineProvider>,
+        );
+
+        expect(screen.getByTestId('test-icon')).toBeInTheDocument();
+        expect(screen.getByText('Deck Builder')).toBeInTheDocument();
+        expect(screen.getByText('Customize your cards')).toBeInTheDocument();
+        expect(screen.getByTestId('test-badge')).toBeInTheDocument();
+        expect(screen.getByText('Action')).toBeInTheDocument();
+    });
 });

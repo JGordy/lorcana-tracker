@@ -6,6 +6,7 @@ import {
     IconUpload,
     IconAlertCircle,
     IconCheck,
+    IconDatabase,
 } from '@tabler/icons-react';
 import type { UserCollectionMap } from '../types/lorcana';
 import {
@@ -84,11 +85,9 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                 setSuccessMsg(null);
                 onClose();
             }}
-            title={
-                <Text fw={700} size="lg">
-                    Collection Backup & Restore
-                </Text>
-            }
+            icon={<IconDatabase size={20} color="#c084fc" />}
+            title="Collection Backup & Restore"
+            subtitle="Export or restore your inventory data"
             centered
         >
             <Stack gap="md">

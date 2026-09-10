@@ -1,6 +1,116 @@
-import { Drawer, Modal, type ModalProps } from '@mantine/core';
+import {
+    Drawer,
+    Modal,
+    Group,
+    Text,
+    Box,
+    type ModalProps,
+} from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import type { ReactNode } from 'react';
+
+export interface ModalHeaderProps {
+    icon?: ReactNode;
+    title: ReactNode;
+    subtitle?: ReactNode;
+    badge?: ReactNode;
+    rightSection?: ReactNode;
+    iconBg?: string;
+    iconBorder?: string;
+}
+
+export function ModalHeader({
+    icon,
+    title,
+    subtitle,
+    badge,
+    rightSection,
+    iconBg,
+    iconBorder,
+}: ModalHeaderProps) {
+    return (
+        <Group
+            justify="space-between"
+            align="center"
+            style={{ width: '100%' }}
+            wrap="nowrap"
+        >
+            <Group
+                gap="sm"
+                align="center"
+                wrap="nowrap"
+                style={{ minWidth: 0 }}
+            >
+                {icon && (
+                    <Box
+                        style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '10px',
+                            background:
+                                iconBg ||
+                                'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
+                            border:
+                                iconBorder ||
+                                '1px solid rgba(168, 85, 247, 0.35)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                        }}
+                    >
+                        {icon}
+                    </Box>
+                )}
+                <Box style={{ minWidth: 0 }}>
+                    <Group gap="xs" align="center" wrap="nowrap">
+                        {typeof title === 'string' ? (
+                            <Text
+                                fw={900}
+                                size="md"
+                                style={{
+                                    fontFamily: "'Cinzel Decorative', serif",
+                                    letterSpacing: '0.5px',
+                                    background:
+                                        'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}
+                            >
+                                {title}
+                            </Text>
+                        ) : (
+                            title
+                        )}
+                        {badge}
+                    </Group>
+                    {subtitle &&
+                        (typeof subtitle === 'string' ? (
+                            <Text
+                                size="xs"
+                                c="dimmed"
+                                style={{
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                }}
+                            >
+                                {subtitle}
+                            </Text>
+                        ) : (
+                            subtitle
+                        ))}
+                </Box>
+            </Group>
+            {rightSection && (
+                <Box style={{ flexShrink: 0 }}>{rightSection}</Box>
+            )}
+        </Group>
+    );
+}
 
 export interface ResponsiveModalProps extends Omit<
     ModalProps,
@@ -9,6 +119,12 @@ export interface ResponsiveModalProps extends Omit<
     opened: boolean;
     onClose: () => void;
     title?: ReactNode;
+    subtitle?: ReactNode;
+    icon?: ReactNode;
+    badge?: ReactNode;
+    headerRightSection?: ReactNode;
+    iconBg?: string;
+    iconBorder?: string;
     children: ReactNode;
     size?: string | number;
     mobileDrawerSize?: string | number;
@@ -25,6 +141,12 @@ export function ResponsiveModal({
     opened,
     onClose,
     title,
+    subtitle,
+    icon,
+    badge,
+    headerRightSection,
+    iconBg,
+    iconBorder,
     children,
     size = 'lg',
     mobileDrawerSize = '90%',
@@ -38,6 +160,21 @@ export function ResponsiveModal({
     const isMobile = useMediaQuery('(max-width: 48em)', false, {
         getInitialValueInEffect: false,
     });
+
+    const resolvedTitle =
+        icon || subtitle || badge || headerRightSection ? (
+            <ModalHeader
+                icon={icon}
+                title={title}
+                subtitle={subtitle}
+                badge={badge}
+                rightSection={headerRightSection}
+                iconBg={iconBg}
+                iconBorder={iconBorder}
+            />
+        ) : (
+            title
+        );
 
     if (isMobile) {
         const {
@@ -56,7 +193,7 @@ export function ResponsiveModal({
                 zIndex={zIndex}
                 radius={0}
                 withCloseButton={withCloseButton}
-                title={title}
+                title={resolvedTitle}
                 styles={{
                     ...styles,
                     content: {
@@ -109,7 +246,7 @@ export function ResponsiveModal({
         <Modal
             opened={opened}
             onClose={onClose}
-            title={title}
+            title={resolvedTitle}
             size={size}
             centered={centered}
             zIndex={zIndex}
