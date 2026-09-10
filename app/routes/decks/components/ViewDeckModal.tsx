@@ -5,7 +5,6 @@ import {
     Box,
     Text,
     Badge,
-    Progress,
     TextInput,
     Select,
     Button,
@@ -37,6 +36,7 @@ import type { useFetcher } from 'react-router';
 import type { Card as LorcanaCard } from '../../../types/lorcana';
 import { parseDeckMetadata } from '../../../utils/deck';
 import { DeckInkCurve } from '../../../components/DeckInkCurve';
+import { DeckHeaderMetrics } from '../../../components/DeckMetricsSummary';
 import { ExportDeckGraphicModal } from './ExportDeckGraphicModal';
 import { calculateDeckCost, formatCurrency } from '../../../utils/valuation';
 import { getTcgPlayerCardSearchUrl } from '../../../utils/shoppingList';
@@ -164,79 +164,11 @@ export function ViewDeckModal({
                     </Group>
 
                     {/* Header Right: Valuation & Collection Completion */}
-                    <Group
-                        gap="md"
-                        align="center"
-                        style={{ marginLeft: 'auto' }}
-                    >
-                        {deckCost.totalDeckCost > 0 && (
-                            <Box style={{ textAlign: 'right' }}>
-                                <Text
-                                    size="10px"
-                                    fw={800}
-                                    c="yellow.4"
-                                    tt="uppercase"
-                                >
-                                    Est. Value:{' '}
-                                    {formatCurrency(deckCost.totalDeckCost)}
-                                </Text>
-                                {deckCost.costToFinish > 0 && (
-                                    <Text size="10px" fw={700} c="red.4">
-                                        Need:{' '}
-                                        {formatCurrency(deckCost.costToFinish)}
-                                    </Text>
-                                )}
-                            </Box>
-                        )}
-
-                        <Box style={{ width: 180 }}>
-                            <Group
-                                justify="space-between"
-                                align="center"
-                                mb={4}
-                            >
-                                <Text
-                                    size="10px"
-                                    fw={800}
-                                    c="gray.4"
-                                    tt="uppercase"
-                                >
-                                    Completion
-                                </Text>
-                                <Badge
-                                    size="xs"
-                                    variant="light"
-                                    color={
-                                        activeDeck.progress.percentage >= 80
-                                            ? 'teal'
-                                            : activeDeck.progress.percentage >=
-                                                50
-                                              ? 'yellow'
-                                              : 'red'
-                                    }
-                                    radius="sm"
-                                    style={{ fontWeight: 800 }}
-                                >
-                                    {activeDeck.progress.ownedCount}/
-                                    {activeDeck.progress.totalCount} (
-                                    {activeDeck.progress.percentage}%)
-                                </Badge>
-                            </Group>
-                            <Progress
-                                value={activeDeck.progress.percentage}
-                                color={
-                                    activeDeck.progress.percentage >= 80
-                                        ? 'teal'
-                                        : activeDeck.progress.percentage >= 50
-                                          ? 'yellow'
-                                          : 'red'
-                                }
-                                size="xs"
-                                radius="xl"
-                                striped
-                            />
-                        </Box>
-                    </Group>
+                    <DeckHeaderMetrics
+                        totalDeckCost={deckCost.totalDeckCost}
+                        costToFinish={deckCost.costToFinish}
+                        progress={activeDeck.progress}
+                    />
                 </Group>
             }
             size="1100px"
