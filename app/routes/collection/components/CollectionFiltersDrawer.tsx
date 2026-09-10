@@ -41,9 +41,9 @@ export function CollectionFiltersDrawer({
                     style={{ width: '100%' }}
                 >
                     <Group gap={8} align="center">
-                        <IconFilter size={18} color="#c084fc" />
+                        <IconFilter size={isMobile ? 20 : 18} color="#c084fc" />
                         <Text
-                            size="sm"
+                            size={isMobile ? 'md' : 'sm'}
                             fw={700}
                             c="gray.1"
                             style={{
@@ -59,14 +59,14 @@ export function CollectionFiltersDrawer({
                             size="compact-xs"
                             variant="subtle"
                             color="red"
-                            leftSection={<IconRefresh size={11} />}
+                            leftSection={<IconRefresh size={12} />}
                             onClick={handleResetFilters}
                             style={{
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: 600,
-                                height: 22,
-                                paddingLeft: 6,
-                                paddingRight: 6,
+                                height: 26,
+                                paddingLeft: 8,
+                                paddingRight: 8,
                             }}
                         >
                             Reset All
@@ -102,10 +102,10 @@ export function CollectionFiltersDrawer({
                 header: {
                     background: 'rgba(24, 20, 52, 0.95)',
                     borderBottom: '1px solid rgba(168, 85, 247, 0.2)',
-                    padding: isMobile ? '12px 16px' : '14px 18px',
+                    padding: isMobile ? '14px 18px' : '14px 18px',
                 },
                 body: {
-                    padding: isMobile ? '14px 16px' : '16px',
+                    padding: isMobile ? '16px 18px' : '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '16px',
@@ -131,14 +131,17 @@ export function CollectionFiltersDrawer({
                     borderTop: '1px solid rgba(168, 85, 247, 0.15)',
                     position: 'sticky',
                     bottom: 0,
-                    backgroundColor: 'rgba(15, 17, 38, 0.95)',
-                    backdropFilter: 'blur(8px)',
+                    backgroundColor: 'rgba(15, 17, 38, 0.98)',
+                    backdropFilter: 'blur(12px)',
                     zIndex: 10,
+                    paddingBottom:
+                        'calc(env(safe-area-inset-bottom, 0px) + 8px)',
                 }}
             >
                 <Button
                     fullWidth
-                    size="sm"
+                    size={isMobile ? 'md' : 'sm'}
+                    h={isMobile ? 48 : 40}
                     radius="md"
                     color="violet"
                     onClick={onClose}
@@ -148,6 +151,7 @@ export function CollectionFiltersDrawer({
                             'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
                         boxShadow: '0 4px 14px rgba(109, 40, 217, 0.4)',
                         fontWeight: 600,
+                        fontSize: isMobile ? 15 : 13,
                     }}
                 >
                     {totalFilteredCards !== undefined

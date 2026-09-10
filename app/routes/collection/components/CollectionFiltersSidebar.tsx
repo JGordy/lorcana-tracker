@@ -12,14 +12,15 @@ import {
 import { IconFilter, IconRefresh } from '@tabler/icons-react';
 import type { SetProgressStats } from '../../../utils/setCompletion';
 
-const selectStyles = {
+const getSelectStyles = (variant: 'card' | 'drawer' = 'card') => ({
     input: {
-        backgroundColor: 'rgba(15, 23, 42, 0.6)',
-        borderColor: 'rgba(168, 85, 247, 0.2)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        borderColor: 'rgba(168, 85, 247, 0.25)',
         color: '#f8fafc',
-        height: 36,
-        fontSize: 11,
-        fontWeight: 600,
+        height: variant === 'drawer' ? 44 : 36,
+        fontSize: variant === 'drawer' ? 14 : 11,
+        fontWeight: 500,
+        borderRadius: 8,
     },
     dropdown: {
         background:
@@ -32,13 +33,14 @@ const selectStyles = {
         padding: 6,
     },
     option: {
-        fontSize: 11.5,
+        fontSize: variant === 'drawer' ? 13.5 : 11.5,
         fontWeight: 500,
         borderRadius: 6,
         color: '#f1f5f9',
-        padding: '7px 10px',
+        padding: variant === 'drawer' ? '10px 12px' : '7px 10px',
+        minHeight: variant === 'drawer' ? 40 : 32,
     },
-};
+});
 
 export interface CollectionFiltersSidebarProps {
     selectedOwnership: string;
@@ -115,12 +117,26 @@ export function CollectionFiltersSidebar({
     handleResetFilters,
     variant = 'card',
 }: CollectionFiltersSidebarProps) {
+    const styles = getSelectStyles(variant);
+    const labelSize = variant === 'drawer' ? '13px' : '11px';
+    const labelColor = variant === 'drawer' ? 'gray.3' : 'gray.4';
+    const labelMargin = variant === 'drawer' ? 6 : 4;
+    const selectSize = variant === 'drawer' ? 'sm' : 'xs';
+
     const filterFields = (
-        <Stack gap="sm" mt={variant === 'card' ? 'xs' : undefined}>
+        <Stack
+            gap={variant === 'drawer' ? 'md' : 'sm'}
+            mt={variant === 'card' ? 'xs' : undefined}
+        >
             {/* Sort Order */}
             {setSelectedSort && (
                 <Box>
-                    <Text size="11px" fw={600} c="gray.4" mb={4}>
+                    <Text
+                        size={labelSize}
+                        fw={600}
+                        c={labelColor}
+                        mb={labelMargin}
+                    >
                         Sort Order
                     </Text>
                     <Select
@@ -154,8 +170,8 @@ export function CollectionFiltersSidebar({
                         value={selectedSort}
                         onChange={(val) => setSelectedSort(val || 'default')}
                         allowDeselect={false}
-                        size="xs"
-                        styles={selectStyles}
+                        size={selectSize}
+                        styles={styles}
                     />
                 </Box>
             )}
@@ -163,7 +179,12 @@ export function CollectionFiltersSidebar({
             {/* Market Price Range */}
             {setSelectedPriceRange && (
                 <Box>
-                    <Text size="11px" fw={600} c="gray.4" mb={4}>
+                    <Text
+                        size={labelSize}
+                        fw={600}
+                        c={labelColor}
+                        mb={labelMargin}
+                    >
                         Market Price Range
                     </Text>
                     <Select
@@ -183,15 +204,15 @@ export function CollectionFiltersSidebar({
                         value={selectedPriceRange}
                         onChange={(val) => setSelectedPriceRange(val || 'All')}
                         allowDeselect={false}
-                        size="xs"
-                        styles={selectStyles}
+                        size={selectSize}
+                        styles={styles}
                     />
                 </Box>
             )}
 
             {/* 0. Ownership Status */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Ownership
                 </Text>
                 <Select
@@ -221,14 +242,14 @@ export function CollectionFiltersSidebar({
                     value={selectedOwnership}
                     onChange={(val) => setSelectedOwnership(val || 'all')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 1. Set */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Card Set
                 </Text>
                 <Select
@@ -247,22 +268,29 @@ export function CollectionFiltersSidebar({
                     onChange={(val) => setSelectedSet(val || 'All')}
                     searchable
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                     renderOption={({ option }) => {
                         if (option.value === 'All') {
-                            return <Text size="xs">All Sets</Text>;
+                            return (
+                                <Text size={variant === 'drawer' ? 'sm' : 'xs'}>
+                                    All Sets
+                                </Text>
+                            );
                         }
                         const stats = setProgressMap?.get(option.value);
                         const percent = stats?.completionPercentage ?? 0;
                         const isComplete = percent === 100;
                         return (
-                            <Box style={{ width: '100%' }} py={2}>
+                            <Box
+                                style={{ width: '100%' }}
+                                py={variant === 'drawer' ? 4 : 2}
+                            >
                                 <Group
                                     justify="space-between"
                                     align="center"
                                     wrap="nowrap"
-                                    mb={3}
+                                    mb={variant === 'drawer' ? 4 : 3}
                                 >
                                     <Group
                                         gap={6}
@@ -271,7 +299,11 @@ export function CollectionFiltersSidebar({
                                     >
                                         {stats?.setIndex !== undefined && (
                                             <Badge
-                                                size="xs"
+                                                size={
+                                                    variant === 'drawer'
+                                                        ? 'sm'
+                                                        : 'xs'
+                                                }
                                                 variant="outline"
                                                 color="violet"
                                             >
@@ -279,7 +311,11 @@ export function CollectionFiltersSidebar({
                                             </Badge>
                                         )}
                                         <Text
-                                            size="xs"
+                                            size={
+                                                variant === 'drawer'
+                                                    ? 'sm'
+                                                    : 'xs'
+                                            }
                                             fw={500}
                                             style={{
                                                 whiteSpace: 'nowrap',
@@ -291,7 +327,9 @@ export function CollectionFiltersSidebar({
                                         </Text>
                                     </Group>
                                     <Badge
-                                        size="xs"
+                                        size={
+                                            variant === 'drawer' ? 'sm' : 'xs'
+                                        }
                                         variant={
                                             isComplete
                                                 ? 'filled'
@@ -312,7 +350,7 @@ export function CollectionFiltersSidebar({
                                 </Group>
                                 <Progress
                                     value={percent}
-                                    size={3}
+                                    size={variant === 'drawer' ? 4 : 3}
                                     radius="xl"
                                     color={
                                         isComplete
@@ -336,7 +374,7 @@ export function CollectionFiltersSidebar({
 
             {/* 2. Rarity */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Rarity
                 </Text>
                 <Select
@@ -356,14 +394,14 @@ export function CollectionFiltersSidebar({
                     value={selectedRarity}
                     onChange={(val) => setSelectedRarity(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 3. Cost */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Ink Cost
                 </Text>
                 <Select
@@ -379,14 +417,14 @@ export function CollectionFiltersSidebar({
                     value={selectedCost}
                     onChange={(val) => setSelectedCost(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 4. Inkable */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Inkwell Type
                 </Text>
                 <Select
@@ -399,14 +437,14 @@ export function CollectionFiltersSidebar({
                     value={selectedInkable}
                     onChange={(val) => setSelectedInkable(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 5. Legality */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Format Legality
                 </Text>
                 <Select
@@ -419,14 +457,14 @@ export function CollectionFiltersSidebar({
                     value={selectedFormat}
                     onChange={(val) => setSelectedFormat(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 6. Card Type */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Card Type
                 </Text>
                 <Select
@@ -441,14 +479,14 @@ export function CollectionFiltersSidebar({
                     value={selectedType}
                     onChange={(val) => setSelectedType(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 7. Classifications */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Classification
                 </Text>
                 <Select
@@ -461,14 +499,14 @@ export function CollectionFiltersSidebar({
                     onChange={(val) => setSelectedClassification(val || 'All')}
                     searchable
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 8. Franchise */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Franchise
                 </Text>
                 <Select
@@ -481,14 +519,14 @@ export function CollectionFiltersSidebar({
                     onChange={(val) => setSelectedFranchise(val || 'All')}
                     searchable
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 9. Attack */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Attack (Strength)
                 </Text>
                 <Select
@@ -504,14 +542,14 @@ export function CollectionFiltersSidebar({
                     value={selectedAttack}
                     onChange={(val) => setSelectedAttack(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 10. Defense */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Defense (Willpower)
                 </Text>
                 <Select
@@ -527,14 +565,14 @@ export function CollectionFiltersSidebar({
                     value={selectedDefense}
                     onChange={(val) => setSelectedDefense(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
 
             {/* 11. Lore */}
             <Box>
-                <Text size="11px" fw={600} c="gray.4" mb={4}>
+                <Text size={labelSize} fw={600} c={labelColor} mb={labelMargin}>
                     Lore Value
                 </Text>
                 <Select
@@ -550,8 +588,8 @@ export function CollectionFiltersSidebar({
                     value={selectedLore}
                     onChange={(val) => setSelectedLore(val || 'All')}
                     allowDeselect={false}
-                    size="xs"
-                    styles={selectStyles}
+                    size={selectSize}
+                    styles={styles}
                 />
             </Box>
         </Stack>
