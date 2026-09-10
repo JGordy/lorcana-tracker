@@ -1,5 +1,4 @@
 import {
-    Modal,
     Stack,
     TextInput,
     Textarea,
@@ -10,6 +9,7 @@ import {
     Badge,
     ScrollArea,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { IconAlertTriangle, IconCheck } from '@tabler/icons-react';
 
 interface MyDecksImportModalProps {
@@ -38,7 +38,7 @@ export function MyDecksImportModal({
     onSubmit,
 }: MyDecksImportModalProps) {
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title="Import Decklist from Text"
@@ -148,6 +148,6 @@ export function MyDecksImportModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

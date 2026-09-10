@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
-    Modal,
     Group,
     Text,
     Button,
@@ -11,6 +10,7 @@ import {
     Tooltip,
     ActionIcon,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../components/ResponsiveModal';
 import {
     IconDownload,
     IconCopy,
@@ -223,7 +223,7 @@ export function ExportDeckGraphicModal({
     if (!deck) return null;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title={
@@ -467,6 +467,6 @@ export function ExportDeckGraphicModal({
                     </Box>
                 </Box>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

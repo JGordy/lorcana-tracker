@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-    Modal,
     Stack,
     TextInput,
     Textarea,
@@ -13,6 +12,7 @@ import {
     Badge,
     SimpleGrid,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { IconEdit, IconCheck } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DECK_FORMAT_OPTIONS } from '../../../../constants/lorcana';
@@ -87,7 +87,7 @@ export function MyDecksEditModal({
     }, [deckCards]);
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={400}
@@ -373,6 +373,6 @@ export function MyDecksEditModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

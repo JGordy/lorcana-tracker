@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -17,6 +16,7 @@ import {
     ActionIcon,
     Indicator,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../components/ResponsiveModal';
 import {
     IconCards,
     IconSearch,
@@ -104,7 +104,7 @@ export function ViewDeckModal({
         }));
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title={
@@ -821,6 +821,6 @@ export function ViewDeckModal({
                 onClose={() => setShowGraphicModal(false)}
                 deck={activeDeck}
             />
-        </Modal>
+        </ResponsiveModal>
     );
 }

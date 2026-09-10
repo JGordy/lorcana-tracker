@@ -1,5 +1,4 @@
 import {
-    Modal,
     Stack,
     TextInput,
     Textarea,
@@ -12,6 +11,7 @@ import {
     Badge,
     SimpleGrid,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { IconSparkles, IconCheck } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DECK_FORMAT_OPTIONS } from '../../../../constants/lorcana';
@@ -53,7 +53,7 @@ export function MyDecksCreateModal({
     };
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             size="md"
@@ -315,6 +315,6 @@ export function MyDecksCreateModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,4 +1,5 @@
-import { Modal, Stack, Text, Group, Button } from '@mantine/core';
+import { Stack, Text, Group, Button } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 
 interface MyDecksDeleteModalProps {
     opened: boolean;
@@ -14,7 +15,7 @@ export function MyDecksDeleteModal({
     onConfirmDelete,
 }: MyDecksDeleteModalProps) {
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={400}
@@ -37,6 +38,6 @@ export function MyDecksDeleteModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Text,
@@ -16,6 +15,7 @@ import {
     ActionIcon,
     Indicator,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import {
     IconCards,
     IconSearch,
@@ -88,7 +88,7 @@ export function MyDecksViewModal({
     const deckCost = calculateDeckCost(activeDeck.cards || []);
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={200}
@@ -942,6 +942,6 @@ export function MyDecksViewModal({
                 onClose={() => setShowGraphicModal(false)}
                 deck={activeDeck}
             />
-        </Modal>
+        </ResponsiveModal>
     );
 }

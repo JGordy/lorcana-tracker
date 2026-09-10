@@ -1,5 +1,4 @@
 import {
-    Modal,
     Stack,
     Text,
     TextInput,
@@ -9,6 +8,7 @@ import {
     Box,
     Button,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../components/ResponsiveModal';
 import type { ParsedResults } from '../hooks/useDeckImport';
 
 interface ImportDeckModalProps {
@@ -37,7 +37,7 @@ export function ImportDeckModal({
     onSubmit,
 }: ImportDeckModalProps) {
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title={
@@ -190,6 +190,6 @@ export function ImportDeckModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

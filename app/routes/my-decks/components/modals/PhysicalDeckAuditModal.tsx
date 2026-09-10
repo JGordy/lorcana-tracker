@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -16,6 +15,7 @@ import {
     ActionIcon,
     Alert,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import {
     IconLayersIntersect,
     IconCheck,
@@ -90,7 +90,7 @@ export function PhysicalDeckAuditModal({
     const hasActiveDecks = activeDecks.length > 0;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title={
@@ -616,6 +616,6 @@ export function PhysicalDeckAuditModal({
                     </>
                 )}
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

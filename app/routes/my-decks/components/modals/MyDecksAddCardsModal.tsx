@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     TextInput,
@@ -14,6 +13,7 @@ import {
     Badge,
     SimpleGrid,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch, IconPlus, IconMinus } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
@@ -86,7 +86,7 @@ export function MyDecksAddCardsModal({
     const hasMoreCards = filteredCards.length > displayLimit;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title={
@@ -424,6 +424,6 @@ export function MyDecksAddCardsModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }
