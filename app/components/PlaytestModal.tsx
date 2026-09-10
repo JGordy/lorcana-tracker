@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -11,6 +10,7 @@ import {
     Tooltip,
     Paper,
 } from '@mantine/core';
+import { ResponsiveModal } from './ResponsiveModal';
 import {
     IconCards,
     IconDice,
@@ -242,7 +242,7 @@ export function PlaytestModal({ opened, onClose, deck }: PlaytestModalProps) {
     if (!deck) return null;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={400}
@@ -916,6 +916,6 @@ export function PlaytestModal({ opened, onClose, deck }: PlaytestModalProps) {
                     )}
                 </Box>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

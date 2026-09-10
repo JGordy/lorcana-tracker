@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -16,6 +15,7 @@ import {
     ActionIcon,
     Menu,
 } from '@mantine/core';
+import { ResponsiveModal } from './ResponsiveModal';
 import {
     IconShoppingCart,
     IconCheck,
@@ -113,7 +113,7 @@ export function ShoppingListModal({
     const isFullyOwned = missingCards.length === 0;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={400}
@@ -738,6 +738,6 @@ export function ShoppingListModal({
                     </>
                 )}
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

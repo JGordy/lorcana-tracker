@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
-import {
-    Modal,
-    Button,
-    Group,
-    Text,
-    Stack,
-    FileInput,
-    Alert,
-} from '@mantine/core';
+import { Button, Group, Text, Stack, FileInput, Alert } from '@mantine/core';
+import { ResponsiveModal } from './ResponsiveModal';
 import {
     IconDownload,
     IconUpload,
@@ -83,9 +76,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     };
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={() => {
+                setFile(null);
                 setErrorMsg(null);
                 setSuccessMsg(null);
                 onClose();
@@ -166,6 +160,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     </Button>
                 )}
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 };

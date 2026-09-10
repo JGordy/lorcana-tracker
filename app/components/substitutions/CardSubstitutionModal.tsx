@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -16,6 +15,7 @@ import {
     Grid,
     Tooltip,
 } from '@mantine/core';
+import { ResponsiveModal } from '../ResponsiveModal';
 import {
     IconArrowsExchange,
     IconSearch,
@@ -180,7 +180,7 @@ export function CardSubstitutionModal({
     };
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={500}
@@ -601,6 +601,6 @@ export function CardSubstitutionModal({
                     </Stack>
                 </Grid.Col>
             </Grid>
-        </Modal>
+        </ResponsiveModal>
     );
 }
