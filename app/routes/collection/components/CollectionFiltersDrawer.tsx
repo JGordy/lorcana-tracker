@@ -1,4 +1,5 @@
 import { Drawer, Group, Text, Button, Box, ScrollArea } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { IconFilter, IconRefresh } from '@tabler/icons-react';
 import {
     CollectionFiltersSidebar,
@@ -22,12 +23,17 @@ export function CollectionFiltersDrawer({
     totalFilteredCards,
     ...sidebarProps
 }: CollectionFiltersDrawerProps) {
+    const isMobile = useMediaQuery('(max-width: 48em)', false, {
+        getInitialValueInEffect: false,
+    });
+
     return (
         <Drawer
             opened={opened}
             onClose={onClose}
-            position="right"
-            size="min(88vw, 380px)"
+            position={isMobile ? 'bottom' : 'right'}
+            size={isMobile ? '90%' : 'min(88vw, 380px)'}
+            radius={0}
             title={
                 <Group
                     justify="space-between"
@@ -74,7 +80,21 @@ export function CollectionFiltersDrawer({
                     background:
                         'linear-gradient(180deg, rgba(24, 20, 52, 0.98) 0%, rgba(12, 16, 33, 0.99) 100%)',
                     backdropFilter: 'blur(20px)',
-                    borderLeft: '1px solid rgba(168, 85, 247, 0.25)',
+                    borderLeft: isMobile
+                        ? 'none'
+                        : '1px solid rgba(168, 85, 247, 0.25)',
+                    borderRight: 'none',
+                    borderBottom: 'none',
+                    borderTop: isMobile
+                        ? '1px solid rgba(168, 85, 247, 0.35)'
+                        : 'none',
+                    borderTopLeftRadius: isMobile ? '16px' : 0,
+                    borderTopRightRadius: isMobile ? '16px' : 0,
+                    borderBottomLeftRadius: 0,
+                    borderBottomRightRadius: 0,
+                    boxShadow: isMobile
+                        ? '0 -10px 40px rgba(0, 0, 0, 0.8)'
+                        : undefined,
                     color: '#f8fafc',
                     display: 'flex',
                     flexDirection: 'column',
@@ -82,10 +102,10 @@ export function CollectionFiltersDrawer({
                 header: {
                     background: 'rgba(24, 20, 52, 0.95)',
                     borderBottom: '1px solid rgba(168, 85, 247, 0.2)',
-                    padding: '14px 18px',
+                    padding: isMobile ? '12px 16px' : '14px 18px',
                 },
                 body: {
-                    padding: '16px',
+                    padding: isMobile ? '14px 16px' : '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '16px',

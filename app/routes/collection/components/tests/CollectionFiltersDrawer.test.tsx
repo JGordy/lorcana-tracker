@@ -1,9 +1,22 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MantineProvider } from '@mantine/core';
+import * as mantineHooks from '@mantine/hooks';
 import { CollectionFiltersDrawer } from '../CollectionFiltersDrawer';
 
+vi.mock('@mantine/hooks', async () => {
+    const actual = await vi.importActual('@mantine/hooks');
+    return {
+        ...actual,
+        useMediaQuery: vi.fn(),
+    };
+});
+
 describe('CollectionFiltersDrawer', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.mocked(mantineHooks.useMediaQuery).mockReturnValue(false);
+    });
     const defaultProps = {
         opened: true,
         onClose: vi.fn(),
@@ -125,6 +138,24 @@ describe('CollectionFiltersDrawer', () => {
         expect(
             screen.getByRole('button', {
                 name: /Apply Filters \(0 cards\)/i,
+            }),
+        ).toBeInTheDocument();
+    });
+
+    it('renders bottom-sheet drawer on mobile viewports', () => {
+        vi.mocked(mantineHooks.useMediaQuery).mockReturnValue(true);
+
+        render(
+            <MantineProvider>
+                <CollectionFiltersDrawer {...defaultProps} />
+            </MantineProvider>,
+        );
+
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+        expect(screen.getByText('Card Set')).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', {
+                name: /Apply Filters \(42 cards\)/i,
             }),
         ).toBeInTheDocument();
     });
