@@ -187,66 +187,17 @@ export function CardSubstitutionModal({
             size="1240px"
             centered
             radius="lg"
-            title={
-                <Group
-                    justify="space-between"
-                    align="center"
-                    style={{ width: '100%' }}
-                >
-                    <Group gap="sm" align="center">
-                        <Box
-                            style={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: '10px',
-                                background:
-                                    'linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(236, 72, 153, 0.25) 100%)',
-                                border: '1px solid rgba(168, 85, 247, 0.4)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <IconArrowsExchange size={20} color="#c084fc" />
-                        </Box>
-                        <Box>
-                            <Text
-                                fw={900}
-                                size="md"
-                                style={{
-                                    fontFamily: "'Cinzel Decorative', serif",
-                                    letterSpacing: '0.5px',
-                                    background:
-                                        'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                }}
-                            >
-                                Card Substitutions: {targetCard.name}
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                                Smart budget and functional alternatives for{' '}
-                                {deck.title}
-                            </Text>
-                        </Box>
-                    </Group>
-                </Group>
-            }
+            icon={<IconArrowsExchange size={20} color="#c084fc" />}
+            title={`Card Substitutions: ${targetCard.name}`}
+            subtitle={`Smart budget and functional alternatives for ${deck.title}`}
             styles={{
                 content: {
-                    background:
-                        'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
-                    border: '1px solid rgba(168, 85, 247, 0.25)',
-                    boxShadow:
-                        '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.12)',
                     maxHeight: '90dvh',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
                 },
                 header: {
-                    background: 'rgba(15, 11, 32, 0.95)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                     padding: '14px 20px',
                     flexShrink: 0,
                 },

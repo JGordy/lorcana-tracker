@@ -40,23 +40,9 @@ export function ImportDeckModal({
         <ResponsiveModal
             opened={opened}
             onClose={onClose}
-            title={
-                <Text fw={700} size="lg">
-                    Import Lorcana Deck List
-                </Text>
-            }
+            title="Import Lorcana Deck List"
             size="lg"
             centered
-            styles={{
-                content: {
-                    backgroundColor: 'var(--mantine-color-dark-8)',
-                    color: 'var(--mantine-color-gray-1)',
-                },
-                header: {
-                    backgroundColor: 'var(--mantine-color-dark-8)',
-                    color: 'var(--mantine-color-gray-1)',
-                },
-            }}
         >
             <Stack gap="md">
                 <Text size="xs" c="gray.4">

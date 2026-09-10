@@ -242,6 +242,33 @@ export function ResponsiveModal({
         );
     }
 
+    const desktopStyles = {
+        ...styles,
+        content: {
+            background:
+                styles?.content?.background ||
+                'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
+            border:
+                styles?.content?.border || '1px solid rgba(168, 85, 247, 0.25)',
+            boxShadow:
+                styles?.content?.boxShadow ||
+                '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.12)',
+            ...styles?.content,
+        },
+        header: {
+            background: styles?.header?.background || 'rgba(15, 11, 32, 0.95)',
+            borderBottom:
+                styles?.header?.borderBottom ||
+                '1px solid rgba(255, 255, 255, 0.08)',
+            padding: styles?.header?.padding || '16px 22px',
+            ...styles?.header,
+        },
+        body: {
+            padding: styles?.body?.padding || '20px 22px',
+            ...styles?.body,
+        },
+    };
+
     return (
         <Modal
             opened={opened}
@@ -252,7 +279,7 @@ export function ResponsiveModal({
             zIndex={zIndex}
             radius={radius}
             withCloseButton={withCloseButton}
-            styles={styles}
+            styles={desktopStyles}
             {...rest}
         >
             {children}

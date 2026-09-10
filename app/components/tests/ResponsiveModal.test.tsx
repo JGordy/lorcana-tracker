@@ -141,4 +141,20 @@ describe('ResponsiveModal', () => {
         expect(screen.getByTestId('test-badge')).toBeInTheDocument();
         expect(screen.getByText('Action')).toBeInTheDocument();
     });
+
+    it('applies default theme styles on desktop modal', () => {
+        vi.mocked(mantineHooks.useMediaQuery).mockReturnValue(false);
+
+        render(
+            <MantineProvider>
+                <ResponsiveModal opened onClose={vi.fn()} title="Styled Modal">
+                    <div>Content</div>
+                </ResponsiveModal>
+            </MantineProvider>,
+        );
+
+        const dialog = screen.getByRole('dialog');
+        expect(dialog).toBeInTheDocument();
+        expect(screen.getByText('Styled Modal')).toBeInTheDocument();
+    });
 });

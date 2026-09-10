@@ -232,22 +232,6 @@ export function ExportDeckGraphicModal({
             size="1380px"
             centered
             radius="lg"
-            styles={{
-                content: {
-                    background:
-                        'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
-                    border: '1px solid rgba(168, 85, 247, 0.25)',
-                    boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9)',
-                },
-                header: {
-                    background: 'rgba(15, 11, 32, 0.95)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: '14px 20px',
-                },
-                body: {
-                    padding: '16px 20px',
-                },
-            }}
         >
             <Stack gap="md">
                 {/* Control Action Bar */}
