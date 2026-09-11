@@ -5,6 +5,7 @@ export default [
     route('decks', 'routes/decks/decks.tsx'),
     route('my-decks', 'routes/my-decks/my-decks.tsx'),
     route('collection', 'routes/collection/collection.tsx'),
+    route('scan', 'routes/scan/scan.tsx'),
     route('verify', 'routes/verify/verify.tsx'),
     route('logout', 'routes/logout/logout.tsx'),
     route('api/proxy-image', 'routes/api/proxy-image.ts'),

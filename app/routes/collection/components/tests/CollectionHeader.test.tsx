@@ -1,17 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
+import { MemoryRouter } from 'react-router';
 import { MantineProvider } from '@mantine/core';
 import { CollectionHeader } from '../CollectionHeader';
 
 describe('CollectionHeader', () => {
     it('renders header title and metric totals correctly', () => {
         render(
-            <MantineProvider>
-                <CollectionHeader
-                    totals={{ totalCardsOwned: 45, uniqueCardsCount: 20 }}
-                    totalCatalogCards={100}
-                />
-            </MantineProvider>,
+            <MemoryRouter>
+                <MantineProvider>
+                    <CollectionHeader
+                        totals={{ totalCardsOwned: 45, uniqueCardsCount: 20 }}
+                        totalCatalogCards={100}
+                    />
+                </MantineProvider>
+            </MemoryRouter>,
         );
 
         expect(screen.getByText('My Collection')).toBeDefined();
@@ -49,13 +52,15 @@ describe('CollectionHeader', () => {
         };
 
         render(
-            <MantineProvider>
-                <CollectionHeader
-                    totals={{ totalCardsOwned: 45, uniqueCardsCount: 20 }}
-                    totalCatalogCards={100}
-                    valuation={mockValuation as any}
-                />
-            </MantineProvider>,
+            <MemoryRouter>
+                <MantineProvider>
+                    <CollectionHeader
+                        totals={{ totalCardsOwned: 45, uniqueCardsCount: 20 }}
+                        totalCatalogCards={100}
+                        valuation={mockValuation as any}
+                    />
+                </MantineProvider>
+            </MemoryRouter>,
         );
 
         expect(screen.getByText('Est. Value')).toBeInTheDocument();
@@ -80,14 +85,16 @@ describe('CollectionHeader', () => {
         };
 
         render(
-            <MantineProvider>
-                <CollectionHeader
-                    totals={{ totalCardsOwned: 450, uniqueCardsCount: 200 }}
-                    totalCatalogCards={1000}
-                    selectedSet="Wilds Unknown"
-                    selectedSetStats={mockSetStats}
-                />
-            </MantineProvider>,
+            <MemoryRouter>
+                <MantineProvider>
+                    <CollectionHeader
+                        totals={{ totalCardsOwned: 450, uniqueCardsCount: 200 }}
+                        totalCatalogCards={1000}
+                        selectedSet="Wilds Unknown"
+                        selectedSetStats={mockSetStats}
+                    />
+                </MantineProvider>
+            </MemoryRouter>,
         );
 
         expect(

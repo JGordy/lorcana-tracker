@@ -17,6 +17,7 @@ import {
     IconUser,
     IconLogin,
     IconFolder,
+    IconScan,
 } from '@tabler/icons-react';
 import { AuthModal } from './AuthModal';
 import { MobileBottomNav } from './MobileBottomNav';
@@ -181,6 +182,25 @@ export function Navbar({ user }: NavbarProps) {
                                 leftSection={<IconCards size={17} />}
                             >
                                 My Collection
+                            </Button>
+                            <Button
+                                component={Link}
+                                to="/scan"
+                                variant={
+                                    location.pathname === '/scan'
+                                        ? 'light'
+                                        : 'subtle'
+                                }
+                                color={
+                                    location.pathname === '/scan'
+                                        ? 'teal'
+                                        : 'gray'
+                                }
+                                size="sm"
+                                radius="md"
+                                leftSection={<IconScan size={17} />}
+                            >
+                                Scanner
                             </Button>
                         </Group>
 

@@ -12,3 +12,6 @@
 
 # MCP secrets
 .agents/**/mcp_config.json
+
+# Tesseract OCR language datasets
+*.traineddata
