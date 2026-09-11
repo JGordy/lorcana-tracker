@@ -1,6 +1,11 @@
 import { Link, useLocation } from 'react-router';
 import { Box, Group, Text, UnstyledButton } from '@mantine/core';
-import { IconDatabase, IconFolder, IconCards } from '@tabler/icons-react';
+import {
+    IconDatabase,
+    IconFolder,
+    IconCards,
+    IconScan,
+} from '@tabler/icons-react';
 
 export interface MobileNavItem {
     label: string;
@@ -28,10 +33,20 @@ export const MOBILE_NAV_ITEMS: MobileNavItem[] = [
         to: '/collection',
         icon: IconCards,
     },
+    {
+        label: 'Scan',
+        to: '/scan',
+        icon: IconScan,
+    },
 ];
 
 export function MobileBottomNav() {
     const location = useLocation();
+
+    // Do not show global bottom navigation on dedicated camera scanner page
+    if (location.pathname === '/scan') {
+        return null;
+    }
 
     return (
         <Box

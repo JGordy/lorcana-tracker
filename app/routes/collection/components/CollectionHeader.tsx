@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router';
 import {
     Paper,
     Group,
@@ -11,7 +12,12 @@ import {
     Button,
     ActionIcon,
 } from '@mantine/core';
-import { IconCards, IconChartBar, IconDiamond } from '@tabler/icons-react';
+import {
+    IconCards,
+    IconChartBar,
+    IconDiamond,
+    IconScan,
+} from '@tabler/icons-react';
 import type { CollectionValuationResult } from '../../../utils/valuation';
 import { formatCurrency } from '../../../utils/valuation';
 import type { SetProgressStats } from '../../../utils/setCompletion';
@@ -117,6 +123,27 @@ export function CollectionHeader({
                             and automatically update deck percentages.
                         </Text>
                         <Group gap="xs" mt={{ base: 4, md: 'xs' }}>
+                            <Button
+                                component={Link}
+                                to="/scan"
+                                size="xs"
+                                variant="gradient"
+                                gradient={{ from: 'teal', to: 'cyan' }}
+                                leftSection={<IconScan size={14} />}
+                                styles={{
+                                    root: {
+                                        height: 28,
+                                        paddingLeft: 10,
+                                        paddingRight: 10,
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        boxShadow:
+                                            '0 2px 8px rgba(20, 184, 166, 0.3)',
+                                    },
+                                }}
+                            >
+                                Scan Cards
+                            </Button>
                             <Button
                                 size="xs"
                                 variant="light"

@@ -29,6 +29,9 @@ describe('Navbar Component', () => {
         expect(screen.getByText('Deck Directory')).toBeInTheDocument();
         expect(screen.getAllByText('My Decks').length).toBeGreaterThan(0);
         expect(screen.getByText('My Collection')).toBeInTheDocument();
+        const scannerLink = screen.getByRole('link', { name: /scanner/i });
+        expect(scannerLink).toBeInTheDocument();
+        expect(scannerLink).toHaveAttribute('href', '/scan');
     });
 
     it('should display Sign In / Register button when user is logged out', () => {

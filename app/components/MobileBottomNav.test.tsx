@@ -61,6 +61,15 @@ describe('MobileBottomNav Component', () => {
         expect(myDecksLink).toHaveAttribute('aria-current', 'page');
     });
 
+    it('does not render bottom navigation on /scan route to maximize camera viewport', () => {
+        renderNav('/scan');
+
+        const nav = screen.queryByRole('navigation', {
+            name: /mobile navigation/i,
+        });
+        expect(nav).toBeNull();
+    });
+
     it('renders with accessibility aria-label and no active items on unmapped route', () => {
         renderNav('/unknown-route');
 
