@@ -70,7 +70,7 @@ export function AuthModal({ opened, onClose }: AuthModalProps) {
                     ? 'Access your cloud collection and custom decks'
                     : 'Create an account to sync across devices'
             }
-            mobileDrawerSize="auto"
+            mobileDrawerSize={mode === 'register' ? '58%' : '50%'}
             size="md"
             centered
             radius="lg"
