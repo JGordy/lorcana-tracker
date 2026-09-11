@@ -1,5 +1,4 @@
 import {
-    Modal,
     Stack,
     Text,
     TextInput,
@@ -9,6 +8,7 @@ import {
     Box,
     Button,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../components/ResponsiveModal';
 import type { ParsedResults } from '../hooks/useDeckImport';
 
 interface ImportDeckModalProps {
@@ -37,26 +37,12 @@ export function ImportDeckModal({
     onSubmit,
 }: ImportDeckModalProps) {
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
-            title={
-                <Text fw={700} size="lg">
-                    Import Lorcana Deck List
-                </Text>
-            }
+            title="Import Lorcana Deck List"
             size="lg"
             centered
-            styles={{
-                content: {
-                    backgroundColor: 'var(--mantine-color-dark-8)',
-                    color: 'var(--mantine-color-gray-1)',
-                },
-                header: {
-                    backgroundColor: 'var(--mantine-color-dark-8)',
-                    color: 'var(--mantine-color-gray-1)',
-                },
-            }}
         >
             <Stack gap="md">
                 <Text size="xs" c="gray.4">
@@ -190,6 +176,6 @@ export function ImportDeckModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

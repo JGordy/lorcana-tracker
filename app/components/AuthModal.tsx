@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useFetcher } from 'react-router';
 import {
-    Modal,
     TextInput,
     PasswordInput,
     Button,
@@ -11,6 +10,7 @@ import {
     Alert,
     Group,
 } from '@mantine/core';
+import { ResponsiveModal } from './ResponsiveModal';
 import { IconAlertCircle, IconCheck, IconMail } from '@tabler/icons-react';
 
 interface AuthModalProps {
@@ -33,7 +33,7 @@ export function AuthModal({ opened, onClose }: AuthModalProps) {
     }, [actionData, mode, onClose]);
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             title={
@@ -163,6 +163,6 @@ export function AuthModal({ opened, onClose }: AuthModalProps) {
                     </Stack>
                 </fetcher.Form>
             )}
-        </Modal>
+        </ResponsiveModal>
     );
 }

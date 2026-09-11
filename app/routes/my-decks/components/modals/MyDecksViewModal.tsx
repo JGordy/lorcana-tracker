@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Text,
     Badge,
-    Progress,
     TextInput,
     Select,
     Button,
@@ -16,6 +14,7 @@ import {
     ActionIcon,
     Indicator,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import {
     IconCards,
     IconSearch,
@@ -34,6 +33,7 @@ import {
 import { LorcanaCardTile } from '../../../../components/LorcanaCardTile';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DeckInkCurve } from '../../../../components/DeckInkCurve';
+import { DeckHeaderMetrics } from '../../../../components/DeckMetricsSummary';
 import { ExportDeckGraphicModal } from '../../../decks/components/ExportDeckGraphicModal';
 import { calculateDeckCost, formatCurrency } from '../../../../utils/valuation';
 import { getTcgPlayerCardSearchUrl } from '../../../../utils/shoppingList';
@@ -88,7 +88,7 @@ export function MyDecksViewModal({
     const deckCost = calculateDeckCost(activeDeck.cards || []);
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={200}
@@ -204,103 +204,20 @@ export function MyDecksViewModal({
                     </Group>
 
                     {/* Header Right: Valuation & Collection Completion */}
-                    <Group
-                        gap="md"
-                        align="center"
-                        style={{ marginLeft: 'auto' }}
-                    >
-                        {deckCost.totalDeckCost > 0 && (
-                            <Box style={{ textAlign: 'right' }}>
-                                <Text
-                                    size="10px"
-                                    fw={800}
-                                    c="yellow.4"
-                                    tt="uppercase"
-                                >
-                                    Est. Value:{' '}
-                                    {formatCurrency(deckCost.totalDeckCost)}
-                                </Text>
-                                {deckCost.costToFinish > 0 && (
-                                    <Text size="10px" fw={700} c="red.4">
-                                        Need:{' '}
-                                        {formatCurrency(deckCost.costToFinish)}
-                                    </Text>
-                                )}
-                            </Box>
-                        )}
-
-                        <Box style={{ width: 180 }}>
-                            <Group
-                                justify="space-between"
-                                align="center"
-                                mb={4}
-                            >
-                                <Text
-                                    size="10px"
-                                    fw={800}
-                                    c="gray.4"
-                                    tt="uppercase"
-                                >
-                                    Completion
-                                </Text>
-                                <Badge
-                                    size="xs"
-                                    variant="light"
-                                    color={
-                                        activeDeck.progress.percentage >= 80
-                                            ? 'teal'
-                                            : activeDeck.progress.percentage >=
-                                                50
-                                              ? 'yellow'
-                                              : 'red'
-                                    }
-                                    radius="sm"
-                                    style={{ fontWeight: 800 }}
-                                >
-                                    {activeDeck.progress.ownedCount}/
-                                    {activeDeck.progress.totalCount} (
-                                    {activeDeck.progress.percentage}%)
-                                </Badge>
-                            </Group>
-                            <Progress
-                                value={activeDeck.progress.percentage}
-                                color={
-                                    activeDeck.progress.percentage >= 80
-                                        ? 'teal'
-                                        : activeDeck.progress.percentage >= 50
-                                          ? 'yellow'
-                                          : 'red'
-                                }
-                                size="xs"
-                                radius="xl"
-                                striped
-                            />
-                        </Box>
-                    </Group>
+                    <DeckHeaderMetrics
+                        totalDeckCost={deckCost.totalDeckCost}
+                        costToFinish={deckCost.costToFinish}
+                        progress={activeDeck.progress}
+                    />
                 </Group>
             }
             size="1150px"
             centered
             radius="lg"
             styles={{
-                content: {
-                    background:
-                        'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
-                    border: '1px solid rgba(168, 85, 247, 0.25)',
-                    boxShadow:
-                        '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.12)',
-                },
-                header: {
-                    background: 'rgba(15, 11, 32, 0.95)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: '16px 22px',
-                },
                 title: {
                     flex: 1,
                     marginRight: 16,
-                },
-                body: {
-                    padding: '20px 22px',
                 },
             }}
         >
@@ -942,6 +859,6 @@ export function MyDecksViewModal({
                 onClose={() => setShowGraphicModal(false)}
                 deck={activeDeck}
             />
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,5 +1,4 @@
 import {
-    Modal,
     Stack,
     TextInput,
     Textarea,
@@ -12,6 +11,7 @@ import {
     Badge,
     SimpleGrid,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { IconSparkles, IconCheck } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DECK_FORMAT_OPTIONS } from '../../../../constants/lorcana';
@@ -53,51 +53,15 @@ export function MyDecksCreateModal({
     };
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             size="md"
             radius="lg"
             centered
-            title={
-                <Group gap="sm" align="center">
-                    <Box
-                        style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: '10px',
-                            background:
-                                'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
-                            border: '1px solid rgba(168, 85, 247, 0.35)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <IconSparkles size={20} color="#c084fc" />
-                    </Box>
-                    <Box>
-                        <Text
-                            fw={900}
-                            size="lg"
-                            style={{
-                                fontFamily:
-                                    "'Cinzel Decorative', Georgia, serif",
-                                letterSpacing: '0.5px',
-                                background:
-                                    'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}
-                        >
-                            Create Custom Deck
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                            Design your deck format, ink colors, and strategy
-                        </Text>
-                    </Box>
-                </Group>
-            }
+            icon={<IconSparkles size={20} color="#c084fc" />}
+            title="Create Custom Deck"
+            subtitle="Design your deck format, ink colors, and strategy"
             styles={{
                 content: {
                     backgroundColor: '#0f172a',
@@ -315,6 +279,6 @@ export function MyDecksCreateModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-    Modal,
     Stack,
     TextInput,
     Textarea,
@@ -13,6 +12,7 @@ import {
     Badge,
     SimpleGrid,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { IconEdit, IconCheck } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
 import { DECK_FORMAT_OPTIONS } from '../../../../constants/lorcana';
@@ -87,52 +87,16 @@ export function MyDecksEditModal({
     }, [deckCards]);
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={400}
             size="md"
             radius="lg"
             centered
-            title={
-                <Group gap="sm" align="center">
-                    <Box
-                        style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: '10px',
-                            background:
-                                'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
-                            border: '1px solid rgba(168, 85, 247, 0.35)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <IconEdit size={20} color="#c084fc" />
-                    </Box>
-                    <Box>
-                        <Text
-                            fw={900}
-                            size="lg"
-                            style={{
-                                fontFamily:
-                                    "'Cinzel Decorative', Georgia, serif",
-                                letterSpacing: '0.5px',
-                                background:
-                                    'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}
-                        >
-                            Edit Deck Info
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                            Update metadata, inks, format, or cover art
-                        </Text>
-                    </Box>
-                </Group>
-            }
+            icon={<IconEdit size={20} color="#c084fc" />}
+            title="Edit Deck Info"
+            subtitle="Update metadata, inks, format, or cover art"
             styles={{
                 content: {
                     backgroundColor: '#0f172a',
@@ -373,6 +337,6 @@ export function MyDecksEditModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
-import {
-    Modal,
-    Button,
-    Group,
-    Text,
-    Stack,
-    FileInput,
-    Alert,
-} from '@mantine/core';
+import { Button, Group, Text, Stack, FileInput, Alert } from '@mantine/core';
+import { ResponsiveModal } from './ResponsiveModal';
 import {
     IconDownload,
     IconUpload,
     IconAlertCircle,
     IconCheck,
+    IconDatabase,
 } from '@tabler/icons-react';
 import type { UserCollectionMap } from '../types/lorcana';
 import {
@@ -83,18 +77,17 @@ export const BackupModal: React.FC<BackupModalProps> = ({
     };
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={() => {
+                setFile(null);
                 setErrorMsg(null);
                 setSuccessMsg(null);
                 onClose();
             }}
-            title={
-                <Text fw={700} size="lg">
-                    Collection Backup & Restore
-                </Text>
-            }
+            icon={<IconDatabase size={20} color="#c084fc" />}
+            title="Collection Backup & Restore"
+            subtitle="Export or restore your inventory data"
             centered
         >
             <Stack gap="md">
@@ -166,6 +159,6 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                     </Button>
                 )}
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 };

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -16,6 +15,7 @@ import {
     ActionIcon,
     Alert,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import {
     IconLayersIntersect,
     IconCheck,
@@ -90,82 +90,29 @@ export function PhysicalDeckAuditModal({
     const hasActiveDecks = activeDecks.length > 0;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
-            title={
-                <Group
-                    justify="space-between"
-                    align="center"
-                    style={{ width: '100%' }}
-                >
-                    <Group gap="sm" align="center">
-                        <Box
-                            style={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: '10px',
-                                background:
-                                    'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(168, 85, 247, 0.25) 100%)',
-                                border: '1px solid rgba(59, 130, 246, 0.4)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <IconLayersIntersect size={20} color="#60a5fa" />
-                        </Box>
-                        <Box>
-                            <Text
-                                fw={900}
-                                size="md"
-                                style={{
-                                    fontFamily: "'Cinzel Decorative', serif",
-                                    letterSpacing: '0.5px',
-                                    background:
-                                        'linear-gradient(to right, #ffffff, #93c5fd, #c084fc)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
-                                }}
-                            >
-                                Physical Deck Audit
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                                Multi-Deck Physical Collection Conflict Detector
-                            </Text>
-                        </Box>
-                    </Group>
-
-                    <Badge size="sm" variant="light" color="blue" radius="md">
-                        {auditResult.activeDecksCount}{' '}
-                        {auditResult.activeDecksCount === 1
-                            ? 'Active Deck'
-                            : 'Active Decks'}
-                    </Badge>
-                </Group>
+            icon={<IconLayersIntersect size={20} color="#60a5fa" />}
+            title="Physical Deck Audit"
+            subtitle="Multi-Deck Physical Collection Conflict Detector"
+            badge={
+                <Badge size="sm" variant="light" color="blue" radius="md">
+                    {auditResult.activeDecksCount}{' '}
+                    {auditResult.activeDecksCount === 1
+                        ? 'Active Deck'
+                        : 'Active Decks'}
+                </Badge>
             }
+            iconBg="linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(168, 85, 247, 0.25) 100%)"
+            iconBorder="1px solid rgba(59, 130, 246, 0.4)"
             size="1100px"
             centered
             radius="lg"
             styles={{
-                content: {
-                    background:
-                        'linear-gradient(180deg, #0d1326 0%, #080c19 100%)',
-                    border: '1px solid rgba(59, 130, 246, 0.25)',
-                    boxShadow:
-                        '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(59, 130, 246, 0.12)',
-                },
-                header: {
-                    background: 'rgba(11, 16, 32, 0.95)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: '16px 22px',
-                },
                 title: {
                     flex: 1,
                     marginRight: 16,
-                },
-                body: {
-                    padding: '20px 22px',
                 },
             }}
         >
@@ -616,6 +563,6 @@ export function PhysicalDeckAuditModal({
                     </>
                 )}
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

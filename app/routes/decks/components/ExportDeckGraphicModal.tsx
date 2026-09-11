@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
-    Modal,
     Group,
     Text,
     Button,
@@ -11,6 +10,7 @@ import {
     Tooltip,
     ActionIcon,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../components/ResponsiveModal';
 import {
     IconDownload,
     IconCopy,
@@ -223,65 +223,15 @@ export function ExportDeckGraphicModal({
     if (!deck) return null;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
-            title={
-                <Group gap="xs" align="center">
-                    <Box
-                        style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: '8px',
-                            background:
-                                'linear-gradient(135deg, rgba(168, 85, 247, 0.25) 0%, rgba(236, 72, 153, 0.2) 100%)',
-                            border: '1px solid rgba(168, 85, 247, 0.35)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <IconPhoto size={18} color="#c084fc" />
-                    </Box>
-                    <Box>
-                        <Text
-                            fw={900}
-                            size="md"
-                            style={{
-                                fontFamily: "'Cinzel Decorative', serif",
-                                background:
-                                    'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                            }}
-                        >
-                            Export Shareable Graphic
-                        </Text>
-                        <Text size="11px" c="gray.4">
-                            High-DPI visual deck spread for Discord & Reddit
-                        </Text>
-                    </Box>
-                </Group>
-            }
+            icon={<IconPhoto size={18} color="#c084fc" />}
+            title="Export Shareable Graphic"
+            subtitle="Download high-resolution image or copy directly to clipboard"
             size="1380px"
             centered
             radius="lg"
-            styles={{
-                content: {
-                    background:
-                        'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
-                    border: '1px solid rgba(168, 85, 247, 0.25)',
-                    boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.9)',
-                },
-                header: {
-                    background: 'rgba(15, 11, 32, 0.95)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: '14px 20px',
-                },
-                body: {
-                    padding: '16px 20px',
-                },
-            }}
         >
             <Stack gap="md">
                 {/* Control Action Bar */}
@@ -467,6 +417,6 @@ export function ExportDeckGraphicModal({
                     </Box>
                 </Box>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import {
-    Modal,
     Group,
     Box,
     Text,
@@ -14,6 +13,7 @@ import {
     SimpleGrid,
     Select,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../components/ResponsiveModal';
 import {
     IconCards,
     IconSearch,
@@ -97,7 +97,7 @@ export function SetBreakdownModal({
     }, [setProgressStats, searchQuery, sortBy]);
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={300}
@@ -528,7 +528,7 @@ export function SetBreakdownModal({
                     </SimpleGrid>
                 )}
             </ScrollArea.Autosize>
-        </Modal>
+        </ResponsiveModal>
     );
 }
 

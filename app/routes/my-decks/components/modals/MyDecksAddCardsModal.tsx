@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     TextInput,
@@ -14,6 +13,7 @@ import {
     Badge,
     SimpleGrid,
 } from '@mantine/core';
+import { ResponsiveModal } from '../../../../components/ResponsiveModal';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconSearch, IconPlus, IconMinus } from '@tabler/icons-react';
 import { ALL_INKS } from '../../../../types/lorcana';
@@ -86,52 +86,19 @@ export function MyDecksAddCardsModal({
     const hasMoreCards = filteredCards.length > displayLimit;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
-            title={
-                <Group
-                    justify="space-between"
-                    align="center"
-                    style={{ width: '100%' }}
-                >
-                    <Text
-                        fw={900}
-                        size="lg"
-                        style={{
-                            fontFamily: "'Cinzel Decorative', Georgia, serif",
-                            letterSpacing: '0.5px',
-                            background:
-                                'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                        }}
-                    >
-                        Add Cards to Deck
-                    </Text>
-                    <Badge size="sm" variant="light" color="violet">
-                        {totalCardsInDeck} Cards in Deck
-                    </Badge>
-                </Group>
+            title="Add Cards to Deck"
+            badge={
+                <Badge size="sm" variant="light" color="violet">
+                    {totalCardsInDeck} Cards in Deck
+                </Badge>
             }
             size="1350px"
             radius="lg"
             centered
             zIndex={400}
-            styles={{
-                content: {
-                    backgroundColor: '#0f172a',
-                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                    borderRadius: '16px',
-                    boxShadow:
-                        '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(168, 85, 247, 0.2)',
-                },
-                header: {
-                    backgroundColor: '#0f172a',
-                    borderBottom: '1px solid rgba(148, 163, 184, 0.12)',
-                    paddingBottom: '12px',
-                },
-            }}
         >
             <Stack gap="md">
                 <Group wrap="wrap" gap="xs">
@@ -424,6 +391,6 @@ export function MyDecksAddCardsModal({
                     </Button>
                 </Group>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Modal,
     Stack,
     Group,
     Box,
@@ -11,6 +10,7 @@ import {
     Tooltip,
     Paper,
 } from '@mantine/core';
+import { ResponsiveModal } from './ResponsiveModal';
 import {
     IconCards,
     IconDice,
@@ -242,122 +242,64 @@ export function PlaytestModal({ opened, onClose, deck }: PlaytestModalProps) {
     if (!deck) return null;
 
     return (
-        <Modal
+        <ResponsiveModal
             opened={opened}
             onClose={onClose}
             zIndex={400}
-            title={
-                <Group
-                    justify="space-between"
-                    align="center"
-                    style={{ width: '100%' }}
+            icon={<IconDice size={22} color="#e9d5ff" />}
+            title={deck.title}
+            subtitle="Opening Hand & Alter (Mulligan) Playtester"
+            badge={
+                <Badge
+                    size="xs"
+                    variant="gradient"
+                    gradient={
+                        deck.isCoreLegal
+                            ? {
+                                  from: 'teal.7',
+                                  to: 'emerald.8',
+                                  deg: 90,
+                              }
+                            : {
+                                  from: 'orange.7',
+                                  to: 'amber.8',
+                                  deg: 90,
+                              }
+                    }
+                    radius="sm"
+                    style={{ fontWeight: 700 }}
                 >
-                    <Group gap="sm" align="center">
-                        <Box
-                            style={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: '10px',
-                                background:
-                                    'linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(236, 72, 153, 0.3) 100%)',
-                                border: '1px solid rgba(168, 85, 247, 0.45)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 0 15px rgba(168, 85, 247, 0.3)',
-                            }}
-                        >
-                            <IconDice size={22} color="#e9d5ff" />
-                        </Box>
-                        <Box>
-                            <Group gap="xs" align="center">
-                                <Text
-                                    fw={900}
-                                    size="md"
-                                    style={{
-                                        fontFamily:
-                                            "'Cinzel Decorative', serif",
-                                        letterSpacing: '0.5px',
-                                        background:
-                                            'linear-gradient(to right, #ffffff, #e9d5ff, #f472b6)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent',
-                                    }}
-                                >
-                                    {deck.title}
-                                </Text>
-                                <Badge
-                                    size="xs"
-                                    variant="gradient"
-                                    gradient={
-                                        deck.isCoreLegal
-                                            ? {
-                                                  from: 'teal.7',
-                                                  to: 'emerald.8',
-                                                  deg: 90,
-                                              }
-                                            : {
-                                                  from: 'orange.7',
-                                                  to: 'amber.8',
-                                                  deg: 90,
-                                              }
-                                    }
-                                    radius="sm"
-                                    style={{ fontWeight: 700 }}
-                                >
-                                    {deck.isCoreLegal ? 'CORE' : 'INFINITY'}
-                                </Badge>
-                            </Group>
-                            <Text size="11px" c="gray.4">
-                                Opening Hand & Alter (Mulligan) Playtester
-                            </Text>
-                        </Box>
-                    </Group>
-
-                    {/* Header Right Status Badges */}
-                    <Group gap="xs" align="center">
-                        <Badge
-                            size="sm"
-                            variant="filled"
-                            color={hasAltered ? 'violet.8' : 'blue.8'}
-                            leftSection={<IconSparkles size={12} />}
-                            style={{ fontWeight: 800 }}
-                        >
-                            {hasAltered ? `Turn ${turnNumber}` : 'Alter Phase'}
-                        </Badge>
-                        <Badge
-                            size="sm"
-                            variant="light"
-                            color="gray"
-                            leftSection={<IconCards size={12} />}
-                        >
-                            {drawPile.length} in Deck
-                        </Badge>
-                    </Group>
+                    {deck.isCoreLegal ? 'CORE' : 'INFINITY'}
+                </Badge>
+            }
+            headerRightSection={
+                <Group gap="xs" align="center">
+                    <Badge
+                        size="sm"
+                        variant="filled"
+                        color={hasAltered ? 'violet.8' : 'blue.8'}
+                        leftSection={<IconSparkles size={12} />}
+                        style={{ fontWeight: 800 }}
+                    >
+                        {hasAltered ? `Turn ${turnNumber}` : 'Alter Phase'}
+                    </Badge>
+                    <Badge
+                        size="sm"
+                        variant="light"
+                        color="gray"
+                        leftSection={<IconCards size={12} />}
+                    >
+                        {drawPile.length} in Deck
+                    </Badge>
                 </Group>
             }
             size="1240px"
             centered
             radius="lg"
             styles={{
-                content: {
-                    background:
-                        'linear-gradient(180deg, #110d24 0%, #0c0919 100%)',
-                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                    boxShadow:
-                        '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(168, 85, 247, 0.15)',
-                },
-                header: {
-                    background: 'rgba(15, 11, 32, 0.95)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                    padding: '16px 22px',
-                },
                 title: {
                     flex: 1,
                     marginRight: 16,
-                },
-                body: {
-                    padding: '20px 22px',
                 },
             }}
         >
@@ -916,6 +858,6 @@ export function PlaytestModal({ opened, onClose, deck }: PlaytestModalProps) {
                     )}
                 </Box>
             </Stack>
-        </Modal>
+        </ResponsiveModal>
     );
 }
