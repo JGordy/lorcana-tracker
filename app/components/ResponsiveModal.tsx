@@ -207,6 +207,7 @@ export function ResponsiveModal({
                             '1px solid rgba(168, 85, 247, 0.35)',
                         borderTopLeftRadius: '16px',
                         borderTopRightRadius: '16px',
+                        maxHeight: '90dvh',
                         ...styles?.content,
                         borderLeft: 'none',
                         borderRight: 'none',
@@ -223,6 +224,7 @@ export function ResponsiveModal({
                             '1px solid rgba(168, 85, 247, 0.2)',
                         padding: '12px 16px',
                         alignItems: 'flex-start',
+                        flexShrink: 0,
                         ...styles?.header,
                     },
                     close: {
@@ -232,6 +234,7 @@ export function ResponsiveModal({
                     },
                     body: {
                         padding: '14px 16px',
+                        overflowY: 'auto',
                         ...styles?.body,
                     },
                 }}
