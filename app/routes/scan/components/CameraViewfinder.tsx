@@ -162,6 +162,7 @@ export const CameraViewfinder = forwardRef<
                             artY,
                             artW,
                             artH,
+                            12,
                         );
                         const fullHash = extractDHashFromCanvas(
                             img,
@@ -169,14 +170,16 @@ export const CameraViewfinder = forwardRef<
                             0,
                             img.naturalWidth,
                             img.naturalHeight,
+                            10,
                         );
 
-                        if (artHash && localArtHashes.length > 0) {
+                        if (artHash && fullHash && localArtHashes.length > 0) {
                             const visualMatch = findBestVisualMatch(
                                 artHash,
                                 fullHash,
                                 localArtHashes,
-                                14,
+                                10,
+                                13,
                             );
                             if (visualMatch) {
                                 const matched =
@@ -822,12 +825,14 @@ export const CameraViewfinder = forwardRef<
                     const artW = cardW * 0.84;
                     const artH = cardH * 0.44;
 
+                    // Discard low-contrast/uniform surfaces (e.g. skin, plain walls, solid background)
                     const liveArtHash = extractDHashFromCanvas(
                         video,
                         artX,
                         artY,
                         artW,
                         artH,
+                        14, // minStdDev for art illustration
                     );
                     const liveFullHash = extractDHashFromCanvas(
                         video,
@@ -835,14 +840,16 @@ export const CameraViewfinder = forwardRef<
                         cardY,
                         cardW,
                         cardH,
+                        12, // minStdDev for full card
                     );
 
-                    if (liveArtHash) {
+                    if (liveArtHash && liveFullHash) {
                         const visualMatch = findBestVisualMatch(
                             liveArtHash,
                             liveFullHash,
                             localArtHashes,
-                            14,
+                            10, // maxArtDistance: <= 10 bits difference
+                            13, // maxFullDistance: <= 13 bits difference
                         );
 
                         if (visualMatch) {

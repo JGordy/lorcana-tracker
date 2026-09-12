@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
     hexHammingDistance,
     computeDHashFromGrayscale72,
+    getGrayscaleStdDev,
     findBestVisualMatch,
     type CardArtHash,
 } from '../artHasher';
@@ -43,6 +44,21 @@ describe('artHasher visual matching utilities', () => {
             const hash = computeDHashFromGrayscale72(pixels);
             expect(hash).toHaveLength(16);
             expect(typeof hash).toBe('string');
+        });
+    });
+
+    describe('getGrayscaleStdDev', () => {
+        it('calculates 0 standard deviation for uniform pixels', () => {
+            const uniform = new Uint8Array(72).fill(128);
+            expect(getGrayscaleStdDev(uniform)).toBe(0);
+        });
+
+        it('calculates high standard deviation for textured pixels with contrast', () => {
+            const highContrast = new Uint8Array(72);
+            for (let i = 0; i < 72; i++) {
+                highContrast[i] = i % 2 === 0 ? 255 : 0;
+            }
+            expect(getGrayscaleStdDev(highContrast)).toBeGreaterThan(100);
         });
     });
 
@@ -90,18 +106,31 @@ describe('artHasher visual matching utilities', () => {
         });
 
         it('matches within tolerance when live hash has minor noise/lighting shifts', () => {
-            // Flip 2 bits from Anna's hash: 'aabbccddeeff0011' -> 'aabbccddeeff0013'
+            // Flip 1 bit from Anna's hash: 'aabbccddeeff0011' -> 'aabbccddeeff0013'
             const noisyHash = 'aabbccddeeff0013';
             const match = findBestVisualMatch(
                 noisyHash,
                 '9988776655443322',
                 mockCatalog,
-                14,
+                10,
+                13,
             );
             expect(match).not.toBeNull();
             expect(match?.cardId).toBe('anna-braving-the-storm-9-218');
             expect(match?.artDistance).toBe(1);
             expect(match?.confidence).toBeGreaterThan(0.95);
+        });
+
+        it('rejects match when art hash matches but full card hash differs beyond threshold', () => {
+            // artHash matches Anna, but fullHash is completely different (e.g. background/random room)
+            const match = findBestVisualMatch(
+                'aabbccddeeff0011',
+                '0000000000000000',
+                mockCatalog,
+                10,
+                13,
+            );
+            expect(match).toBeNull();
         });
 
         it('returns null when distance exceeds threshold', () => {

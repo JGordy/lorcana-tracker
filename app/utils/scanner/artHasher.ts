@@ -92,7 +92,28 @@ function getOffscreenCanvas(): {
 }
 
 /**
+/**
+ * Calculates standard deviation (contrast/texture metric) of a 72-pixel grayscale array.
+ */
+export function getGrayscaleStdDev(
+    pixels: Uint8Array | Uint8ClampedArray,
+): number {
+    let sum = 0;
+    for (let i = 0; i < pixels.length; i++) {
+        sum += pixels[i];
+    }
+    const mean = sum / pixels.length;
+    let variance = 0;
+    for (let i = 0; i < pixels.length; i++) {
+        const diff = pixels[i] - mean;
+        variance += diff * diff;
+    }
+    return Math.sqrt(variance / pixels.length);
+}
+
+/**
  * Extracts a region from a source canvas/video, resizes to 9x8, and returns 64-bit dHash.
+ * If minStdDev is specified and texture contrast is too low (e.g. flat wall, skin, solid background), returns null.
  */
 export function extractDHashFromCanvas(
     source: CanvasImageSource,
@@ -100,6 +121,7 @@ export function extractDHashFromCanvas(
     sy: number,
     sw: number,
     sh: number,
+    minStdDev = 0,
 ): string | null {
     const offscreen = getOffscreenCanvas();
     if (!offscreen) return null;
@@ -124,18 +146,27 @@ export function extractDHashFromCanvas(
         );
     }
 
+    // Discard flat/uniform surfaces without sufficient image texture
+    if (minStdDev > 0) {
+        const stdDev = getGrayscaleStdDev(gray72);
+        if (stdDev < minStdDev) {
+            return null;
+        }
+    }
+
     return computeDHashFromGrayscale72(gray72);
 }
 
 /**
  * Scans live frame hashes against the precomputed hash database.
- * Returns the best candidate if distance falls within tolerance thresholds.
+ * Returns the best candidate if distance falls within strict dual-hash tolerance thresholds.
  */
 export function findBestVisualMatch(
     liveArtHash: string,
     liveFullHash: string | null,
     hashCatalog: CardArtHash[],
-    maxArtDistance = 14,
+    maxArtDistance = 10,
+    maxFullDistance = 13,
 ): ArtMatchResult | null {
     if (!liveArtHash || !hashCatalog || hashCatalog.length === 0) {
         return null;
@@ -148,7 +179,7 @@ export function findBestVisualMatch(
         const item = hashCatalog[i];
         const artDist = hexHammingDistance(liveArtHash, item.artHash);
 
-        // Early reject if art difference is too high
+        // Reject if art difference exceeds threshold
         if (artDist > maxArtDistance) {
             continue;
         }
@@ -158,14 +189,22 @@ export function findBestVisualMatch(
                 ? hexHammingDistance(liveFullHash, item.fullHash)
                 : 0;
 
+        // Strictly enforce fullHash threshold when full card hash is provided
+        if (liveFullHash && item.fullHash && fullDist > maxFullDistance) {
+            continue;
+        }
+
         // Combined score: art window is weighted higher than full border/text
         const totalDist = artDist * 1.5 + fullDist * 0.8;
 
         if (totalDist < lowestDistance) {
             lowestDistance = totalDist;
 
-            // Normalize confidence: 0 distance = 1.0, distance 14 = 0.78
-            const confidence = Math.max(0, Math.min(1, 1 - artDist / 64));
+            // Normalize confidence: 0 distance = 1.0
+            const confidence = Math.max(
+                0,
+                Math.min(1, 1 - (artDist * 1.5 + fullDist * 0.8) / (64 * 2.3)),
+            );
 
             bestResult = {
                 cardId: item.id,
