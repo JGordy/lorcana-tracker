@@ -27,6 +27,7 @@ export { loader, action };
 export default function ScanPage() {
     const {
         cards,
+        artHashes,
         userCollection: initialUserCollection,
         user,
         hasGeminiApiKey,
@@ -44,7 +45,9 @@ export default function ScanPage() {
     const [isTorchOn, setIsTorchOn] = useState(false);
 
     const [activeCard, setActiveCard] = useState<Card | null>(null);
-    const [detectionMethod, setDetectionMethod] = useState<'ocr' | 'ai'>('ocr');
+    const [detectionMethod, setDetectionMethod] = useState<
+        'visual' | 'ocr' | 'ai'
+    >('visual');
     const [drawerOpened, setDrawerOpened] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
 
@@ -128,9 +131,9 @@ export default function ScanPage() {
         [cardsLookup, getCardQuantity, inventoryFetcher, user],
     );
 
-    // Handle card matched by OCR or AI
+    // Handle card matched by Visual, OCR, or AI
     const handleCardDetected = useCallback(
-        (card: Card, method: 'ocr' | 'ai') => {
+        (card: Card, method: 'visual' | 'ocr' | 'ai') => {
             setDetectionMethod(method);
             setActiveCard(card);
             setStatusNotice(null);
@@ -271,6 +274,7 @@ export default function ScanPage() {
             <CameraViewfinder
                 ref={viewfinderRef}
                 cards={cards}
+                artHashes={artHashes}
                 onCardDetected={handleCardDetected}
                 isPaused={isPaused}
                 facingMode={facingMode}

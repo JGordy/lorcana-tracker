@@ -7,17 +7,6 @@ import {
 } from '../CameraViewfinder';
 import React from 'react';
 
-// Mock tesseract.js worker
-vi.mock('tesseract.js', () => ({
-    createWorker: vi.fn().mockResolvedValue({
-        setParameters: vi.fn().mockResolvedValue(undefined),
-        recognize: vi.fn().mockResolvedValue({
-            data: { text: '' },
-        }),
-        terminate: vi.fn().mockResolvedValue(undefined),
-    }),
-}));
-
 describe('CameraViewfinder component', () => {
     let originalMediaDevices: any;
     const mockTrack = {
@@ -173,5 +162,36 @@ describe('CameraViewfinder component', () => {
 
         ref.current?.openFilePicker();
         expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('mounts and functions with preloaded artHashes', () => {
+        const mockHashes = [
+            {
+                id: 'elsa-snow-queen',
+                name: 'Elsa - Snow Queen',
+                set: '1',
+                setNum: 1,
+                number: 1,
+                cardNum: 1,
+                rarity: 'Common',
+                artHash: 'ffff0000ffff0000',
+                fullHash: 'ffff0000ffff0000',
+            },
+        ];
+
+        const { container } = render(
+            <MantineProvider>
+                <CameraViewfinder
+                    cards={[]}
+                    artHashes={mockHashes}
+                    onCardDetected={vi.fn()}
+                    isPaused={false}
+                    facingMode="environment"
+                />
+            </MantineProvider>,
+        );
+
+        expect(container.querySelector('video')).toBeInTheDocument();
+        expect(container.querySelector('canvas')).toBeInTheDocument();
     });
 });
