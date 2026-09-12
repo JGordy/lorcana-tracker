@@ -25,10 +25,12 @@ import {
     IconSparkles,
 } from '@tabler/icons-react';
 import type { Card } from '../../../types/lorcana';
+import { buildCardsLookup } from '../../../utils/deck';
 import {
-    preprocessCanvasForOcr,
-    matchCardFromOcr,
-} from '../../../utils/scanner/ocrDetector';
+    extractDHashFromCanvas,
+    findBestVisualMatch,
+    type CardArtHash,
+} from '../../../utils/scanner/artHasher';
 import { playCardChime } from '../../../utils/scanner/soundEffects';
 
 export interface CameraViewfinderRef {
@@ -42,7 +44,8 @@ export interface CameraViewfinderRef {
 
 export interface CameraViewfinderProps {
     cards: Card[];
-    onCardDetected: (card: Card, method: 'ocr' | 'ai') => void;
+    artHashes?: CardArtHash[];
+    onCardDetected: (card: Card, method: 'visual' | 'ocr' | 'ai') => void;
     isPaused: boolean;
     facingMode: 'environment' | 'user';
     isAiScanning?: boolean;
@@ -55,6 +58,7 @@ export const CameraViewfinder = forwardRef<
 >(function CameraViewfinder(
     {
         cards,
+        artHashes,
         onCardDetected,
         isPaused,
         facingMode,
@@ -68,7 +72,6 @@ export const CameraViewfinder = forwardRef<
     const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const workerRef = useRef<any>(null);
     const isScanningRef = useRef(false);
     const candidateRef = useRef<{
         cardId: string;
@@ -86,50 +89,48 @@ export const CameraViewfinder = forwardRef<
     const [scanStatus, setScanStatus] = useState<string>(
         'Hold card inside frame',
     );
-    const [ocrReady, setOcrReady] = useState(false);
     const [isCardLocked, setIsCardLocked] = useState(false);
     const [isProcessingFrame, setIsProcessingFrame] = useState(false);
     const isProcessingRef = useRef(false);
     const [hasZoom, setHasZoom] = useState(false);
     const [zoomLevel, setZoomLevel] = useState(1);
+    const [localArtHashes, setLocalArtHashes] = useState<CardArtHash[]>(
+        artHashes || [],
+    );
 
-    // Initialize Tesseract.js worker safely with high-performance low-latency settings
+    // Fast O(1) card lookup
+    const cardsLookup = useRef<{ get(cardId: string): Card | undefined }>(
+        buildCardsLookup(cards),
+    );
     useEffect(() => {
-        let isMounted = true;
-        async function initOcr() {
-            try {
-                const { createWorker } = await import('tesseract.js');
-                const worker = await createWorker('eng');
-                await worker.setParameters({
-                    tessjs_create_hocr: '0',
-                    tessjs_create_tsv: '0',
-                    tessjs_create_box: '0',
-                    tessjs_create_unlv: '0',
-                    tessjs_create_osd: '0',
-                    tessedit_char_whitelist:
-                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -/·•'!:",
-                });
-                if (isMounted) {
-                    workerRef.current = worker;
-                    setOcrReady(true);
-                } else {
-                    await worker.terminate();
-                }
-            } catch (e) {
-                console.warn('[OCR Worker Init Error]:', e);
-            }
+        cardsLookup.current = buildCardsLookup(cards);
+    }, [cards]);
+
+    // Load precomputed art hashes catalog (instant from loader or cached static asset)
+    useEffect(() => {
+        if (artHashes && artHashes.length > 0) {
+            setLocalArtHashes(artHashes);
+            return;
         }
-        initOcr();
+        let isMounted = true;
+        fetch('/art-hashes.json')
+            .then((r) => r.json())
+            .then((data: CardArtHash[]) => {
+                if (isMounted && Array.isArray(data)) {
+                    setLocalArtHashes(data);
+                }
+            })
+            .catch((err) => {
+                console.warn(
+                    '[Visual Scanner]: Failed to load art hashes:',
+                    err,
+                );
+            });
 
         return () => {
             isMounted = false;
-            if (workerRef.current) {
-                const w = workerRef.current;
-                workerRef.current = null;
-                w.terminate().catch(() => {});
-            }
         };
-    }, []);
+    }, [artHashes]);
 
     // Process an uploaded or captured image file
     const processImageFile = useCallback(
@@ -143,42 +144,61 @@ export const CameraViewfinder = forwardRef<
 
                 onImageUploaded?.(base64Data);
 
-                if (workerRef.current && !isScanningRef.current) {
+                if (!isScanningRef.current) {
                     try {
                         isScanningRef.current = true;
                         const img = new window.Image();
                         img.src = base64Data;
                         await img.decode();
 
-                        const tempCanvas = document.createElement('canvas');
-                        preprocessCanvasForOcr(img, tempCanvas, {
-                            x: 0,
-                            y: 0,
-                            width: 1,
-                            height: 1,
-                        });
+                        const artX = img.naturalWidth * 0.08;
+                        const artY = img.naturalHeight * 0.1;
+                        const artW = img.naturalWidth * 0.84;
+                        const artH = img.naturalHeight * 0.44;
 
-                        if (tempCanvas.width >= 60 && tempCanvas.height >= 60) {
-                            const { data } =
-                                await workerRef.current.recognize(tempCanvas);
-                            if (data?.text) {
-                                const match = matchCardFromOcr(
-                                    data.text,
-                                    cards,
-                                );
-                                if (match && match.card) {
+                        const artHash = extractDHashFromCanvas(
+                            img,
+                            artX,
+                            artY,
+                            artW,
+                            artH,
+                        );
+                        const fullHash = extractDHashFromCanvas(
+                            img,
+                            0,
+                            0,
+                            img.naturalWidth,
+                            img.naturalHeight,
+                        );
+
+                        if (artHash && localArtHashes.length > 0) {
+                            const visualMatch = findBestVisualMatch(
+                                artHash,
+                                fullHash,
+                                localArtHashes,
+                                14,
+                            );
+                            if (visualMatch) {
+                                const matched =
+                                    cardsLookup.current.get(
+                                        visualMatch.cardId,
+                                    ) ||
+                                    cards.find(
+                                        (c) => c.id === visualMatch.cardId,
+                                    );
+                                if (matched) {
                                     const cardPrice = Math.max(
-                                        match.card.prices?.usd ?? 0,
-                                        match.card.prices?.usd_foil ?? 0,
+                                        matched.prices?.usd ?? 0,
+                                        matched.prices?.usd_foil ?? 0,
                                     );
                                     playCardChime(cardPrice);
-                                    onCardDetected(match.card, 'ocr');
+                                    onCardDetected(matched, 'visual');
                                     return;
                                 }
                             }
                         }
-                    } catch (ocrErr) {
-                        console.warn('[Image OCR Error]:', ocrErr);
+                    } catch (err) {
+                        console.warn('[Uploaded Image Matching Error]:', err);
                     } finally {
                         isScanningRef.current = false;
                     }
@@ -186,7 +206,7 @@ export const CameraViewfinder = forwardRef<
             };
             reader.readAsDataURL(file);
         },
-        [cards, onCardDetected, onImageUploaded],
+        [cards, localArtHashes, onCardDetected, onImageUploaded],
     );
 
     // Robust camera streamer with fallback constraints
@@ -728,9 +748,9 @@ export const CameraViewfinder = forwardRef<
         }
     }, [isPaused]);
 
-    // Continuous High-Speed OCR Recognition Loop
+    // Continuous Real-Time Visual Art Recognition Loop (ManaBox-style 60 FPS)
     useEffect(() => {
-        if (!cameraActive || isPaused || !ocrReady || isAiScanning) {
+        if (!cameraActive || isPaused || isAiScanning) {
             return;
         }
 
@@ -749,19 +769,16 @@ export const CameraViewfinder = forwardRef<
 
             if (isScanningRef.current) {
                 if (isRunning && !isPaused && !isAiScanning) {
-                    timerId = setTimeout(scanFrame, 150);
+                    timerId = setTimeout(scanFrame, 40);
                 }
                 return;
             }
 
             const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const worker = workerRef.current;
 
             if (
                 video &&
-                canvas &&
-                worker &&
+                localArtHashes.length > 0 &&
                 video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
                 video.videoWidth > 0
             ) {
@@ -788,103 +805,61 @@ export const CameraViewfinder = forwardRef<
                     const offsetX = (renderedW - dWidth) / 2;
                     const offsetY = (renderedH - dHeight) / 2;
 
-                    // Add 25% downward padding to ensure collector numbers are never truncated
-                    const padBottom = (targetH / scale) * 0.25;
-                    const padSides = (actualW / scale) * 0.1;
-
-                    const cropX = Math.max(
-                        0,
-                        (x0 + offsetX) / scale - padSides,
+                    const cardX = Math.max(0, (x0 + offsetX) / scale);
+                    const cardY = Math.max(0, (y0 + offsetY) / scale);
+                    const cardW = Math.min(
+                        video.videoWidth - cardX,
+                        actualW / scale,
                     );
-                    const cropY = Math.max(0, (y0 + offsetY) / scale);
-                    const cropW = Math.min(
-                        video.videoWidth - cropX,
-                        actualW / scale + padSides * 2,
-                    );
-                    const cropH = Math.min(
-                        video.videoHeight - cropY,
-                        targetH / scale + padBottom,
+                    const cardH = Math.min(
+                        video.videoHeight - cardY,
+                        targetH / scale,
                     );
 
-                    preprocessCanvasForOcr(video, canvas, {
-                        x: cropX / video.videoWidth,
-                        y: cropY / video.videoHeight,
-                        width: cropW / video.videoWidth,
-                        height: cropH / video.videoHeight,
-                    });
+                    // Illustration area in standard Lorcana cards: X: 8-92%, Y: 10-54%
+                    const artX = cardX + cardW * 0.08;
+                    const artY = cardY + cardH * 0.1;
+                    const artW = cardW * 0.84;
+                    const artH = cardH * 0.44;
 
-                    // Strict size guard before invoking Tesseract WASM
-                    if (
-                        canvas.width >= 80 &&
-                        canvas.height >= 80 &&
-                        workerRef.current
-                    ) {
-                        isProcessingRef.current = true;
-                        setIsProcessingFrame(true);
+                    const liveArtHash = extractDHashFromCanvas(
+                        video,
+                        artX,
+                        artY,
+                        artW,
+                        artH,
+                    );
+                    const liveFullHash = extractDHashFromCanvas(
+                        video,
+                        cardX,
+                        cardY,
+                        cardW,
+                        cardH,
+                    );
 
-                        let data: any = null;
-                        try {
-                            const res = await worker.recognize(canvas);
-                            data = res?.data;
-                        } finally {
-                            isProcessingRef.current = false;
-                            setIsProcessingFrame(false);
-                        }
+                    if (liveArtHash) {
+                        const visualMatch = findBestVisualMatch(
+                            liveArtHash,
+                            liveFullHash,
+                            localArtHashes,
+                            14,
+                        );
 
-                        if (!isRunning || isPaused || isAiScanning) return;
+                        if (visualMatch) {
+                            const matched =
+                                cardsLookup.current.get(visualMatch.cardId) ||
+                                cards.find((c) => c.id === visualMatch.cardId);
 
-                        const text = data?.text || '';
-
-                        if (text.trim().length > 0) {
-                            const result = matchCardFromOcr(text, cards);
-                            if (result && result.card) {
-                                const matched = result.card;
+                            if (matched) {
                                 const now = Date.now();
+                                const prev = candidateRef.current;
 
-                                console.log('[Scanner Match Candidate]:', {
-                                    card: matched.name,
-                                    score: result.score,
-                                    snippet: text
-                                        .slice(0, 60)
-                                        .replace(/[\r\n]+/g, ' '),
-                                });
-
-                                // If a title has multiple printings in Lorcana (e.g. reprint in Set 4 vs Set 9 Epic #218),
-                                // strictly verify the collector number before locking!
-                                const titleNorm = matched.name
-                                    .toLowerCase()
-                                    .replace(/[^a-z0-9]/g, '');
-                                const printingsCount = cards.filter(
-                                    (c) =>
-                                        c.name
-                                            .toLowerCase()
-                                            .replace(/[^a-z0-9]/g, '') ===
-                                        titleNorm,
-                                ).length;
-                                const isNumberConfirmed = Boolean(
-                                    result.score === 100 ||
-                                    (result.parsed?.cardNumber &&
-                                        result.parsed.cardNumber ===
-                                            matched.number) ||
-                                    new RegExp(
-                                        `(?:^|[^0-9])${matched.number}(?:[^0-9]|$)`,
-                                    ).test(text),
-                                );
-
-                                // For cards with multiple printings, require confirmed card number before locking!
-                                const isHighConfidence =
-                                    (printingsCount <= 1 ||
-                                        isNumberConfirmed) &&
-                                    result.score >= 95;
-                                const isCandidateConfirmed =
-                                    (printingsCount <= 1 ||
-                                        isNumberConfirmed) &&
-                                    candidateRef.current &&
-                                    candidateRef.current.cardId ===
-                                        matched.id &&
-                                    now - candidateRef.current.timestamp < 1500;
-
-                                if (isHighConfidence || isCandidateConfirmed) {
+                                // Require 2 consecutive frames matching same card within 500ms for stable lock
+                                if (
+                                    prev &&
+                                    prev.cardId === matched.id &&
+                                    now - prev.timestamp < 500
+                                ) {
                                     candidateRef.current = null;
                                     setIsCardLocked(true);
                                     setScanStatus(`Found: ${matched.name}`);
@@ -896,7 +871,8 @@ export const CameraViewfinder = forwardRef<
                                         matched.prices?.usd_foil ?? 0,
                                     );
                                     playCardChime(cardPrice);
-                                    onCardDetected(matched, 'ocr');
+                                    onCardDetected(matched, 'visual');
+
                                     if (
                                         isRunning &&
                                         !isPaused &&
@@ -911,53 +887,48 @@ export const CameraViewfinder = forwardRef<
                                         count: 1,
                                         timestamp: now,
                                     };
-                                    if (
-                                        printingsCount > 1 &&
-                                        !isNumberConfirmed
-                                    ) {
-                                        setScanStatus(
-                                            `Align bottom number for ${matched.name}...`,
-                                        );
-                                    } else {
-                                        setScanStatus(
-                                            `Focusing on ${matched.name}...`,
-                                        );
-                                    }
+                                    setScanStatus(
+                                        `Focusing on ${matched.name}...`,
+                                    );
                                 }
-                            } else {
-                                if (
-                                    candidateRef.current &&
-                                    Date.now() -
-                                        candidateRef.current.timestamp >
-                                        1200
-                                ) {
-                                    candidateRef.current = null;
-                                    setScanStatus('Hold card inside frame');
-                                }
+                            }
+                        } else {
+                            if (
+                                candidateRef.current &&
+                                Date.now() - candidateRef.current.timestamp >
+                                    800
+                            ) {
+                                candidateRef.current = null;
+                                setScanStatus('Hold card inside frame');
                             }
                         }
                     }
                 } catch (e) {
-                    console.warn('[OCR Scan Frame Warning]:', e);
+                    console.warn('[Visual Scan Frame Warning]:', e);
                 } finally {
                     isScanningRef.current = false;
-                    isProcessingRef.current = false;
-                    setIsProcessingFrame(false);
                 }
             }
 
             if (isRunning && !isPaused && !isAiScanning) {
-                timerId = setTimeout(scanFrame, 280);
+                timerId = setTimeout(scanFrame, 40);
             }
         }
 
-        timerId = setTimeout(scanFrame, 300);
+        timerId = setTimeout(scanFrame, 100);
 
         return () => {
             isRunning = false;
             if (timerId) clearTimeout(timerId);
         };
-    }, [cameraActive, isPaused, ocrReady, isAiScanning, cards, onCardDetected]);
+    }, [
+        cameraActive,
+        isPaused,
+        isAiScanning,
+        localArtHashes,
+        cards,
+        onCardDetected,
+    ]);
 
     return (
         <Box

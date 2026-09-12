@@ -38,7 +38,7 @@ export interface ScannedCardDrawerProps {
         isFoil: boolean,
     ) => Promise<void> | void;
     onSelectCard?: (card: Card) => void;
-    detectionMethod?: 'ocr' | 'ai';
+    detectionMethod?: 'visual' | 'ocr' | 'ai';
 }
 
 export function ScannedCardDrawer({
